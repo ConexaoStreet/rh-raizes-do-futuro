@@ -86,10 +86,8 @@ export const specs: Record<string, EntitySpec> = {
     search: "full_name",
     columns: [
       { key: "full_name", label: "Nome" },
+      { key: "department_id", label: "Setor", type: "reference" },
       { key: "member_group", label: "Grupo", type: "option" },
-      { key: "registration", label: "Matrícula" },
-      { key: "class_id", label: "Turma", type: "reference" },
-      { key: "manager_id", label: "Gestor", type: "reference" },
       { key: "status", label: "Situação", type: "status" },
     ],
     fields: [
@@ -105,7 +103,7 @@ export const specs: Record<string, EntitySpec> = {
           ["rh", "Equipe de RH"],
         ]),
       },
-      { key: "registration", label: "Matrícula", required: true },
+      { key: "registration", label: "Código interno", required: true },
       { key: "email", label: "E-mail", type: "email" },
       { key: "phone", label: "Telefone", type: "tel" },
       {
