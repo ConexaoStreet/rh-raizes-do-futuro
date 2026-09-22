@@ -225,7 +225,7 @@ function Shell() {
         <div className="workspace-label">
           <span className="workspace-icon">RH</span>
           <div>
-            Gestão de pessoas<small>Anhanguera / ESPRO</small>
+            Raízes do Futuro<small>Turma 16807 · Anhanguera / ESPRO</small>
           </div>
         </div>
         <nav>
@@ -272,7 +272,7 @@ function Shell() {
               <Menu />
             </button>
             <span className="desktop-only">
-              RH <span className="slash">/</span> Gestão de pessoas
+              Raízes do Futuro <span className="slash">/</span> RH
             </span>
           </div>
           <div className="topbar-actions">
