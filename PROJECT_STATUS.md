@@ -22,6 +22,14 @@ Supabase de produção: `RH Raízes do Futuro` (`fiuealmgufpmtgmxxpna`, sa-east-
 - Vercel: `vercel.json` e CI preparados para preview/deploy.
 - Linear: projeto e backlog de produção ativos.
 
+## Produção Vercel
+
+- Projeto: `rh-raizes-do-futuro`
+- Domínio principal: `https://rh-raizes-do-futuro.vercel.app`
+- Status do primeiro deploy: `Ready`
+- Fonte: GitHub `main`
+- Próximo ajuste obrigatório: configurar Supabase Auth URL Configuration e o secret `ALLOWED_ORIGINS` da Edge Function `email-2fa`.
+
 ## Frontend
 
 A base recebida foi atualizada para entender `recently_verified`, pedir nova verificação antes de manutenção da presença e emitir telemetria mínima de segurança/uso sem nomes, e-mails, telefones, matrícula, justificativas ou notas.
