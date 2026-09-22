@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Download, FileUp, Paperclip, Plus, Upload } from "lucide-react";
+import { Download, FileUp, Paperclip, Plus, TriangleAlert, Upload } from "lucide-react";
 import {
   client,
   json,
@@ -95,6 +95,19 @@ export default function People({ mode }: { mode: Mode }) {
       </>
     );
   if (mode === "justifications") return <Justifications />;
+  if (mode === "absences")
+    return (
+      <>
+        <div className="notice maintenance-notice">
+          <TriangleAlert size={20} />
+          <div>
+            <strong>Faltas em manutenção</strong>
+            <span>O histórico da planilha está em revisão e pode estar desatualizado. Os registros oficiais do sistema serão atualizados em breve.</span>
+          </div>
+        </div>
+        <Occurrences />
+      </>
+    );
   return <Occurrences late={mode === "lateness"} />;
 }
 function EmployeeProfile() {
@@ -152,7 +165,7 @@ function EmployeeProfile() {
     <>
       <Heading
         title={employee.social_name || employee.full_name}
-        eyebrow={`COLABORADOR · ${employee.registration}`}
+        eyebrow="RAÍZES DO FUTURO · TURMA 16807"
       >
         <Badge value={employee.status} />
         {can("employee.manage") && (
@@ -213,7 +226,7 @@ function EmployeeProfile() {
               ["Nome completo", employee.full_name],
               ["E-mail", employee.email],
               ["Telefone", employee.phone],
-              ["Matrícula", employee.registration],
+              ["Código interno", employee.registration],
               ["Data de entrada", dateLabel(employee.join_date)],
               [
                 "Horário",
