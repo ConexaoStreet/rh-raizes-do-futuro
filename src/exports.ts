@@ -318,7 +318,7 @@ export async function buildPdf(
       autoTable(doc, {
         startY: 48,
         head: [keys],
-        body: rows.map((row) => keys.map((key) => String(row[key] ?? "—"))),
+        body: rows.map((row) => {\n          const record = row as Record<string, unknown>;\n          return keys.map((key) => String(record[key] ?? "—"));\n        }),
         styles: { fontSize: 8, cellPadding: 2.4, overflow: "linebreak" },
         headStyles: { fillColor: [36, 94, 75] },
         margin: { left: 14, right: 14, bottom: 22 },
