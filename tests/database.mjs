@@ -119,6 +119,38 @@ await root("update public.employees set profile_id=$1 where id=$2", [
   users.second,
   secondEmployee,
 ]);
+await test("Equipe de RH e turma ficam separadas sem aceitar grupo inválido", async () => {
+  await as("rafaella", "select public.save_entity('employees',$1,$2)", [
+    JSON.stringify({ id: employeeId, member_group: "rh" }),
+    2,
+  ]);
+  await as("rafaella", "select public.save_entity('employees',$1,$2)", [
+    JSON.stringify({ id: secondEmployee, member_group: "rh" }),
+    2,
+  ]);
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from public.employees where member_group='rh'",
+      ),
+    ),
+    2,
+  );
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from public.employees where member_group='class'",
+      ),
+    ),
+    55,
+  );
+  await assert.rejects(
+    root("update public.employees set member_group='invalid' where id=$1", [
+      employeeId,
+    ]),
+    /check|constraint|member_group/i,
+  );
+});
 await test("Todas as tabelas públicas e privadas usam RLS", async () =>
   assert.equal(
     await value(
@@ -223,6 +255,24 @@ await test("Terça às 08h cria chamada com snapshot de 57 pessoas", async () =>
       ),
     ),
     57,
+  );
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from public.attendance_members m join public.employees e on e.id=m.employee_id where m.session_id=$1 and e.member_group='rh'",
+        [attendanceId],
+      ),
+    ),
+    2,
+  );
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from public.attendance_members m join public.employees e on e.id=m.employee_id where m.session_id=$1 and e.member_group='class'",
+        [attendanceId],
+      ),
+    ),
+    55,
   );
 });
 await test("Não duplica a chamada da mesma turma e data", async () =>
