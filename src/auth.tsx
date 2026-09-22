@@ -168,12 +168,10 @@ function AuthFrame({ children }: { children: ReactNode }) {
     <div className="auth-page">
       <aside className="auth-brand">
         <Brand />
-        <div className="auth-wordmark">
-          Pessoas.
-          <br />
-          Presença.
-          <br />
-          <span>Futuro.</span>
+        <div className="auth-wordmark" aria-label="Raízes do Futuro">
+          <span className="auth-wordmark-line auth-wordmark-line-1">Raízes</span>
+          <span className="auth-wordmark-line auth-wordmark-line-2">do</span>
+          <span className="auth-wordmark-line auth-wordmark-line-3">Futuro</span>
         </div>
         <div className="auth-signature">RH · ANHANGUERA / ESPRO</div>
       </aside>
