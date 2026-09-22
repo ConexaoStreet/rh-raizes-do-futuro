@@ -297,12 +297,13 @@ function AttendanceSession({ id, onBack }: { id: string; onBack: () => void }) {
       course: course as unknown as CourseStatus,
     };
   }, [id]);
+  const reloadAttendance = data.reload;
   useEffect(() => {
     const timer = setInterval(() => {
-      if (!savingRef.current) data.reload();
+      if (!savingRef.current) reloadAttendance();
     }, 20000);
     return () => clearInterval(timer);
-  }, [data.reload]);
+  }, [reloadAttendance]);
   useEffect(() => {
     const listener = (event: BeforeUnloadEvent) => {
       if (savingRef.current) {
