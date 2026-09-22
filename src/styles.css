@@ -2897,3 +2897,136 @@ td small {
     scroll-behavior: auto !important;
   }
 }
+
+.raizes-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 30px 32px;
+  margin-bottom: 18px;
+  border-radius: 16px;
+  color: #f5f8ee;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(188, 218, 112, 0.25), transparent 24%),
+    linear-gradient(135deg, #132a23 0%, #204e3e 62%, #2b624c 100%);
+  border: 1px solid #2d5c49;
+}
+.raizes-hero:after {
+  content: "";
+  position: absolute;
+  width: 290px;
+  height: 290px;
+  right: -110px;
+  bottom: -165px;
+  border: 1px solid rgba(212, 232, 166, 0.22);
+  border-radius: 50%;
+  box-shadow: 0 0 0 34px rgba(212, 232, 166, 0.05), 0 0 0 72px rgba(212, 232, 166, 0.035);
+}
+.raizes-hero-mark {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  border-radius: 26px 26px 26px 8px;
+  background: var(--lime);
+  color: #173026;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Manrope", Arial, sans-serif;
+  font-weight: 800;
+  font-size: 3rem;
+  letter-spacing: -0.12em;
+  box-shadow: 0 18px 55px rgba(0,0,0,.16);
+}
+.raizes-hero-mark b {
+  font-size: 1.45rem;
+  align-self: flex-start;
+  margin-top: 23px;
+  margin-left: 3px;
+}
+.raizes-hero-copy {
+  position: relative;
+  z-index: 1;
+}
+.raizes-hero .eyebrow {
+  color: #c8d9ab;
+}
+.raizes-hero h2 {
+  font-size: 1.65rem;
+  margin: 4px 0 7px;
+  color: #fff;
+}
+.raizes-hero p {
+  color: #c9d6cd;
+  margin: 0 0 16px;
+  max-width: 680px;
+  font-size: .88rem;
+}
+.department-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.department-pills span {
+  border: 1px solid rgba(217,232,196,.2);
+  background: rgba(255,255,255,.075);
+  color: #e4ecdc;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: .69rem;
+  letter-spacing: .01em;
+}
+.maintenance-notice {
+  background: #fff5e7;
+  border-color: #efc37f;
+  color: #7a5220;
+  align-items: flex-start;
+  box-shadow: 0 5px 18px rgba(164, 103, 28, 0.05);
+}
+.maintenance-notice > svg {
+  color: #d88724;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.maintenance-notice strong {
+  display: block;
+  color: #8c5819;
+  margin-bottom: 3px;
+  font-size: .87rem;
+}
+.maintenance-notice span {
+  display: block;
+  color: #876637;
+  font-size: .8rem;
+  line-height: 1.55;
+}
+@media (max-width: 700px) {
+  .raizes-hero {
+    padding: 22px 19px;
+    gap: 17px;
+    align-items: flex-start;
+  }
+  .raizes-hero-mark {
+    width: 64px;
+    height: 64px;
+    flex-basis: 64px;
+    border-radius: 18px 18px 18px 6px;
+    font-size: 2rem;
+  }
+  .raizes-hero-mark b {
+    font-size: .95rem;
+    margin-top: 15px;
+  }
+  .raizes-hero h2 {
+    font-size: 1.25rem;
+  }
+  .department-pills {
+    gap: 6px;
+  }
+  .department-pills span {
+    font-size: .61rem;
+    padding: 5px 8px;
+  }
+}
