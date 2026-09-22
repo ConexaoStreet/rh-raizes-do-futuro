@@ -1893,13 +1893,57 @@ td small {
   font-size: clamp(3rem, 5.8vw, 6rem);
   letter-spacing: -0.075em;
   font-weight: 650;
-  line-height: 1.17;
+  line-height: 0.98;
   max-width: 500px;
   margin: auto 0;
   padding: 90px 0;
 }
-.auth-wordmark > span {
+.auth-wordmark-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(22px);
+  animation: authWordmarkReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.auth-wordmark-line + .auth-wordmark-line {
+  margin-top: 0.08em;
+}
+.auth-wordmark-line-1 {
+  animation-delay: 0.08s;
+}
+.auth-wordmark-line-2 {
+  animation-delay: 0.24s;
+  font-size: 0.58em;
+  letter-spacing: -0.045em;
+  color: #d8e4d6;
+}
+.auth-wordmark-line-3 {
+  animation-name: authWordmarkReveal, authWordmarkGlow;
+  animation-duration: 0.8s, 4.2s;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1), ease-in-out;
+  animation-delay: 0.4s, 1.15s;
+  animation-fill-mode: forwards, both;
+  animation-iteration-count: 1, infinite;
   color: #bcda70;
+  text-shadow: 0 0 24px rgba(188, 218, 112, 0.16);
+}
+@keyframes authWordmarkReveal {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes authWordmarkGlow {
+  0%,
+  100% {
+    text-shadow: 0 0 24px rgba(188, 218, 112, 0.12);
+  }
+  50% {
+    text-shadow: 0 0 34px rgba(188, 218, 112, 0.26);
+  }
 }
 .auth-signature {
   font-size: 0.7rem;
