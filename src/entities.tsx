@@ -51,7 +51,7 @@ export type EntitySpec = {
   columns: {
     key: string;
     label: string;
-    type?: "date" | "status" | "boolean" | "reference";
+    type?: "date" | "status" | "boolean" | "reference" | "option";
   }[];
   fields: FieldSpec[];
 };
@@ -86,6 +86,7 @@ export const specs: Record<string, EntitySpec> = {
     search: "full_name",
     columns: [
       { key: "full_name", label: "Nome" },
+      { key: "member_group", label: "Grupo", type: "option" },
       { key: "registration", label: "Matrícula" },
       { key: "class_id", label: "Turma", type: "reference" },
       { key: "manager_id", label: "Gestor", type: "reference" },
@@ -94,6 +95,16 @@ export const specs: Record<string, EntitySpec> = {
     fields: [
       { key: "full_name", label: "Nome completo", required: true, wide: true },
       { key: "social_name", label: "Nome social" },
+      {
+        key: "member_group",
+        label: "Grupo",
+        type: "select",
+        required: true,
+        options: options([
+          ["class", "Turma"],
+          ["rh", "Equipe de RH"],
+        ]),
+      },
       { key: "registration", label: "Matrícula", required: true },
       { key: "email", label: "E-mail", type: "email" },
       { key: "phone", label: "Telefone", type: "tel" },
@@ -557,10 +568,14 @@ export function EntityPage({
   spec,
   onSelect,
   extra,
+  filter,
+  subnav,
 }: {
   spec: EntitySpec;
   onSelect?: (record: EntityRecord) => void;
   extra?: React.ReactNode;
+  filter?: { key: string; value: string };
+  subnav?: React.ReactNode;
 }) {
   const { can } = useAuth();
   const [search, setSearch] = useState("");
@@ -575,10 +590,11 @@ export function EntityPage({
       .order(spec.search)
       .range(page * 25, page * 25 + 24);
     if (query) q = q.ilike(spec.search, `%${query.replace(/[%_]/g, "")}%`);
+    if (filter) q = q.eq(filter.key as never, filter.value as never);
     const { data, error, count } = await q;
     if (error) throw error;
     return { rows: data as unknown as EntityRecord[], total: count || 0 };
-  }, [spec.table, query, page]);
+  }, [spec.table, query, page, filter?.key, filter?.value]);
   return (
     <>
       <Heading title={spec.title} eyebrow="GESTÃO DE RH">
@@ -590,6 +606,7 @@ export function EntityPage({
           </button>
         )}
       </Heading>
+      {subnav}
       <section className="panel">
         <div className="table-toolbar">
           <div className="search-input">
@@ -646,6 +663,9 @@ export function EntityPage({
                           refs.data?.[field?.reference || ""]?.find(
                             (item) => item.value === value,
                           )?.label || "—"
+                        ) : column.type === "option" ? (
+                          field?.options?.find((item) => item.value === value)
+                            ?.label || "—"
                         ) : (
                           String(value ?? "—")
                         );
