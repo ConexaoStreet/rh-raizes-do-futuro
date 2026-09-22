@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   Clock3,
   Plus,
+  TriangleAlert,
   Users,
 } from "lucide-react";
 import {
@@ -121,6 +122,32 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
           </Link>
         )}
       </Heading>
+      {!today && (
+        <section className="raizes-hero">
+          <div className="raizes-hero-mark" aria-hidden="true">
+            <span>R</span><b>F</b>
+          </div>
+          <div className="raizes-hero-copy">
+            <span className="eyebrow">ANHANGUERA · ESPRO · TURMA 16807</span>
+            <h2>Raízes do Futuro</h2>
+            <p>Gestão de pessoas, presença e desenvolvimento da turma em um único lugar.</p>
+            <div className="department-pills">
+              <span>Recursos Humanos</span>
+              <span>Eventos</span>
+              <span>Educação</span>
+              <span>Ecológico</span>
+              <span>Marketing</span>
+            </div>
+          </div>
+        </section>
+      )}
+      <div className="notice maintenance-notice">
+        <TriangleAlert size={20} />
+        <div>
+          <strong>Faltas em manutenção</strong>
+          <span>Os dados históricos de faltas da planilha ainda estão sendo revisados e podem estar desatualizados. Em breve, as informações serão atualizadas no sistema.</span>
+        </div>
+      </div>
       {data.loading ? (
         <Loading />
       ) : data.error ? (
