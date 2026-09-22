@@ -391,9 +391,6 @@ function Onboarding({
         <Field label="Telefone">
           <input name="phone" type="tel" />
         </Field>
-        <Field label="Matrícula">
-          <input name="registration" required />
-        </Field>
         <Field label="Turma">
           <input name="requested_class" required />
         </Field>
