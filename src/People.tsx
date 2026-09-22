@@ -38,12 +38,34 @@ export default function People({ mode }: { mode: Mode }) {
   const [importOpen, setImportOpen] = useState(false);
   const [feedback, setFeedback] = useState<EntityRecord | null>(null);
   const [version, setVersion] = useState(0);
+  const [peopleGroup, setPeopleGroup] = useState<"class" | "rh">("class");
   if (mode === "employees")
     return (
       <>
         <EntityPage
           key={version}
           spec={specs.colaboradores}
+          filter={{ key: "member_group", value: peopleGroup }}
+          subnav={
+            <div className="tabs" role="tablist" aria-label="Grupos de pessoas">
+              <button
+                role="tab"
+                aria-selected={peopleGroup === "rh"}
+                className={peopleGroup === "rh" ? "active" : ""}
+                onClick={() => setPeopleGroup("rh")}
+              >
+                Equipe de RH
+              </button>
+              <button
+                role="tab"
+                aria-selected={peopleGroup === "class"}
+                className={peopleGroup === "class" ? "active" : ""}
+                onClick={() => setPeopleGroup("class")}
+              >
+                Turma
+              </button>
+            </div>
+          }
           extra={
             <button onClick={() => setImportOpen(true)}>
               <Upload size={17} />
