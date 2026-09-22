@@ -1,0 +1,10 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@vitest/mocker": {"name":"@vitest/mocker","severity":"moderate","isDirect":false,"range":"2.1.0 - 4.1.10"},
+    "image-size": {"name":"image-size","severity":"high","isDirect":false,"range":"*"},
+    "pptxgenjs": {"name":"pptxgenjs","severity":"high","isDirect":true,"range":"1.1.5-1 || >=1.1.6"},
+    "vitest": {"name":"vitest","severity":"moderate","isDirect":true,"range":"2.1.0-beta.1 - 4.1.10"}
+  },
+  "metadata": {"vulnerabilities":{"info":0,"low":0,"moderate":2,"high":2,"critical":0,"total":4},"dependencies":{"prod":217,"dev":286,"optional":78,"peer":1,"peerOptional":0,"total":519}}
+}
