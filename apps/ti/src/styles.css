@@ -1137,3 +1137,11 @@ html[data-theme="light"] .operator-avatar {
     scroll-behavior: auto !important;
   }
 }
+
+.login-theme-control,
+.access-theme-control {
+  position: fixed;
+  top: max(18px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+  z-index: 30;
+}
