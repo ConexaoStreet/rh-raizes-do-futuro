@@ -51,14 +51,14 @@ jobs:
 
           cat > /tmp/claim-public.pem <<'PEM'
           -----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5YNnihdIqogFSadR8Cz+
-zHUfPL/B9jS4DtE5bGnFSjhfitqyVqIZKXSjGyUbnQnbkquR63xT3OhSPeuX9Tyi
-CMTFwOfll1oWFvJHGxUEmi3doAYi4ztJM2AiSQpmcM+FIOOxRxunNWOcswLArFIQ
-r6oN6CTrXJ8lNJMlT/MK2dEMtXhSBICcfn9ew1Zw9JRqsfP4muYejMqrd/2Rs6Xf
-p9npu/oC0P89EBuFupy1tSFoZHJHemX5SCoPyZ8nES4tjaiq9OUp3xL/u4BBD5eg
-QBUPEQWkepXi4I0iAL95/eZpyzd9w5g8fbh35ZW+XMNlwuSrMqpSrjZnY/cS8jDp
-TwIDAQAB
------END PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5YNnihdIqogFSadR8Cz+
+          zHUfPL/B9jS4DtE5bGnFSjhfitqyVqIZKXSjGyUbnQnbkquR63xT3OhSPeuX9Tyi
+          CMTFwOfll1oWFvJHGxUEmi3doAYi4ztJM2AiSQpmcM+FIOOxRxunNWOcswLArFIQ
+          r6oN6CTrXJ8lNJMlT/MK2dEMtXhSBICcfn9ew1Zw9JRqsfP4muYejMqrd/2Rs6Xf
+          p9npu/oC0P89EBuFupy1tSFoZHJHemX5SCoPyZ8nES4tjaiq9OUp3xL/u4BBD5eg
+          QBUPEQWkepXi4I0iAL95/eZpyzd9w5g8fbh35ZW+XMNlwuSrMqpSrjZnY/cS8jDp
+          TwIDAQAB
+          -----END PUBLIC KEY-----
           PEM
 
           set +e
