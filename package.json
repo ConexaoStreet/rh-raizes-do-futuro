@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:database": "node tests/database.mjs",
     "test:e2e": "playwright test",
-    "verify": "npm run lint && npm run test && npm run test:database && npm run build"
+    "verify": "npm run lint && npm run test && npm run test:database && npm run build && npm run check:bundle",
+    "check:bundle": "node scripts/check-bundle-budget.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",
