@@ -112,8 +112,8 @@ test("manager first access stays isolated from regular signup", async ({ page })
   await expect(
     page.getByRole("heading", { name: "Ative seu acesso de gestão" }),
   ).toBeVisible();
-  await expect(page.getByLabel("Matrícula")).toBeVisible();
   await expect(page.getByLabel("Código temporário")).toBeVisible();
+  await expect(page.getByText("Matrícula")).toHaveCount(0);
   await expect(page.getByText("ACESSO EXCLUSIVO DE GESTOR")).toBeVisible();
 
   await page.getByRole("button", { name: "Voltar ao login" }).click();
