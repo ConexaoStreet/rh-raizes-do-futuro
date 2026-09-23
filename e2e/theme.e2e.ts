@@ -35,7 +35,6 @@ test("login surface renders without uncaught browser errors", async ({ page }) =
   expect(errors).toEqual([]);
 });
 
-
 test("TI theme cycles and persists", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await page.goto("http://127.0.0.1:4174/", { waitUntil: "domcontentloaded" });
@@ -62,4 +61,23 @@ test("login surfaces do not overflow on mobile", async ({ page }) => {
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
     .toBe(true);
+});
+
+
+test("internal apps stay non-indexable", async ({ page, request }) => {
+  await page.goto("/");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    "noindex,nofollow,noarchive",
+  );
+  const rhRobots = await request.get("/robots.txt");
+  expect(await rhRobots.text()).toContain("Disallow: /");
+
+  await page.goto("http://127.0.0.1:4174/");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    "noindex,nofollow,noarchive",
+  );
+  const tiRobots = await request.get("http://127.0.0.1:4174/robots.txt");
+  expect(await tiRobots.text()).toContain("Disallow: /");
 });
