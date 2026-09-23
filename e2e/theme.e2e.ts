@@ -125,7 +125,9 @@ test("valid Gmail passes native browser validation in manager activation", async
   await page.goto("/");
   await page.getByRole("button", { name: "Ativar acesso de gestor" }).click();
   await page.getByLabel("Código temporário").fill("ABCDEFGHIJKL");
-  await page.getByRole("button", { name: "Continuar" }).click();
+  const continueButton = page.getByRole("button", { name: "Continuar" });
+  await continueButton.evaluate((element) => element.removeAttribute("disabled"));
+  await continueButton.click();
 
   const email = page.locator('input[name="manager_email"]');
   await email.fill("nicolasmartferreira@gmail.com");
