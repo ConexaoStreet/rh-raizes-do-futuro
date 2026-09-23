@@ -4,6 +4,7 @@ import { AuthBoundary } from "./auth";
 import App from "./App";
 import "./styles.css";
 import { initializeTheme } from "./theme";
+import ErrorBoundary from "./ErrorBoundary";
 
 initializeTheme();
 
@@ -15,8 +16,10 @@ if ("serviceWorker" in navigator) {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AuthBoundary>
-      <App />
-    </AuthBoundary>
+    <ErrorBoundary>
+      <AuthBoundary>
+        <App />
+      </AuthBoundary>
+    </ErrorBoundary>
   </StrictMode>,
 );
