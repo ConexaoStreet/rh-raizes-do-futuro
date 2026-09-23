@@ -391,7 +391,6 @@ function ManagerActivation({
   onBack: () => void;
 }) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [registration, setRegistration] = useState("");
   const [activationCode, setActivationCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [activatedEmail, setActivatedEmail] = useState("");
@@ -411,7 +410,6 @@ function ManagerActivation({
     try {
       const { data, error } = await client().functions.invoke("manager-activation", {
         body: {
-          registration,
           activation_code: activationCode,
           email,
           password,
@@ -503,7 +501,7 @@ function ManagerActivation({
       </div>
 
       <div className="manager-activation-steps" aria-label="Etapas da ativação">
-        <span className={step >= 1 ? "active" : ""}>1. Identificação</span>
+        <span className={step >= 1 ? "active" : ""}>1. Código</span>
         <span className={step >= 2 ? "active" : ""}>2. Segurança</span>
         <span>3. 2FA</span>
       </div>
@@ -519,25 +517,14 @@ function ManagerActivation({
           className="form-stack"
           onSubmit={(event) => {
             event.preventDefault();
-            if (!/^RF\d{5}-\d{3}$/.test(registration) || activationCode.length < 10) {
-              toast.error("Confira sua matrícula e o código temporário.");
+            if (activationCode.length < 10) {
+              toast.error("Confira o código temporário.");
               return;
             }
             capture("manager_activation_started");
             setStep(2);
           }}
         >
-          <Field label="Matrícula">
-            <input
-              name="registration"
-              value={registration}
-              onChange={(event) => setRegistration(event.target.value.toUpperCase())}
-              placeholder="RF00000-000"
-              pattern="RF[0-9]{5}-[0-9]{3}"
-              autoComplete="off"
-              required
-            />
-          </Field>
           <Field label="Código temporário">
             <div className="password-field manager-code-field">
               <input
@@ -554,7 +541,7 @@ function ManagerActivation({
             </div>
           </Field>
           <div className="manager-security-note">
-            O código funciona uma única vez e expira automaticamente.
+            Use o código temporário recebido. Ele funciona uma única vez e expira automaticamente.
           </div>
           <button className="primary large" disabled={!ready}>
             Continuar <ArrowRight size={19} />
