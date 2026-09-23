@@ -202,7 +202,7 @@ function Login() {
               <span>Senha</span>
               <input name="password" type="password" autoComplete="current-password" required />
             </label>
-            {error && <div className="form-error">{error}</div>}
+            {error && <div className="form-error" role="alert">{error}</div>}
             <button className="primary-button" disabled={busy}>
               <KeyRound size={18} />
               {busy ? "Validando..." : "Entrar"}
@@ -232,7 +232,7 @@ function Verification({ onDone }: { onDone: () => Promise<void> }) {
       <span className="eyebrow">SEGURANÇA</span>
       <h1>Verificação em duas etapas</h1>
       <p>{sent ? `Enviamos um código para ${masked}.` : "Confirme sua identidade para abrir a Central de T.I."}</p>
-      {error && <div className="form-error">{error}</div>}
+      {error && <div className="form-error" role="alert">{error}</div>}
       {sent && (
         <form
           onSubmit={async (event) => {
@@ -301,7 +301,7 @@ function AccessFrame({ children }: { children: ReactNode }) {
 
 function Splash({ label }: { label: string }) {
   return (
-    <div className="splash">
+    <div className="splash" role="status" aria-live="polite">
       <Brand compact />
       <div className="loader" />
       <span>{label}</span>
