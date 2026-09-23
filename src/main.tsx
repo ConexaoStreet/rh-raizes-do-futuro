@@ -11,6 +11,21 @@ import ErrorBoundary from "./ErrorBoundary";
 initializeTheme();
 observeWebVitals();
 
+window.addEventListener("vite:preloadError", (event) => {
+  event.preventDefault();
+  capture("chunk_load_error");
+  try {
+    if (sessionStorage.getItem("raizes-chunk-reload") === "1") return;
+    sessionStorage.setItem("raizes-chunk-reload", "1");
+  } catch {}
+  location.reload();
+});
+window.setTimeout(() => {
+  try {
+    sessionStorage.removeItem("raizes-chunk-reload");
+  } catch {}
+}, 10000);
+
 window.addEventListener("error", (event) => captureError("window", event.error));
 window.addEventListener("unhandledrejection", (event) => captureError("promise", event.reason));
 window.addEventListener("load", () => {
