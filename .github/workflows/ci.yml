@@ -25,6 +25,7 @@ jobs:
             git push
           fi
       - run: npm ci
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run test -- --passWithNoTests
       - run: npm run test:database
