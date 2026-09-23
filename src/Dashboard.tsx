@@ -124,9 +124,12 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
       </Heading>
       {!today && (
         <section className="raizes-hero">
-          <div className="raizes-hero-mark" aria-hidden="true">
-            <span>R</span><b>F</b>
-          </div>
+          <img
+            className="raizes-hero-logo"
+            src="/brand/raizes-logo-mark.png"
+            alt=""
+            aria-hidden="true"
+          />
           <div className="raizes-hero-copy">
             <span className="eyebrow">ANHANGUERA · ESPRO · TURMA 16807</span>
             <h2>Raízes do Futuro</h2>
