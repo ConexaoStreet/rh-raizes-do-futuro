@@ -15,6 +15,8 @@ function applyTheme(mode: ThemeMode) {
   document.documentElement.dataset.theme = resolved;
   document.documentElement.dataset.themeMode = mode;
   document.documentElement.style.colorScheme = resolved;
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (meta) meta.content = resolved === "dark" ? "#08110e" : "#f4f7f4";
 }
 
 export function useTheme() {
