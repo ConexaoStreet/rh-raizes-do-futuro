@@ -119,7 +119,13 @@ export default function App() {
     setEmployeesPath(string(datasul.employees_path));
     setMaintenanceTitle(string(site.maintenance_title, "Sistema em manutenção"));
     setMaintenanceMessage(string(site.maintenance_message, "Alguns recursos podem ficar temporariamente indisponíveis."));
-  }, [settings]);
+  }, [
+    datasul.company_id,
+    datasul.employees_path,
+    datasul.health_path,
+    site.maintenance_message,
+    site.maintenance_title,
+  ]);
 
   const healthScore = useMemo(() => {
     const states = [
