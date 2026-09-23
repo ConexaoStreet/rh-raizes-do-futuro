@@ -30,3 +30,5 @@ jobs:
       - run: npm run test:database
       - run: npm run build
       - run: npm run check:bundle
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
