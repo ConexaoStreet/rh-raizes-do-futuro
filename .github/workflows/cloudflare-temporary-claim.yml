@@ -50,16 +50,16 @@ jobs:
           set -euo pipefail
 
           cat > /tmp/claim-public.pem <<'PEM'
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnP5nHm/Su6TaWZ0VrfD/
-Yci2zWscwuC/ukHbs4aoALBo++vo339y9yhfpdkLWi+4pu7fwUJzK6SaPZHmCkXY
-gAXlI6y+5tv63Nw/R0mle++eL2wD/W+bN55AoXuvDh6sl6hZcGMB0qlJL6g/50tQ
-qABwqdzfmf7KqdXF3g6VbU9dFb+TwALoNbPzmtibLixJlOgPEAyYwbEAXSi9M+NU
-+PCGcwfDLLJuwX0nortJNPB+okiv0cOY2v8HYWMU0S0nFDITpwQMxaT/MU4puliU
-esDGYYWL45qUKPsIZBKXhKI+7rQfdqF36WzD5sd4nWLSfXTHHe6OrFWejO54NYg9
-6wIDAQAB
------END PUBLIC KEY-----
-PEM
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnP5nHm/Su6TaWZ0VrfD/
+          Yci2zWscwuC/ukHbs4aoALBo++vo339y9yhfpdkLWi+4pu7fwUJzK6SaPZHmCkXY
+          gAXlI6y+5tv63Nw/R0mle++eL2wD/W+bN55AoXuvDh6sl6hZcGMB0qlJL6g/50tQ
+          qABwqdzfmf7KqdXF3g6VbU9dFb+TwALoNbPzmtibLixJlOgPEAyYwbEAXSi9M+NU
+          +PCGcwfDLLJuwX0nortJNPB+okiv0cOY2v8HYWMU0S0nFDITpwQMxaT/MU4puliU
+          esDGYYWL45qUKPsIZBKXhKI+7rQfdqF36WzD5sd4nWLSfXTHHe6OrFWejO54NYg9
+          6wIDAQAB
+          -----END PUBLIC KEY-----
+          PEM
 
           set +e
           npx --yes wrangler@latest deploy --temporary > /tmp/rh-cloudflare.log 2>&1
