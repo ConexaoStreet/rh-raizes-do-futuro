@@ -1,0 +1,116 @@
+name: Cloudflare Temporary Claim
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/cloudflare-temporary-claim.yml"
+
+concurrency:
+  group: cloudflare-temporary-claim
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+      VITE_SUPABASE_URL: "https://fiuealmgufpmtgmxxpna.supabase.co"
+      VITE_SUPABASE_ANON_KEY: "sb_publishable_s63zvAG5397aTQG1V4hOeQ_CYa_7gSs"
+      VITE_POSTHOG_HOST: "https://us.i.posthog.com"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/ti/package-lock.json
+
+      - name: Build RH
+        run: |
+          npm ci
+          npm run build
+          npm run check:bundle
+
+      - name: Build Central T.I.
+        run: |
+          npm --prefix apps/ti ci --no-audit --no-fund
+          npm --prefix apps/ti run build
+          npm --prefix apps/ti run check:bundle
+
+      - name: Deploy temporary Cloudflare Workers
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > /tmp/claim-public.pem <<'PEM'
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnP5nHm/Su6TaWZ0VrfD/
+Yci2zWscwuC/ukHbs4aoALBo++vo339y9yhfpdkLWi+4pu7fwUJzK6SaPZHmCkXY
+gAXlI6y+5tv63Nw/R0mle++eL2wD/W+bN55AoXuvDh6sl6hZcGMB0qlJL6g/50tQ
+qABwqdzfmf7KqdXF3g6VbU9dFb+TwALoNbPzmtibLixJlOgPEAyYwbEAXSi9M+NU
++PCGcwfDLLJuwX0nortJNPB+okiv0cOY2v8HYWMU0S0nFDITpwQMxaT/MU4puliU
+esDGYYWL45qUKPsIZBKXhKI+7rQfdqF36WzD5sd4nWLSfXTHHe6OrFWejO54NYg9
+6wIDAQAB
+-----END PUBLIC KEY-----
+PEM
+
+          set +e
+          npx --yes wrangler@latest deploy --temporary > /tmp/rh-cloudflare.log 2>&1
+          RH_STATUS=$?
+          set -e
+          if [ "$RH_STATUS" -ne 0 ]; then
+            echo "RH temporary deploy failed."
+            sed -E 's#https://dash.cloudflare.com/claim-preview\?claimToken=[^[:space:]]+#CLAIM_URL_REDACTED#g' /tmp/rh-cloudflare.log | tail -n 80
+            exit "$RH_STATUS"
+          fi
+
+          CLAIM_URL="$(grep -Eo 'https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]]+' /tmp/rh-cloudflare.log | head -n 1 || true)"
+          RH_URL="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' /tmp/rh-cloudflare.log | tail -n 1 || true)"
+
+          set +e
+          (
+            cd apps/ti
+            npx --yes wrangler@latest deploy --temporary > /tmp/ti-cloudflare.log 2>&1
+          )
+          TI_STATUS=$?
+          set -e
+          if [ "$TI_STATUS" -ne 0 ]; then
+            echo "TI temporary deploy failed."
+            sed -E 's#https://dash.cloudflare.com/claim-preview\?claimToken=[^[:space:]]+#CLAIM_URL_REDACTED#g' /tmp/ti-cloudflare.log | tail -n 80
+            exit "$TI_STATUS"
+          fi
+
+          TI_CLAIM_URL="$(grep -Eo 'https://dash\.cloudflare\.com/claim-preview\?claimToken=[^[:space:]]+' /tmp/ti-cloudflare.log | head -n 1 || true)"
+          TI_URL="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' /tmp/ti-cloudflare.log | tail -n 1 || true)"
+
+          if [ -z "$CLAIM_URL" ]; then CLAIM_URL="$TI_CLAIM_URL"; fi
+          if [ -z "$CLAIM_URL" ] || [ -z "$RH_URL" ] || [ -z "$TI_URL" ]; then
+            echo "Temporary deploy completed but expected URLs were not parsed."
+            sed -E 's#https://dash.cloudflare.com/claim-preview\?claimToken=[^[:space:]]+#CLAIM_URL_REDACTED#g' /tmp/rh-cloudflare.log | tail -n 40
+            sed -E 's#https://dash.cloudflare.com/claim-preview\?claimToken=[^[:space:]]+#CLAIM_URL_REDACTED#g' /tmp/ti-cloudflare.log | tail -n 40
+            exit 1
+          fi
+
+          printf '{"claim_url":"%s","rh_url":"%s","ti_url":"%s"}' "$CLAIM_URL" "$RH_URL" "$TI_URL" > /tmp/claim.json
+
+          AES_KEY="$(openssl rand -hex 32)"
+          AES_IV="$(openssl rand -hex 16)"
+          openssl enc -aes-256-cbc -K "$AES_KEY" -iv "$AES_IV" -in /tmp/claim.json -out /tmp/claim.enc
+          printf '%s:%s' "$AES_KEY" "$AES_IV" > /tmp/key.txt
+          openssl pkeyutl -encrypt -pubin -inkey /tmp/claim-public.pem -in /tmp/key.txt -out /tmp/key.enc -pkeyopt rsa_padding_mode:oaep
+
+          KEY_B64="$(base64 -w0 /tmp/key.enc)"
+          DATA_B64="$(base64 -w0 /tmp/claim.enc)"
+
+          echo "RH_WORKER_URL=$RH_URL"
+          echo "TI_WORKER_URL=$TI_URL"
+          echo "CLAIM_KEY_B64=$KEY_B64"
+          echo "CLAIM_DATA_B64=$DATA_B64"
+          echo "The claim URL is encrypted; plaintext is intentionally excluded from public logs."
