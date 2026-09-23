@@ -40,12 +40,19 @@ test("TI theme cycles and persists", async ({ page }) => {
   await page.goto("http://127.0.0.1:4174/", { waitUntil: "domcontentloaded" });
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "system");
   const toggle = page.getByRole("button", { name: /Tema atual:/ });
   await expect(toggle).toBeVisible();
 
   await toggle.click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+  await toggle.click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
