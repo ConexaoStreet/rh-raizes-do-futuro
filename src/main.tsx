@@ -40,12 +40,15 @@ window.addEventListener("load", () => {
   }, 0);
 
   if ("serviceWorker" in navigator) {
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (refreshing) return;
-      refreshing = true;
-      location.reload();
-    });
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    if (hadController) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        location.reload();
+      });
+    }
 
     void navigator.serviceWorker
       .register("/sw.js", { updateViaCache: "none" })
