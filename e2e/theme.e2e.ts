@@ -103,3 +103,19 @@ test("PWA assets stay available", async ({ request }) => {
   expect((await tiManifest.json()).theme_color).toBe("#08110e");
   expect((await request.get("http://127.0.0.1:4174/sw.js")).ok()).toBe(true);
 });
+
+
+test("manager first access stays isolated from regular signup", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Ativar acesso de gestor" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Ative seu acesso de gestão" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Matrícula")).toBeVisible();
+  await expect(page.getByLabel("Código temporário")).toBeVisible();
+  await expect(page.getByText("ACESSO EXCLUSIVO DE GESTOR")).toBeVisible();
+
+  await page.getByRole("button", { name: "Voltar ao login" }).click();
+  await expect(page.getByRole("heading", { name: "Entrar" })).toBeVisible();
+});
