@@ -5,6 +5,9 @@ import { Toaster } from "sonner";
 import App from "./App";
 import "./styles.css";
 import { capture, captureError } from "./telemetry";
+import { initializeTheme } from "./theme";
+
+initializeTheme();
 
 window.addEventListener("error", (event) => captureError("window", event.error));
 window.addEventListener("unhandledrejection", (event) => captureError("promise", event.reason));
