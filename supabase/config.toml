@@ -20,3 +20,6 @@ enable_confirmations = true
 secure_password_change = true
 [functions.email-2fa]
 verify_jwt = true
+
+[functions.datasul-bridge]
+verify_jwt = false
