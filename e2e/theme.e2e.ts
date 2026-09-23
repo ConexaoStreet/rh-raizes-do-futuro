@@ -119,3 +119,19 @@ test("manager first access stays isolated from regular signup", async ({ page })
   await page.getByRole("button", { name: "Voltar ao login" }).click();
   await expect(page.getByRole("heading", { name: "Entrar" })).toBeVisible();
 });
+
+
+test("valid Gmail passes native browser validation in manager activation", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Ativar acesso de gestor" }).click();
+  await page.getByLabel("Código temporário").fill("ABCDEFGHIJKL");
+  await page.getByRole("button", { name: "Continuar" }).click();
+
+  const email = page.locator('input[name="manager_email"]');
+  await email.fill("nicolasmartferreira@gmail.com");
+
+  const valid = await email.evaluate(
+    (element) => (element as HTMLInputElement).checkValidity(),
+  );
+  expect(valid).toBe(true);
+});
