@@ -1,12 +1,19 @@
-insert into public.classes(name,code,active) values ('Turma 16807 — Anhanguera Guarulhos','16807',true) on conflict (code) do update set name=excluded.name,active=true;
-insert into public.departments(name,active) values ('Recursos Humanos',true),('Eventos',true),('Educação',true),('Ecológico',true),('Marketing',true) on conflict (name) do update set active=true;
-with source(full_name,registration,department_name,member_group) as (values ('Agatha Christ de Jesus Lopes','RF16807-001','Marketing','class'),('Ana Luiza Campos da Mata','RF16807-002','Educação','class'),('Ananda Natany Mangobeira Soares','RF16807-003','Ecológico','class'),('Anna Clara Albuquerque Arantes','RF16807-004',null,'class'),('Beatriz Macedo de Oliveira','RF16807-005',null,'class'),('Brayon Philipi da Silva de Andrade','RF16807-006',null,'class'),('Brenda Uchella Gato','RF16807-007',null,'class'),('Camille Roberta Panis','RF16807-008',null,'class'),('Camilly Anacleto de Souza','RF16807-009','Educação','class'),('Carolaine Rodrigues Santos','RF16807-010','Educação','class'),('Fernanda Oliveira da Silva','RF16807-011','Marketing','class'),('Franciely Beatriz Guedes da Silva','RF16807-012','Ecológico','class'),('Gabriela da Silva Santos','RF16807-013','Educação','class'),('Gabriela Oliveira Varizi','RF16807-014','Eventos','class'),('Gabrielle Gomes da Silva','RF16807-015',null,'class'),('Giovana Oliveira da Silva','RF16807-016','Ecológico','class'),('Graziela Cristina de Souza Santos','RF16807-017','Recursos Humanos','rh'),('Henrique Cruz Rocha','RF16807-018','Educação','class'),('Hiudy Mateus Silva de Aguiar','RF16807-019','Ecológico','class'),('Hugo Rocha Cabrera','RF16807-020',null,'class'),('Jaida Sena Barbosa','RF16807-021',null,'class'),('Joao Victor Gomes Ferreira','RF16807-022','Recursos Humanos','rh'),('Kaio Borges Faustino da Silva','RF16807-023','Recursos Humanos','rh'),('Kaua Silva Cardoso','RF16807-024','Ecológico','class'),('Kethelyn Barbosa Marcondes de Assis','RF16807-025','Eventos','class'),('Kevin da Silva Gomes','RF16807-026',null,'class'),('Laís Branco de Souza','RF16807-027','Marketing','class'),('Larissa Emilly Lima de Oliveira','RF16807-028','Educação','class'),('Larissa Ferreira dos Santos','RF16807-029','Ecológico','class'),('Lohany Uchella Gato','RF16807-030',null,'class'),('Lucas Neves Ribeiro','RF16807-031','Eventos','class'),('Mariana Batista Leonel','RF16807-032','Eventos','class'),('Melissa de Souza Matos','RF16807-033','Eventos','class'),('Nicolas Martinez Ferreira','RF16807-034','Recursos Humanos','rh'),('Rafaela Righi','RF16807-035','Marketing','class'),('Rafaella Negreli','RF16807-036','Recursos Humanos','rh'),('Raquel Araújo','RF16807-037',null,'class'),('Rhenzo Antonni Sanches Aranha','RF16807-038','Ecológico','class'),('Thassiana Bitencourt','RF16807-039','Marketing','class'),('Thiago do Carmo Santos','RF16807-040','Recursos Humanos','rh'),('Victoria Rodrigues Costa','RF16807-041','Educação','class'),('Vitor Lucas Souza Santos','RF16807-042','Recursos Humanos','rh')),
-resolved as (
- select s.full_name,s.registration,s.member_group,c.id class_id,d.id department_id
- from source s cross join public.classes c left join public.departments d on d.name=s.department_name
- where c.code='16807'
+insert into public.classes(name,code,active)
+values ('Turma 16807 — Anhanguera Guarulhos','16807',true)
+on conflict (code) do update set name=excluded.name,active=true;
+
+insert into public.departments(name,active)
+values
+  ('Recursos Humanos',true),
+  ('Eventos',true),
+  ('Educação',true),
+  ('Ecológico',true),
+  ('Marketing',true)
+on conflict (name) do update set active=true;
+
+insert into public.releases(version,changes)
+values (
+  '1.0.3',
+  'Personalização Raízes do Futuro: turma 16807 e estrutura inicial de setores.'
 )
-insert into public.employees(full_name,registration,class_id,department_id,member_group,join_date,expected_arrival,expected_departure,status)
-select full_name,registration,class_id,department_id,member_group,date '2026-09-22',time '08:00',time '14:00','active' from resolved
-on conflict (registration) do update set full_name=excluded.full_name,class_id=excluded.class_id,department_id=excluded.department_id,member_group=excluded.member_group,status='active';
-insert into public.releases(version,changes) values ('1.0.3','Personalização Raízes do Futuro: turma 16807, setores e diretório inicial dos 42 membros com base na planilha e organogramas do Canva.') on conflict (version) do nothing;
+on conflict (version) do nothing;
