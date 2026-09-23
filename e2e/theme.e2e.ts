@@ -34,3 +34,32 @@ test("login surface renders without uncaught browser errors", async ({ page }) =
   await expect(page.getByRole("button", { name: /Tema atual:/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+
+test("TI theme cycles and persists", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("http://127.0.0.1:4174/", { waitUntil: "domcontentloaded" });
+
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  const toggle = page.getByRole("button", { name: /Tema atual:/ });
+  await expect(toggle).toBeVisible();
+
+  await toggle.click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("login surfaces do not overflow on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+    .toBe(true);
+
+  await page.goto("http://127.0.0.1:4174/");
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+    .toBe(true);
+});
