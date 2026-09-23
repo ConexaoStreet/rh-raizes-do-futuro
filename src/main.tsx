@@ -38,10 +38,23 @@ window.addEventListener("load", () => {
         duration_ms: Math.round(navigation.duration),
       });
   }, 0);
-  if ("serviceWorker" in navigator)
-    void navigator.serviceWorker.register("/sw.js").catch((error) =>
-      captureError("service_worker", error),
-    );
+
+  if ("serviceWorker" in navigator) {
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    if (hadController) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        location.reload();
+      });
+    }
+
+    void navigator.serviceWorker
+      .register("/sw.js", { updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch((error) => captureError("service_worker", error));
+  }
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
