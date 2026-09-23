@@ -62,6 +62,10 @@ export default function App() {
   const [view, setView] = useState<View>("overview");
   const [settings, setSettings] = useState<Record<string, JsonObject>>({});
   const [loading, setLoading] = useState(true);
+  const [databaseState, setDatabaseState] = useState<"checking" | "connected" | "error">("checking");
+  const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [lastRefreshAt, setLastRefreshAt] = useState("");
   const [busy, setBusy] = useState("");
   const [datasulResult, setDatasulResult] = useState<unknown>(null);
   const [platformResult, setPlatformResult] = useState<unknown>(null);
@@ -81,16 +85,27 @@ export default function App() {
 
   async function reload() {
     setLoading(true);
-    const [{ data, error }, auditResponse] = await Promise.all([
-      client().from("settings").select("key,value").in("key", keys).order("key"),
-      client().from("audit_logs").select("id,created_at,actor_name,action,module,event_type,success").order("created_at", { ascending: false }).limit(12),
-    ]);
-    if (error) throw error;
-    const next: Record<string, JsonObject> = {};
-    for (const row of (data || []) as SettingRow[]) next[row.key] = object(row.value);
-    setSettings(next);
-    setAudit((auditResponse.data || []) as Record<string, unknown>[]);
-    setLoading(false);
+    setDatabaseState("checking");
+    setLoadError("");
+    try {
+      const [{ data, error }, auditResponse] = await Promise.all([
+        client().from("settings").select("key,value").in("key", keys).order("key"),
+        client().from("audit_logs").select("id,created_at,actor_name,action,module,event_type,success").order("created_at", { ascending: false }).limit(12),
+      ]);
+      if (error) throw error;
+      if (auditResponse.error) throw auditResponse.error;
+      const next: Record<string, JsonObject> = {};
+      for (const row of (data || []) as SettingRow[]) next[row.key] = object(row.value);
+      setSettings(next);
+      setAudit((auditResponse.data || []) as Record<string, unknown>[]);
+      setDatabaseState("connected");
+      setLastRefreshAt(new Date().toISOString());
+    } catch {
+      setDatabaseState("error");
+      setLoadError("Não foi possível atualizar o estado técnico. Verifique a sessão e a conexão com o Supabase.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -107,22 +122,30 @@ export default function App() {
 
   const healthScore = useMemo(() => {
     const states = [
-      "connected",
+      databaseState === "connected" ? "connected" : "error",
       string(datasul.status),
       string(github.status),
       string(vercel.status),
       string(email.status),
     ];
-    return Math.round(states.filter((item) => item === "connected" || item === "healthy" || item === "partial").length / states.length * 100);
-  }, [datasul.status, github.status, vercel.status, email.status]);
+    const score = states.reduce((total, item) => {
+      if (item === "connected" || item === "healthy") return total + 1;
+      if (item === "partial") return total + 0.5;
+      return total;
+    }, 0);
+    return Math.round(score / states.length * 100);
+  }, [databaseState, datasul.status, github.status, vercel.status, email.status]);
 
   async function invokeDatasul(action: "health" | "preview") {
     setBusy(`datasul-${action}`);
+    setActionError("");
     try {
       const { data, error } = await client().functions.invoke("datasul-bridge", { body: { action } });
       if (error) throw error;
       setDatasulResult(data);
       await reload();
+    } catch {
+      setActionError(action === "health" ? "O teste do Datasul falhou." : "Não foi possível carregar a prévia do Datasul.");
     } finally {
       setBusy("");
     }
@@ -130,11 +153,14 @@ export default function App() {
 
   async function invokePlatform() {
     setBusy("platform");
+    setActionError("");
     try {
       const { data, error } = await client().functions.invoke("platform-bridge", { body: { action: "status" } });
       if (error) throw error;
       setPlatformResult(data);
       await reload();
+    } catch {
+      setActionError("Não foi possível verificar GitHub e Vercel pela ponte interna.");
     } finally {
       setBusy("");
     }
@@ -142,35 +168,60 @@ export default function App() {
 
   async function saveDatasul() {
     setBusy("save-datasul");
-    await updateSetting("ti_datasul", {
-      ...datasul,
-      company_id: companyId || null,
-      health_path: healthPath || "/api/btb/v1/companies",
-      employees_path: employeesPath || null,
-    });
-    await reload();
-    setBusy("");
+    setActionError("");
+    try {
+      await updateSetting("ti_datasul", {
+        ...datasul,
+        company_id: companyId || null,
+        health_path: healthPath || "/api/btb/v1/companies",
+        employees_path: employeesPath || null,
+      });
+      await reload();
+    } catch {
+      setActionError("Não foi possível salvar a configuração do Datasul.");
+    } finally {
+      setBusy("");
+    }
   }
 
   async function toggleMaintenance() {
+    const nextEnabled = !boolean(maintenance.enabled);
+    const confirmed = window.confirm(
+      nextEnabled
+        ? "Ativar a manutenção global do RH? O acesso dos usuários poderá ser interrompido."
+        : "Desativar a manutenção global e liberar novamente o acesso normal ao RH?",
+    );
+    if (!confirmed) return;
     setBusy("maintenance");
-    await updateSetting("maintenance", {
-      ...maintenance,
-      enabled: !boolean(maintenance.enabled),
-    });
-    await reload();
-    setBusy("");
+    setActionError("");
+    try {
+      await updateSetting("maintenance", {
+        ...maintenance,
+        enabled: nextEnabled,
+      });
+      await reload();
+    } catch {
+      setActionError("Não foi possível alterar o modo de manutenção.");
+    } finally {
+      setBusy("");
+    }
   }
 
   async function saveMaintenanceText() {
     setBusy("maintenance-text");
-    await updateSetting("ti_site", {
-      ...site,
-      maintenance_title: maintenanceTitle,
-      maintenance_message: maintenanceMessage,
-    });
-    await reload();
-    setBusy("");
+    setActionError("");
+    try {
+      await updateSetting("ti_site", {
+        ...site,
+        maintenance_title: maintenanceTitle,
+        maintenance_message: maintenanceMessage,
+      });
+      await reload();
+    } catch {
+      setActionError("Não foi possível salvar a comunicação de manutenção.");
+    } finally {
+      setBusy("");
+    }
   }
 
   const rhSite = import.meta.env.VITE_RH_SITE_URL || "https://rh-raizes-do-futuro.vercel.app";
@@ -218,6 +269,8 @@ export default function App() {
         </header>
 
         <div className="content">
+          {loadError && <Notice>{loadError}</Notice>}
+          {actionError && <Notice>{actionError}</Notice>}
           {loading ? (
             <div className="loading-panel"><div className="loader" />Carregando infraestrutura...</div>
           ) : (
@@ -232,16 +285,16 @@ export default function App() {
                     </div>
                     <div className="health-ring">
                       <strong>{healthScore}%</strong>
-                      <span>serviços prontos</span>
+                      <span>saúde verificada</span>
                     </div>
                   </section>
-                  <ServiceGrid datasul={datasul} github={github} vercel={vercel} email={email} />
+                  <ServiceGrid datasul={datasul} github={github} vercel={vercel} email={email} databaseState={databaseState} maintenance={maintenance} />
                   <div className="two-columns">
                     <Panel title="Estado do site" kicker="RH EM PRODUÇÃO" icon={<Globe2 />}>
-                      <StateRow name="Acesso principal" value="Online" tone="ok" />
+                      <StateRow name="Acesso principal" value="Produção configurada" tone="ok" />
                       <StateRow name="Modo de manutenção" value={boolean(maintenance.enabled) ? "Ativo" : "Desativado"} tone={boolean(maintenance.enabled) ? "warn" : "ok"} />
-                      <StateRow name="Supabase" value="Conectado" tone="ok" />
-                      <StateRow name="Edge Functions" value="Ativas" tone="ok" />
+                      <StateRow name="Supabase" value={databaseState === "connected" ? "Conectado" : databaseState === "error" ? "Erro" : "Verificando"} tone={databaseState === "connected" ? "ok" : "warn"} />
+                      <StateRow name="Última leitura" value={lastRefreshAt ? new Date(lastRefreshAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "Pendente"} tone={lastRefreshAt ? "ok" : "warn"} />
                     </Panel>
                     <Panel title="Atividade recente" kicker="AUDITORIA" icon={<Activity />}>
                       <AuditList rows={audit.slice(0, 5)} />
@@ -252,7 +305,7 @@ export default function App() {
 
               {view === "integrations" && (
                 <>
-                  <ServiceGrid datasul={datasul} github={github} vercel={vercel} email={email} />
+                  <ServiceGrid datasul={datasul} github={github} vercel={vercel} email={email} databaseState={databaseState} maintenance={maintenance} />
                   <div className="two-columns">
                     <Panel title="Datasul RH" kicker="ERP / COLABORADORES" icon={<Database />}>
                       <div className="form-grid">
@@ -266,12 +319,15 @@ export default function App() {
                         <button onClick={() => void invokeDatasul("preview")} disabled={busy !== "" || !employeesPath}><Users size={16} />Prévia</button>
                       </div>
                       <Notice>As credenciais ficam nos Secrets do Supabase e nunca aparecem neste navegador.</Notice>
+                      {string(datasul.last_error) && <Notice>{string(datasul.last_error)}</Notice>}
                       {datasulResult !== null && <pre>{JSON.stringify(datasulResult, null, 2)}</pre>}
                     </Panel>
                     <Panel title="GitHub + Vercel" kicker="CÓDIGO E DEPLOY" icon={<GitBranch />}>
                       <p className="panel-copy">A ponte já está criada. Quando os tokens forem configurados no Supabase, esta área passa a mostrar Actions e deploys em tempo real.</p>
                       <button className="primary-button" onClick={() => void invokePlatform()} disabled={busy !== ""}><RefreshCw size={16} />Verificar plataforma</button>
                       <Notice>Secrets necessários: GITHUB_TOKEN, VERCEL_TOKEN e VERCEL_TEAM_ID.</Notice>
+                      {string(github.last_error) && <Notice>{string(github.last_error)}</Notice>}
+                      {string(vercel.last_error) && <Notice>{string(vercel.last_error)}</Notice>}
                       {platformResult !== null && <pre>{JSON.stringify(platformResult, null, 2)}</pre>}
                     </Panel>
                   </div>
@@ -340,11 +396,25 @@ function NavButton({ active, icon, children, onClick }: { active: boolean; icon:
   return <button className={active ? "nav-button active" : "nav-button"} onClick={onClick}>{icon}<span>{children}</span></button>;
 }
 
-function ServiceGrid({ datasul, github, vercel, email }: { datasul: JsonObject; github: JsonObject; vercel: JsonObject; email: JsonObject }) {
+function ServiceGrid({
+  datasul,
+  github,
+  vercel,
+  email,
+  databaseState,
+  maintenance,
+}: {
+  datasul: JsonObject;
+  github: JsonObject;
+  vercel: JsonObject;
+  email: JsonObject;
+  databaseState: "checking" | "connected" | "error";
+  maintenance: JsonObject;
+}) {
   return (
     <section className="service-grid">
-      <Service icon={<Globe2 />} title="Site RH" subtitle="Produção" status="Conectado" tone="ok" />
-      <Service icon={<Database />} title="Supabase" subtitle="Banco + Auth" status="Conectado" tone="ok" />
+      <Service icon={<Globe2 />} title="Site RH" subtitle="Produção" status={boolean(maintenance.enabled) ? "Manutenção" : "Configurado"} tone="warn" />
+      <Service icon={<Database />} title="Supabase" subtitle="Banco + Auth" status={databaseState === "connected" ? "Conectado" : databaseState === "error" ? "Erro" : "Verificando"} tone={databaseState === "connected" ? "ok" : databaseState === "error" ? "error" : "warn"} />
       <Service icon={<CircleDot />} title="Datasul" subtitle="RH / ERP" status={labelStatus(datasul.status)} tone={statusTone(datasul.status)} />
       <Service icon={<GitBranch />} title="GitHub" subtitle={string(github.repository, "Repositório")} status={labelStatus(github.status)} tone={statusTone(github.status)} />
       <Service icon={<Server />} title="Vercel" subtitle={string(vercel.project, "Deploy")} status={labelStatus(vercel.status)} tone={statusTone(vercel.status)} />
