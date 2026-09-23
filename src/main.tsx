@@ -6,6 +6,7 @@ import App from "./App";
 import "./styles.css";
 import { capture, captureError, observeWebVitals } from "./telemetry";
 import { initializeTheme } from "./theme";
+import ErrorBoundary from "./ErrorBoundary";
 
 initializeTheme();
 observeWebVitals();
@@ -23,9 +24,11 @@ window.addEventListener("load", () => {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <HashRouter>
-      <App />
-      <Toaster richColors position="top-right" />
-    </HashRouter>
+    <ErrorBoundary>
+      <HashRouter>
+        <App />
+        <Toaster richColors position="top-right" />
+      </HashRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 );
