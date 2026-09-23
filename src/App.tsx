@@ -37,7 +37,6 @@ import {
 import { AuthBoundary, useAuth } from "./auth";
 import { client, rpc, runAction, useAsync, useDebounce } from "./api";
 import { Brand, Loading, Modal } from "./components";
-import { EntityPage, specs } from "./entities";
 import { captureNavigation } from "./telemetry";
 import { ThemeToggle } from "./theme";
 const Dashboard = lazy(() => import("./Dashboard"));
@@ -48,6 +47,7 @@ const ManagerReviews = lazy(() => import("./ManagerReviews"));
 const Reports = lazy(() => import("./Reports"));
 const Administration = lazy(() => import("./Administration"));
 const Calendar = lazy(() => import("./Calendar"));
+const EntitySettings = lazy(() => import("./EntitySettings"));
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{
@@ -492,21 +492,7 @@ function Shell() {
                   }
                 />
               ))}
-              {Object.entries(specs)
-                .filter(
-                  ([key]) => !["colaboradores", "feedbacks"].includes(key),
-                )
-                .map(([key, spec]) => (
-                  <Route
-                    key={key}
-                    path={`/configuracoes/${key}`}
-                    element={
-                      <Guard permission={spec.permission}>
-                        <EntityPage spec={spec} />
-                      </Guard>
-                    }
-                  />
-                ))}
+              <Route path="/configuracoes/:entity" element={<EntitySettings />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
