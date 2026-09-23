@@ -3030,3 +3030,33 @@ td small {
     padding: 5px 8px;
   }
 }
+
+.brand-logo-mark {
+  width: 39px;
+  height: 39px;
+  flex: 0 0 39px;
+  object-fit: contain;
+  display: block;
+}
+.auth-brand .brand-logo-mark {
+  width: 52px;
+  height: 52px;
+  flex-basis: 52px;
+}
+.raizes-hero-logo {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  object-fit: contain;
+  display: block;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 18px 32px rgba(0, 0, 0, 0.16));
+}
+@media (max-width: 700px) {
+  .raizes-hero-logo {
+    width: 64px;
+    height: 64px;
+    flex-basis: 64px;
+  }
+}
