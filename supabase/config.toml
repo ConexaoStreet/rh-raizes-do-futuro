@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.datasul-bridge]
 verify_jwt = false
+
+[functions.platform-bridge]
+verify_jwt = false
