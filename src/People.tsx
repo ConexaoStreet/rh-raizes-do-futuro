@@ -101,8 +101,8 @@ export default function People({ mode }: { mode: Mode }) {
         <div className="notice maintenance-notice">
           <TriangleAlert size={20} />
           <div>
-            <strong>Faltas em manutenção</strong>
-            <span>O histórico da planilha está em revisão e pode estar desatualizado. Os registros oficiais do sistema serão atualizados em breve.</span>
+            <strong>Histórico da planilha importado</strong>
+            <span>As faltas e presenças registradas na planilha já estão no sistema. A base histórica contém ocorrências; nomes ausentes em uma data não foram convertidos automaticamente em presença.</span>
           </div>
         </div>
         <Occurrences />
