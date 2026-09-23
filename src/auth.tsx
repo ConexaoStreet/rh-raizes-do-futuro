@@ -15,12 +15,16 @@ import {
   ShieldCheck,
   Mail,
   LogOut,
+  Sparkles,
+  KeyRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { client, configured, rpc, json, runAction, supabase } from "./api";
 import { Brand, Field, Loading } from "./components";
 import { errorMessage } from "./domain";
 import { capture, captureError, setTelemetryUser } from "./telemetry";
+import { shouldRefreshExpiredJwt } from "./auth-errors";
+import { ThemeToggle } from "./theme";
 import type { Row } from "./database.types";
 export type Bootstrap = {
   profile: Row<"profiles">;
@@ -61,10 +65,22 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
       } = await supabase.auth.getSession();
       setSession(current);
       if (current) {
-        const data = await rpc("bootstrap", {});
+        let activeSession = current;
+        let data: Awaited<ReturnType<typeof rpc<"bootstrap">>>;
+        try {
+          data = await rpc("bootstrap", {});
+        } catch (error) {
+          if (!shouldRefreshExpiredJwt(error)) throw error;
+          const { data: refreshed, error: refreshError } =
+            await supabase.auth.refreshSession();
+          if (refreshError || !refreshed.session) throw refreshError || error;
+          activeSession = refreshed.session;
+          setSession(activeSession);
+          data = await rpc("bootstrap", {});
+        }
         const nextUser = data as unknown as Bootstrap;
         setUser(nextUser);
-        setTelemetryUser(current.user.id);
+        setTelemetryUser(activeSession.user.id);
       } else {
         setUser(null);
         setTelemetryUser(null);
@@ -166,6 +182,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
 function AuthFrame({ children }: { children: ReactNode }) {
   return (
     <div className="auth-page">
+      <div className="auth-theme-control"><ThemeToggle compact /></div>
       <aside className="auth-brand">
         <Brand />
         <div className="auth-wordmark" aria-label="Raízes do Futuro">
@@ -211,7 +228,7 @@ function PasswordInput({
   );
 }
 function Login({ configured: ready }: { configured: boolean }) {
-  const [mode, setMode] = useState<"login" | "signup" | "recover">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "recover" | "manager">("login");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -263,6 +280,17 @@ function Login({ configured: ready }: { configured: boolean }) {
     } finally {
       setBusy(false);
     }
+  }
+  if (mode === "manager") {
+    return (
+      <ManagerActivation
+        configured={ready}
+        onBack={() => {
+          setSent(false);
+          setMode("login");
+        }}
+      />
+    );
   }
   return (
     <AuthFrame>
@@ -342,6 +370,238 @@ function Login({ configured: ready }: { configured: boolean }) {
           {mode === "login" ? "Criar cadastro" : "Voltar ao login"}
         </button>
       </div>
+      {mode === "login" && (
+        <button
+          type="button"
+          className="manager-entry-button"
+          onClick={() => setMode("manager")}
+        >
+          <ShieldCheck size={17} />
+          Ativar acesso de gestor
+        </button>
+      )}
+    </AuthFrame>
+  );
+}
+function ManagerActivation({
+  configured: ready,
+  onBack,
+}: {
+  configured: boolean;
+  onBack: () => void;
+}) {
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [activationCode, setActivationCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [activatedEmail, setActivatedEmail] = useState("");
+
+  async function activate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!ready) return;
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("manager_email")).trim().toLowerCase();
+    const password = String(form.get("manager_password"));
+    const confirmation = String(form.get("manager_confirmation"));
+    if (password !== confirmation) {
+      toast.error("As senhas precisam ser iguais.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await client().functions.invoke("manager-activation", {
+        body: {
+          activation_code: activationCode,
+          email,
+          password,
+          terms: form.get("terms") === "on",
+        },
+      });
+      if (error) {
+        let message = "Não foi possível ativar o acesso de gestor.";
+        if ("context" in error && error.context instanceof Response) {
+          const detail = (await error.context.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+          if (detail?.error === "INVALID_ACTIVATION")
+            message = "Código de ativação inválido, expirado ou já utilizado.";
+          if (detail?.error === "ACTIVATION_IN_PROGRESS")
+            message = "Esta ativação já está em andamento. Tente novamente em instantes.";
+          if (detail?.error === "GMAIL_REQUIRED")
+            message = "Informe um endereço @gmail.com válido.";
+          if (detail?.error === "WEAK_PASSWORD")
+            message = "A senha precisa ter 12 caracteres, maiúscula, minúscula, número e símbolo.";
+          if (detail?.error === "EMAIL_UNAVAILABLE")
+            message = "Este Gmail já está vinculado a outra conta.";
+          if (detail?.error === "TERMS_REQUIRED")
+            message = "É necessário aceitar o uso dos dados para concluir.";
+        }
+        throw new Error(message);
+      }
+      if (!(data as { ok?: boolean } | null)?.ok)
+        throw new Error("Não foi possível ativar o acesso de gestor.");
+
+      setActivatedEmail(email);
+      setStep(3);
+      capture("manager_activation_completed");
+      await new Promise((resolve) => setTimeout(resolve, 950));
+
+      const { error: signInError } = await client().auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) {
+        setStep(2);
+        throw signInError;
+      }
+      await rpc("authenticate_event", { action_name: "login" });
+      capture("login_success");
+    } catch (error) {
+      captureError("manager_activation", error);
+      toast.error(error instanceof Error ? error.message : errorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (step === 3) {
+    return (
+      <AuthFrame>
+        <div className="manager-success" aria-live="polite">
+          <div className="manager-activation-emblem success">
+            <ShieldCheck size={34} />
+            <Sparkles className="manager-sparkle" size={21} />
+          </div>
+          <div className="eyebrow">ACESSO DE GESTOR ATIVADO</div>
+          <h1>Proteção em duas etapas</h1>
+          <p>
+            Conta vinculada a <strong>{activatedEmail}</strong>. Preparando o envio do
+            código de segurança para concluir o primeiro acesso.
+          </p>
+          <div className="manager-loading-line" />
+        </div>
+      </AuthFrame>
+    );
+  }
+
+  return (
+    <AuthFrame>
+      <div className="manager-activation-hero">
+        <div className="manager-activation-emblem">
+          <ShieldCheck size={32} />
+          <Sparkles className="manager-sparkle" size={20} />
+        </div>
+        <div>
+          <div className="eyebrow">ACESSO EXCLUSIVO DE GESTOR</div>
+          <h1>Ative seu acesso de gestão</h1>
+          <p>
+            Este fluxo é de uso único. Depois da ativação, seu Gmail e sua nova
+            senha serão usados no login normal, sempre com verificação em duas etapas.
+          </p>
+        </div>
+      </div>
+
+      <div className="manager-activation-steps" aria-label="Etapas da ativação">
+        <span className={step >= 1 ? "active" : ""}>1. Código</span>
+        <span className={step >= 2 ? "active" : ""}>2. Segurança</span>
+        <span>3. 2FA</span>
+      </div>
+
+      {!ready && (
+        <div className="notice">
+          A ativação está temporariamente indisponível. Aguarde a liberação do sistema.
+        </div>
+      )}
+
+      {step === 1 ? (
+        <form
+          className="form-stack"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (activationCode.length < 10) {
+              toast.error("Confira o código temporário.");
+              return;
+            }
+            capture("manager_activation_started");
+            setStep(2);
+          }}
+        >
+          <Field label="Código temporário">
+            <div className="password-field manager-code-field">
+              <input
+                name="activation_code"
+                value={activationCode}
+                onChange={(event) => setActivationCode(event.target.value.toUpperCase())}
+                autoComplete="one-time-code"
+                minLength={10}
+                required
+              />
+              <span className="manager-code-icon" aria-hidden="true">
+                <KeyRound size={18} />
+              </span>
+            </div>
+          </Field>
+          <div className="manager-security-note">
+            Use o código temporário recebido. Ele funciona uma única vez e expira automaticamente.
+          </div>
+          <button className="primary large" disabled={!ready}>
+            Continuar <ArrowRight size={19} />
+          </button>
+          <button type="button" className="text-button" onClick={onBack}>
+            Voltar ao login
+          </button>
+        </form>
+      ) : (
+        <form className="form-stack" onSubmit={activate}>
+          <Field label="Gmail de segurança">
+            <input
+              name="manager_email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="seunome@gmail.com"
+              pattern="[^@\\s]+@gmail\\.com"
+              required
+              autoFocus
+            />
+          </Field>
+          <div className="manager-security-note emphasized">
+            Este Gmail receberá o código de 6 dígitos da verificação em duas etapas.
+          </div>
+          <Field label="Crie sua nova senha">
+            <PasswordInput name="manager_password" />
+          </Field>
+          <Field label="Confirmar nova senha">
+            <PasswordInput name="manager_confirmation" />
+          </Field>
+          <span className="muted">
+            Mínimo de 12 caracteres com maiúscula, minúscula, número e símbolo.
+          </span>
+          <details className="privacy">
+            <summary>Uso dos seus dados</summary>
+            <p>
+              O Gmail será usado para autenticação, recuperação de acesso e códigos de
+              segurança. Seu perfil de gestor acessa apenas os recursos autorizados pelo
+              cargo e todas as ações administrativas permanecem auditadas.
+            </p>
+          </details>
+          <label className="check">
+            <input type="checkbox" name="terms" required />
+            Li e aceito o uso dos dados para autenticação e gestão do RH.
+          </label>
+          <button className="primary large" disabled={busy || !ready}>
+            {busy ? "Ativando..." : "Ativar acesso de gestor"}
+            <ShieldCheck size={19} />
+          </button>
+          <button
+            type="button"
+            className="text-button"
+            disabled={busy}
+            onClick={() => setStep(1)}
+          >
+            Voltar
+          </button>
+        </form>
+      )}
     </AuthFrame>
   );
 }

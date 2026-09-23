@@ -52,9 +52,85 @@ export function captureError(scope: string, error: unknown) {
       : error instanceof Error
         ? error.name
         : "unknown";
-  capture("app_error", { scope, code });
+  const frame =
+    error instanceof Error
+      ? error.stack
+          ?.split("\n")
+          .slice(1)
+          .map((line) => line.trim())
+          .find((line) => line.startsWith("at "))
+          ?.replace(location.origin, "") || null
+      : null;
+  capture("app_error", { scope, code, frame });
 }
 
 export function captureNavigation(path: string) {
   capture("page_view", { path: path.split("?")[0] });
+}
+
+export function observeWebVitals() {
+  if (!key || typeof PerformanceObserver === "undefined") return () => {};
+  let cls = 0;
+  let lcp = 0;
+  let inp = 0;
+  let reported = false;
+  const observers: PerformanceObserver[] = [];
+  const watch = (
+    type: string,
+    handler: (entry: PerformanceEntry) => void,
+    init: PerformanceObserverInit = { type, buffered: true },
+  ) => {
+    try {
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) handler(entry);
+      });
+      observer.observe(init);
+      observers.push(observer);
+    } catch {}
+  };
+  watch("largest-contentful-paint", (entry) => {
+    lcp = Math.max(lcp, entry.startTime);
+  });
+  watch("layout-shift", (entry) => {
+    const shift = entry as PerformanceEntry & {
+      value?: number;
+      hadRecentInput?: boolean;
+    };
+    if (!shift.hadRecentInput) cls += shift.value || 0;
+  });
+  watch(
+    "event",
+    (entry) => {
+      inp = Math.max(inp, entry.duration);
+    },
+    { type: "event", buffered: true, durationThreshold: 40 } as PerformanceObserverInit,
+  );
+  const report = () => {
+    if (reported) return;
+    reported = true;
+    const fcp =
+      performance
+        .getEntriesByName("first-contentful-paint")
+        .at(-1)?.startTime || 0;
+    capture("web_vitals", {
+      lcp_ms: Math.round(lcp),
+      cls: Number(cls.toFixed(3)),
+      inp_ms: Math.round(inp),
+      fcp_ms: Math.round(fcp),
+      path: location.hash.split("?")[0] || "/",
+    });
+    observers.forEach((observer) => observer.disconnect());
+  };
+  const onVisibility = () => {
+    if (document.visibilityState === "hidden") report();
+  };
+  const timer = window.setTimeout(report, 15000);
+  window.addEventListener("pagehide", report, { once: true });
+  document.addEventListener("visibilitychange", onVisibility);
+  return () => {
+    window.clearTimeout(timer);
+    window.removeEventListener("pagehide", report);
+    document.removeEventListener("visibilitychange", onVisibility);
+    observers.forEach((observer) => observer.disconnect());
+  };
 }

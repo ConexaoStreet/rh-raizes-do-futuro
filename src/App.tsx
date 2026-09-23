@@ -37,10 +37,9 @@ import {
 import { AuthBoundary, useAuth } from "./auth";
 import { client, rpc, runAction, useAsync, useDebounce } from "./api";
 import { Brand, Loading, Modal } from "./components";
-import { EntityPage, specs } from "./entities";
 import { captureNavigation } from "./telemetry";
 import { ThemeToggle } from "./theme";
-import Dashboard from "./Dashboard";
+const Dashboard = lazy(() => import("./Dashboard"));
 const Attendance = lazy(() => import("./Attendance"));
 const People = lazy(() => import("./People"));
 const Performance = lazy(() => import("./Performance"));
@@ -48,6 +47,7 @@ const ManagerReviews = lazy(() => import("./ManagerReviews"));
 const Reports = lazy(() => import("./Reports"));
 const Administration = lazy(() => import("./Administration"));
 const Calendar = lazy(() => import("./Calendar"));
+const EntitySettings = lazy(() => import("./EntitySettings"));
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{
@@ -228,6 +228,7 @@ function Shell() {
   }, []);
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">Pular para o conteúdo</a>
       {mobile && (
         <button
           className="sidebar-scrim"
@@ -491,21 +492,7 @@ function Shell() {
                   }
                 />
               ))}
-              {Object.entries(specs)
-                .filter(
-                  ([key]) => !["colaboradores", "feedbacks"].includes(key),
-                )
-                .map(([key, spec]) => (
-                  <Route
-                    key={key}
-                    path={`/configuracoes/${key}`}
-                    element={
-                      <Guard permission={spec.permission}>
-                        <EntityPage spec={spec} />
-                      </Guard>
-                    }
-                  />
-                ))}
+              <Route path="/configuracoes/:entity" element={<EntitySettings />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

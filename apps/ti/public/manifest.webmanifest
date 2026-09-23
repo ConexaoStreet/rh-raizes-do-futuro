@@ -6,8 +6,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0b1713",
-  "theme_color": "#0b1713",
+  "background_color": "#08110e",
+  "theme_color": "#08110e",
   "icons": [
     {
       "src": "https://rh-raizes-do-futuro.vercel.app/icons/icon-192.png",
@@ -19,5 +19,12 @@
       "sizes": "512x512",
       "type": "image/png"
     }
+  ],
+  "id": "/",
+  "prefer_related_applications": false,
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
   ]
 }

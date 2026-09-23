@@ -217,37 +217,48 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 {data.data?.snapshot.series.length ? (
                   <ResponsiveContainer width="100%" height={265}>
                     <BarChart data={data.data.snapshot.series} barGap={6}>
-                      <CartesianGrid vertical={false} stroke="#e8ece9" />
+                      <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                       <XAxis
                         dataKey="month"
                         tickFormatter={(v) => String(v).slice(5)}
                         axisLine={false}
                         tickLine={false}
+                        tick={{ fill: "var(--muted)" }}
                       />
                       <YAxis
                         allowDecimals={false}
                         axisLine={false}
                         tickLine={false}
+                        tick={{ fill: "var(--muted)" }}
                       />
-                      <Tooltip labelFormatter={(v) => `Mês ${v}`} />
+                      <Tooltip
+                        labelFormatter={(v) => `Mês ${v}`}
+                        contentStyle={{
+                          background: "var(--paper)",
+                          border: "1px solid var(--line)",
+                          borderRadius: 10,
+                          color: "var(--ink)",
+                        }}
+                        labelStyle={{ color: "var(--ink)" }}
+                      />
                       <Bar
                         dataKey="present"
                         name="Presenças"
-                        fill="#245e4b"
+                        fill="var(--chart-present)"
                         radius={[5, 5, 0, 0]}
                         maxBarSize={45}
                       />
                       <Bar
                         dataKey="absent"
                         name="Faltas"
-                        fill="#e3a67f"
+                        fill="var(--chart-absent)"
                         radius={[5, 5, 0, 0]}
                         maxBarSize={45}
                       />
                       <Bar
                         dataKey="justified"
                         name="Justificadas"
-                        fill="#bcc7bf"
+                        fill="var(--chart-justified)"
                         radius={[5, 5, 0, 0]}
                         maxBarSize={45}
                       />

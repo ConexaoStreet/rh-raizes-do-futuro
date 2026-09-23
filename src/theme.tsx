@@ -5,6 +5,23 @@ export type ThemeMode = "system" | "light" | "dark";
 
 const STORAGE_KEY = "raizes-theme";
 
+function readStoredTheme(): ThemeMode {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === "light" || stored === "dark" || stored === "system"
+      ? stored
+      : "system";
+  } catch {
+    return "system";
+  }
+}
+
+function writeStoredTheme(mode: ThemeMode) {
+  try {
+    localStorage.setItem(STORAGE_KEY, mode);
+  } catch {}
+}
+
 function resolveTheme(mode: ThemeMode) {
   if (mode !== "system") return mode;
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -15,23 +32,29 @@ function applyTheme(mode: ThemeMode) {
   document.documentElement.dataset.theme = resolved;
   document.documentElement.dataset.themeMode = mode;
   document.documentElement.style.colorScheme = resolved;
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (meta) meta.content = resolved === "dark" ? "#09120f" : "#f5f7f5";
 }
 
 export function useTheme() {
-  const [mode, setModeState] = useState<ThemeMode>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
-  });
+  const [mode, setModeState] = useState<ThemeMode>(readStoredTheme);
 
   useEffect(() => {
     applyTheme(mode);
-    localStorage.setItem(STORAGE_KEY, mode);
+    writeStoredTheme(mode);
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
       if (mode === "system") applyTheme("system");
     };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY) setModeState(readStoredTheme());
+    };
     media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      media.removeEventListener("change", onChange);
+      window.removeEventListener("storage", onStorage);
+    };
   }, [mode]);
 
   return { mode, setMode: setModeState, resolved: resolveTheme(mode) };
@@ -58,7 +81,5 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
 }
 
 export function initializeTheme() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  const mode: ThemeMode = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
-  applyTheme(mode);
+  applyTheme(readStoredTheme());
 }

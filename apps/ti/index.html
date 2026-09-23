@@ -4,13 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#0b1713" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
     <meta name="description" content="Central de T.I · Raízes do Futuro" />
     <meta name="application-name" content="T.I Raízes do Futuro" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>T.I · Raízes do Futuro</title>
     <script>
       (() => {
-        const stored = localStorage.getItem("raizes-theme");
+        let stored = null;
+        try {
+          stored = localStorage.getItem("raizes-theme");
+        } catch {}
         const mode = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
         const resolved = mode === "system" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : mode;
         document.documentElement.dataset.theme = resolved;

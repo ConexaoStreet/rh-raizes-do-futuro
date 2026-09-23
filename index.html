@@ -4,19 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#152522" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
     <meta name="description" content="Gestão de RH · Raízes do Futuro" />
     <meta name="application-name" content="Raízes do Futuro" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Raízes RH" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap" rel="stylesheet" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <title>Raízes do Futuro | RH</title>
     <script>
       (() => {
-        const stored = localStorage.getItem("raizes-theme");
+        let stored = null;
+        try {
+          stored = localStorage.getItem("raizes-theme");
+        } catch {}
         const mode = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
         const resolved = mode === "system" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : mode;
         document.documentElement.dataset.theme = resolved;
