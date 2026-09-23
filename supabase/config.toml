@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.platform-bridge]
 verify_jwt = false
+
+[functions.manager-activation]
+verify_jwt = false
