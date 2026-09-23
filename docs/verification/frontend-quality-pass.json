@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-09-23T10:21:00Z",
+  "branch": "feat/frontend-quality-pass",
+  "status": "candidate",
+  "checks": {
+    "lint": "success",
+    "unit_tests": "success",
+    "database_tests": "success",
+    "exports_pdf_pptx_xlsx": "success",
+    "playwright_smoke_tests": {
+      "status": "success",
+      "count": 6
+    },
+    "rh_build": "success",
+    "ti_build": "success",
+    "dependency_audit_root": "0 vulnerabilities",
+    "dependency_audit_ti": "0 vulnerabilities"
+  },
+  "budgets": {
+    "rh_initial_js_gzip_kib": 155.83,
+    "rh_js_limit_kib": 200,
+    "rh_initial_css_gzip_kib": 11.28,
+    "rh_css_limit_kib": 16,
+    "ti_js_gzip_kib": 119.46,
+    "ti_js_limit_kib": 150,
+    "ti_css_gzip_kib": 4.5,
+    "ti_css_limit_kib": 8
+  },
+  "protection": {
+    "source_maps": false,
+    "terser": true,
+    "mangling": true,
+    "drop_console": true,
+    "drop_debugger": true,
+    "opaque_asset_names": true
+  },
+  "blockers": [
+    "vercel_build_rate_limit",
+    "github_repository_public_history_contains_removed_pii",
+    "figma_mcp_starter_limit",
+    "supabase_leaked_password_protection_requires_external_auth_config"
+  ]
+}
