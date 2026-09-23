@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const html = readFileSync(resolve("dist/index.html"), "utf8");
-const scriptMatch = html.match(/<script[^>]+src="([^"]*\/assets\/index-[^"]+\.js)"/);
-const styleMatch = html.match(/<link[^>]+href="([^"]*\/assets\/index-[^"]+\.css)"/);
+const scriptMatch = html.match(/<script[^>]+src="([^"]*\/assets\/[^"]+\.js)"/);
+const styleMatch = html.match(/<link[^>]+href="([^"]*\/assets\/[^"]+\.css)"/);
 
 if (!scriptMatch || !styleMatch) {
   throw new Error("BUNDLE_ENTRY_NOT_FOUND");
