@@ -3065,3 +3065,16 @@ td small {
     flex-basis: 64px;
   }
 }
+
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+  }
+  .topbar {
+    padding-top: env(safe-area-inset-top);
+    height: calc(82px + env(safe-area-inset-top));
+  }
+  .page-content {
+    padding-bottom: calc(50px + env(safe-area-inset-bottom));
+  }
+}
