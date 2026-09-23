@@ -131,7 +131,7 @@ await test("Equipe de RH e turma ficam separadas sem aceitar grupo inválido", a
   assert.equal(
     await value(
       await root(
-        "select count(*)::int from public.employees where member_group='rh' and class_id=$1",
+        "select count(*)::int from public.employees where member_group='rh' and class_id=$1 and registration like 'TEST-%'",
         [classId],
       ),
     ),
@@ -140,7 +140,7 @@ await test("Equipe de RH e turma ficam separadas sem aceitar grupo inválido", a
   assert.equal(
     await value(
       await root(
-        "select count(*)::int from public.employees where member_group='class' and class_id=$1",
+        "select count(*)::int from public.employees where member_group='class' and class_id=$1 and registration like 'TEST-%'",
         [classId],
       ),
     ),
