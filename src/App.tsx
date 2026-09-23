@@ -40,7 +40,7 @@ import { Brand, Loading, Modal } from "./components";
 import { EntityPage, specs } from "./entities";
 import { captureNavigation } from "./telemetry";
 import { ThemeToggle } from "./theme";
-import Dashboard from "./Dashboard";
+const Dashboard = lazy(() => import("./Dashboard"));
 const Attendance = lazy(() => import("./Attendance"));
 const People = lazy(() => import("./People"));
 const Performance = lazy(() => import("./Performance"));
