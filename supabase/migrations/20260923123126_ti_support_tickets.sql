@@ -67,7 +67,7 @@ for insert
 to authenticated
 with check (
   bucket_id = 'ti-support'
-  and (storage.foldername(name))[1] = (select auth.uid())::text
+  and split_part(name, '/', 1) = (select auth.uid())::text
 );
 
 create policy ti_support_read_own_or_ti
@@ -77,7 +77,7 @@ to authenticated
 using (
   bucket_id = 'ti-support'
   and (
-    (storage.foldername(name))[1] = (select auth.uid())::text
+    split_part(name, '/', 1) = (select auth.uid())::text
     or public.has_permission('ti.manage')
   )
 );
