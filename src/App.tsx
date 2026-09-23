@@ -19,6 +19,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  Download,
   Menu,
   MessageSquare,
   Search,
@@ -46,6 +47,14 @@ const ManagerReviews = lazy(() => import("./ManagerReviews"));
 const Reports = lazy(() => import("./Reports"));
 const Administration = lazy(() => import("./Administration"));
 const Calendar = lazy(() => import("./Calendar"));
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
+};
+
 const navGroups = [
   {
     label: "ACOMPANHAMENTO",
@@ -194,6 +203,20 @@ function Shell() {
   const [mobile, setMobile] = useState(false);
   const [account, setAccount] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  useEffect(() => {
+    const onPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    const onInstalled = () => setInstallPrompt(null);
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
   const notifications = useAsync(async () => {
     const { count, error } = await client()
       .from("notifications")
@@ -329,6 +352,21 @@ function Shell() {
                     >
                       Meu perfil
                     </Link>
+                  )}
+                  {installPrompt && (
+                    <button
+                      onClick={() =>
+                        void (async () => {
+                          await installPrompt.prompt();
+                          await installPrompt.userChoice;
+                          setInstallPrompt(null);
+                          setAccount(false);
+                        })()
+                      }
+                    >
+                      <Download size={17} />
+                      Instalar aplicativo
+                    </button>
                   )}
                   <button
                     onClick={() =>
