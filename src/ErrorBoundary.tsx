@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ReactNode } from "react";
 import { captureError } from "./telemetry";
 
 export default class ErrorBoundary extends Component<
@@ -11,7 +11,7 @@ export default class ErrorBoundary extends Component<
     return { failed: true };
   }
 
-  componentDidCatch(error: Error, _info: ErrorInfo) {
+  componentDidCatch(error: Error) {
     captureError("react_boundary", error);
   }
 
