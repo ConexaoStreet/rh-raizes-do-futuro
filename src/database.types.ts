@@ -1243,6 +1243,50 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["settings"]["Insert"]>;
         Relationships: [];
       };
+      ti_support_tickets: {
+        Row: {
+          id: string;
+          user_id: string;
+          category: string;
+          subject: string;
+          description: string;
+          page_path: string;
+          page_url: string;
+          page_title: string;
+          technical_context: Json;
+          attachment_path: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          category: string;
+          subject: string;
+          description: string;
+          page_path?: string;
+          page_url?: string;
+          page_title?: string;
+          technical_context?: Json;
+          attachment_path?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["ti_support_tickets"]["Insert"]
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "ti_support_tickets_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       user_roles: {
         Row: {
           user_id: string;
