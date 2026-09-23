@@ -56,19 +56,17 @@ Deno.serve(async (request) => {
     if (raw.length > 4096) return respond(origin, { error: "INVALID_REQUEST" }, 400);
 
     const body = JSON.parse(raw) as {
-      registration?: string;
       activation_code?: string;
       email?: string;
       password?: string;
       terms?: boolean;
     };
 
-    const registration = String(body.registration || "").trim().toUpperCase();
     const activationCode = String(body.activation_code || "").trim().toUpperCase();
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
 
-    if (!/^RF\d{5}-\d{3}$/.test(registration) || activationCode.length < 10)
+    if (activationCode.length < 10)
       return respond(origin, { error: "INVALID_ACTIVATION" }, 400);
     if (!/^[^\s@]+@gmail\.com$/i.test(email))
       return respond(origin, { error: "GMAIL_REQUIRED" }, 400);
@@ -83,10 +81,11 @@ Deno.serve(async (request) => {
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
+    const activationHash = await sha256(activationCode);
     const { data: invite, error: inviteError } = await admin
       .from("manager_activation_invites")
-      .select("id,employee_id,registration,code_hash,expires_at,used_at,locked_at,attempts,max_attempts")
-      .eq("registration", registration)
+      .select("id,employee_id,code_hash,expires_at,used_at,locked_at,attempts,max_attempts")
+      .eq("code_hash", activationHash)
       .maybeSingle();
 
     if (
@@ -95,19 +94,7 @@ Deno.serve(async (request) => {
       invite.used_at ||
       new Date(invite.expires_at).getTime() <= Date.now() ||
       invite.attempts >= invite.max_attempts
-    )
-      return respond(origin, { error: "INVALID_ACTIVATION" }, 400);
-
-    const expectedHash = await sha256(`${registration}:${activationCode}`);
-    if (expectedHash !== invite.code_hash) {
-      await admin
-        .from("manager_activation_invites")
-        .update({
-          attempts: Math.min(invite.max_attempts, invite.attempts + 1),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", invite.id)
-        .is("used_at", null);
+    ) {
       return respond(origin, { error: "INVALID_ACTIVATION" }, 400);
     }
 
@@ -146,7 +133,7 @@ Deno.serve(async (request) => {
 
     const { data: employee, error: employeeError } = await admin
       .from("employees")
-      .select("id,full_name,status,profile_id,registration")
+      .select("id,full_name,status,profile_id")
       .eq("id", invite.employee_id)
       .single();
 
@@ -154,8 +141,7 @@ Deno.serve(async (request) => {
       employeeError ||
       !employee ||
       employee.status !== "active" ||
-      employee.profile_id ||
-      employee.registration !== registration
+      employee.profile_id
     ) {
       await unlock();
       return respond(origin, { error: "INVALID_ACTIVATION" }, 400);
