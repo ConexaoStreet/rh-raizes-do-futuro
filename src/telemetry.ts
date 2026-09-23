@@ -52,7 +52,16 @@ export function captureError(scope: string, error: unknown) {
       : error instanceof Error
         ? error.name
         : "unknown";
-  capture("app_error", { scope, code });
+  const frame =
+    error instanceof Error
+      ? error.stack
+          ?.split("\n")
+          .slice(1)
+          .map((line) => line.trim())
+          .find((line) => line.startsWith("at "))
+          ?.replace(location.origin, "") || null
+      : null;
+  capture("app_error", { scope, code, frame });
 }
 
 export function captureNavigation(path: string) {
