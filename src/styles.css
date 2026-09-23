@@ -1,20 +1,36 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap");
 :root {
   font-family: "DM Sans", Arial, sans-serif;
-  color: #20352b;
-  background: #f5f7f5;
+  color: var(--color-text-primary);
+  background: var(--color-bg-app);
   font-synthesis: none;
   font-weight: 400;
-  --ink: #20352b;
-  --muted: #718078;
-  --line: #e3e8e3;
-  --green: #245e4b;
-  --lime: #bcda70;
+  --color-bg-app: #f5f7f5;
+  --color-bg-surface: #ffffff;
+  --color-bg-subtle: #f0f4ee;
+  --color-text-primary: #20352b;
+  --color-text-muted: #718078;
+  --color-border-default: #e3e8e3;
+  --color-brand-primary: #245e4b;
+  --color-brand-accent: #bcda70;
+  --color-status-danger: #ad473c;
+  --color-status-warning: #97682c;
+  --radius-card: 13px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --ink: var(--color-text-primary);
+  --muted: var(--color-text-muted);
+  --line: var(--color-border-default);
+  --green: var(--color-brand-primary);
+  --lime: var(--color-brand-accent);
   --dark: #152522;
-  --paper: #fff;
-  --radius: 13px;
+  --paper: var(--color-bg-surface);
+  --radius: var(--radius-card);
   --chart-grid: #e8ece9;
-  --chart-present: #245e4b;
+  --chart-present: var(--color-brand-primary);
   --chart-absent: #e3a67f;
   --chart-justified: #bcc7bf;
   font-size: 16px;
@@ -3102,27 +3118,31 @@ td small {
 .theme-toggle-compact span { display: none; }
 
 html[data-theme="dark"] {
-  --ink: #e9f1eb;
-  --muted: #9aaba1;
-  --line: #2a3b33;
-  --green: #9ac9ab;
-  --lime: #bddb79;
+  --color-bg-app: #09120f;
+  --color-bg-surface: #111e19;
+  --color-bg-subtle: #17261f;
+  --color-text-primary: #e9f1eb;
+  --color-text-muted: #9aaba1;
+  --color-border-default: #2a3b33;
+  --color-brand-primary: #9ac9ab;
+  --color-brand-accent: #bddb79;
+  --color-status-danger: #e7a098;
+  --color-status-warning: #e2bd76;
   --dark: #0b1512;
-  --paper: #111e19;
   --chart-grid: #263930;
-  --chart-present: #9ac9ab;
+  --chart-present: var(--color-brand-primary);
   --chart-absent: #d5a078;
   --chart-justified: #7f9288;
-  background: #09120f;
+  background: var(--color-bg-app);
   color: var(--ink);
 }
 html[data-theme="dark"] body {
-  background: #09120f;
+  background: var(--color-bg-app);
   color: var(--ink);
 }
 html[data-theme="dark"] .main-column,
 html[data-theme="dark"] .page-content {
-  background: #09120f;
+  background: var(--color-bg-app);
 }
 html[data-theme="dark"] .topbar {
   background: rgba(13, 25, 21, .92);
