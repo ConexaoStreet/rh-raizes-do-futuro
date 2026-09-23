@@ -10,6 +10,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { KeyRound, LogOut, Mail, ShieldCheck } from "lucide-react";
 import { client, configured, rpc, supabase } from "./api";
+import { ThemeToggle } from "./theme";
 
 type Bootstrap = {
   profile: {
@@ -177,6 +178,7 @@ function Login() {
 
   return (
     <div className="login-page">
+      <div className="login-theme-control"><ThemeToggle compact /></div>
       <section className="login-brand">
         <Brand />
         <div className="login-brand-copy">
@@ -288,6 +290,7 @@ function Verification({ onDone }: { onDone: () => Promise<void> }) {
 function AccessFrame({ children }: { children: ReactNode }) {
   return (
     <div className="access-page">
+      <div className="access-theme-control"><ThemeToggle compact /></div>
       <div className="access-card">
         <Brand />
         {children}
