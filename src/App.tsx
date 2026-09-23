@@ -228,6 +228,7 @@ function Shell() {
   }, []);
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">Pular para o conteúdo</a>
       {mobile && (
         <button
           className="sidebar-scrim"
