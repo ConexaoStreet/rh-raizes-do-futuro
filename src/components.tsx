@@ -13,9 +13,11 @@ import { label } from "./domain";
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className="brand">
-      <span className="brand-mark">
-        R<span>↗</span>
-      </span>
+      <img
+        className="brand-logo-mark"
+        src="/brand/raizes-logo-mark.png"
+        alt="Símbolo Raízes do Futuro"
+      />
       {!compact && (
         <div>
           Raízes do Futuro<small>GESTÃO DE RH</small>
