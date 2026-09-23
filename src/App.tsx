@@ -33,6 +33,7 @@ import {
   UserCircle,
   ChevronsUpDown,
   Presentation,
+  Wrench,
 } from "lucide-react";
 import { AuthBoundary, useAuth } from "./auth";
 import { client, rpc, runAction, useAsync, useDebounce } from "./api";
@@ -47,6 +48,7 @@ const ManagerReviews = lazy(() => import("./ManagerReviews"));
 const Reports = lazy(() => import("./Reports"));
 const Administration = lazy(() => import("./Administration"));
 const Calendar = lazy(() => import("./Calendar"));
+const TIControl = lazy(() => import("./TIControl"));
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{
@@ -167,6 +169,17 @@ const navGroups = [
         name: "Administração total",
         icon: SlidersHorizontal,
         permission: "system.manage",
+      },
+    ],
+  },
+  {
+    label: "TECNOLOGIA",
+    items: [
+      {
+        path: "/ti",
+        name: "Central de T.I",
+        icon: Wrench,
+        permission: "ti.view",
       },
     ],
   },
@@ -451,6 +464,14 @@ function Shell() {
                 element={
                   <Guard permission="report.export">
                     <Reports presentation />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/ti"
+                element={
+                  <Guard permission="ti.view">
+                    <TIControl />
                   </Guard>
                 }
               />
