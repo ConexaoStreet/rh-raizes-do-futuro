@@ -300,7 +300,7 @@ export default function App() {
                   <ServiceGrid datasul={datasul} github={github} vercel={vercel} email={email} databaseState={databaseState} maintenance={maintenance} />
                   <div className="two-columns">
                     <Panel title="Estado do site" kicker="RH EM PRODUÇÃO" icon={<Globe2 />}>
-                      <StateRow name="Acesso principal" value="Produção configurada" tone="ok" />
+                      <StateRow name="Acesso principal" value="Configurado · sem health check direto" tone="warn" />
                       <StateRow name="Modo de manutenção" value={boolean(maintenance.enabled) ? "Ativo" : "Desativado"} tone={boolean(maintenance.enabled) ? "warn" : "ok"} />
                       <StateRow name="Supabase" value={databaseState === "connected" ? "Conectado" : databaseState === "error" ? "Erro" : "Verificando"} tone={databaseState === "connected" ? "ok" : "warn"} />
                       <StateRow name="Última leitura" value={lastRefreshAt ? new Date(lastRefreshAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "Pendente"} tone={lastRefreshAt ? "ok" : "warn"} />
