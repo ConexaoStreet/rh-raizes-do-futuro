@@ -62,10 +62,26 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
       } = await supabase.auth.getSession();
       setSession(current);
       if (current) {
-        const data = await rpc("bootstrap", {});
+        let activeSession = current;
+        let data: Awaited<ReturnType<typeof rpc<"bootstrap">>>;
+        try {
+          data = await rpc("bootstrap", {});
+        } catch (error) {
+          const code =
+            error && typeof error === "object" && "code" in error
+              ? String((error as { code?: unknown }).code || "")
+              : "";
+          if (code !== "PGRST303") throw error;
+          const { data: refreshed, error: refreshError } =
+            await supabase.auth.refreshSession();
+          if (refreshError || !refreshed.session) throw refreshError || error;
+          activeSession = refreshed.session;
+          setSession(activeSession);
+          data = await rpc("bootstrap", {});
+        }
         const nextUser = data as unknown as Bootstrap;
         setUser(nextUser);
-        setTelemetryUser(current.user.id);
+        setTelemetryUser(activeSession.user.id);
       } else {
         setUser(null);
         setTelemetryUser(null);
