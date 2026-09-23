@@ -402,6 +402,10 @@ function ManagerActivation({
     const email = String(form.get("manager_email")).trim().toLowerCase();
     const password = String(form.get("manager_password"));
     const confirmation = String(form.get("manager_confirmation"));
+    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+      toast.error("Informe um endereço @gmail.com válido.");
+      return;
+    }
     if (password !== confirmation) {
       toast.error("As senhas precisam ser iguais.");
       return;
@@ -559,7 +563,6 @@ function ManagerActivation({
               inputMode="email"
               autoComplete="email"
               placeholder="seunome@gmail.com"
-              pattern="[^@\\s]+@gmail\\.com"
               required
               autoFocus
             />
