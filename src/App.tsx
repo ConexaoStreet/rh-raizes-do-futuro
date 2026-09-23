@@ -33,6 +33,7 @@ import {
   UserCircle,
   ChevronsUpDown,
   Presentation,
+  LifeBuoy,
 } from "lucide-react";
 import { AuthBoundary, useAuth } from "./auth";
 import { client, rpc, runAction, useAsync, useDebounce } from "./api";
@@ -48,6 +49,7 @@ const Reports = lazy(() => import("./Reports"));
 const Administration = lazy(() => import("./Administration"));
 const Calendar = lazy(() => import("./Calendar"));
 const EntitySettings = lazy(() => import("./EntitySettings"));
+const SupportTickets = lazy(() => import("./SupportTickets"));
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{
@@ -120,6 +122,17 @@ const navGroups = [
         path: "/calendario",
         name: "Calendário de cursos",
         icon: CalendarDays,
+        permission: "",
+      },
+    ],
+  },
+  {
+    label: "SUPORTE",
+    items: [
+      {
+        path: "/suporte-ti",
+        name: "Chamado T.I.",
+        icon: LifeBuoy,
         permission: "",
       },
     ],
@@ -272,6 +285,16 @@ function Shell() {
                     key={item.path}
                     to={item.path}
                     end={item.path === "/"}
+                    state={
+                      item.path === "/suporte-ti"
+                        ? {
+                            reportPath:
+                              location.pathname === "/suporte-ti"
+                                ? "/"
+                                : location.pathname,
+                          }
+                        : undefined
+                    }
                     onClick={() => setMobile(false)}
                   >
                     <item.icon size={18} />
@@ -441,6 +464,7 @@ function Shell() {
               <Route path="/notas" element={<Performance />} />
               <Route path="/gestao" element={<ManagerReviews />} />
               <Route path="/calendario" element={<Calendar />} />
+              <Route path="/suporte-ti" element={<SupportTickets />} />
               <Route
                 path="/relatorios"
                 element={
