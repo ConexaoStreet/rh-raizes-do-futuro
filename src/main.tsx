@@ -11,6 +11,10 @@ window.addEventListener("unhandledrejection", (event) => captureError("promise",
 window.addEventListener("load", () => {
   const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
   if (navigation) capture("navigation_performance", { duration_ms: Math.round(navigation.duration) });
+  if ("serviceWorker" in navigator)
+    void navigator.serviceWorker.register("/sw.js").catch((error) =>
+      captureError("service_worker", error),
+    );
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
