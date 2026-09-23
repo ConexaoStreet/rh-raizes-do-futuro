@@ -21,6 +21,7 @@ import { client, configured, rpc, json, runAction, supabase } from "./api";
 import { Brand, Field, Loading } from "./components";
 import { errorMessage } from "./domain";
 import { capture, captureError, setTelemetryUser } from "./telemetry";
+import { ThemeToggle } from "./theme";
 import type { Row } from "./database.types";
 export type Bootstrap = {
   profile: Row<"profiles">;
@@ -166,6 +167,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
 function AuthFrame({ children }: { children: ReactNode }) {
   return (
     <div className="auth-page">
+      <div className="auth-theme-control"><ThemeToggle compact /></div>
       <aside className="auth-brand">
         <Brand />
         <div className="auth-wordmark" aria-label="Raízes do Futuro">
