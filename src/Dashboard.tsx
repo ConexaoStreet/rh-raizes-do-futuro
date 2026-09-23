@@ -147,8 +147,8 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
       <div className="notice maintenance-notice">
         <TriangleAlert size={20} />
         <div>
-          <strong>Faltas em manutenção</strong>
-          <span>Os dados históricos de faltas da planilha ainda estão sendo revisados e podem estar desatualizados. Em breve, as informações serão atualizadas no sistema.</span>
+          <strong>Histórico da planilha importado</strong>
+          <span>Faltas e registros de presença da base histórica já foram lançados. A planilha registra ocorrências, não uma chamada completa; por isso, quem não aparece nela não foi presumido como presente.</span>
         </div>
       </div>
       {data.loading ? (
