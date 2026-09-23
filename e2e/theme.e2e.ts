@@ -81,3 +81,18 @@ test("internal apps stay non-indexable", async ({ page, request }) => {
   const tiRobots = await request.get("http://127.0.0.1:4174/robots.txt");
   expect(await tiRobots.text()).toContain("Disallow: /");
 });
+
+
+test("PWA assets stay available", async ({ request }) => {
+  const rhManifest = await request.get("/manifest.webmanifest");
+  expect(rhManifest.ok()).toBe(true);
+  expect((await rhManifest.json()).theme_color).toBe("#152522");
+  expect((await request.get("/sw.js")).ok()).toBe(true);
+
+  const tiManifest = await request.get(
+    "http://127.0.0.1:4174/manifest.webmanifest",
+  );
+  expect(tiManifest.ok()).toBe(true);
+  expect((await tiManifest.json()).theme_color).toBe("#08110e");
+  expect((await request.get("http://127.0.0.1:4174/sw.js")).ok()).toBe(true);
+});
