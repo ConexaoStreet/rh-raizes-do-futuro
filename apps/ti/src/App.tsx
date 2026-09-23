@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { client, updateSetting } from "./api";
 import { Brand, useAuth } from "./auth";
+import { ThemeToggle } from "./theme";
 
 type SettingRow = { key: string; value: unknown };
 type JsonObject = Record<string, unknown>;
@@ -260,6 +261,7 @@ export default function App() {
             <h1>{titleFor(view)}</h1>
           </div>
           <div className="operator">
+            <ThemeToggle compact />
             <div>
               <strong>{user.profile.full_name}</strong>
               <span>{user.roles.join(" · ")}</span>
