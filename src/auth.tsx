@@ -21,6 +21,7 @@ import { client, configured, rpc, json, runAction, supabase } from "./api";
 import { Brand, Field, Loading } from "./components";
 import { errorMessage } from "./domain";
 import { capture, captureError, setTelemetryUser } from "./telemetry";
+import { shouldRefreshExpiredJwt } from "./auth-errors";
 import { ThemeToggle } from "./theme";
 import type { Row } from "./database.types";
 export type Bootstrap = {
@@ -67,11 +68,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         try {
           data = await rpc("bootstrap", {});
         } catch (error) {
-          const code =
-            error && typeof error === "object" && "code" in error
-              ? String((error as { code?: unknown }).code || "")
-              : "";
-          if (code !== "PGRST303") throw error;
+          if (!shouldRefreshExpiredJwt(error)) throw error;
           const { data: refreshed, error: refreshError } =
             await supabase.auth.refreshSession();
           if (refreshError || !refreshed.session) throw refreshError || error;
