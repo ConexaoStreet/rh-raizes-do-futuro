@@ -13,6 +13,10 @@
   --dark: #152522;
   --paper: #fff;
   --radius: 13px;
+  --chart-grid: #e8ece9;
+  --chart-present: #245e4b;
+  --chart-absent: #e3a67f;
+  --chart-justified: #bcc7bf;
   font-size: 16px;
 }
 * {
@@ -3105,6 +3109,10 @@ html[data-theme="dark"] {
   --lime: #bddb79;
   --dark: #0b1512;
   --paper: #111e19;
+  --chart-grid: #263930;
+  --chart-present: #9ac9ab;
+  --chart-absent: #d5a078;
+  --chart-justified: #7f9288;
   background: #09120f;
   color: var(--ink);
 }
@@ -3298,4 +3306,11 @@ html[data-theme="dark"] .status-selected.absent {
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+.auth-theme-control {
+  position: fixed;
+  top: max(18px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+  z-index: 90;
 }
