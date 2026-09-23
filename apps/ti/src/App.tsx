@@ -235,6 +235,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#ti-main-content">Pular para o conteúdo</a>
       <aside className="sidebar">
         <Brand />
         <div className="environment">
@@ -260,7 +261,7 @@ export default function App() {
         </div>
       </aside>
 
-      <main>
+      <main id="ti-main-content">
         <header className="topbar">
           <div>
             <span className="eyebrow">CENTRAL TÉCNICA</span>
