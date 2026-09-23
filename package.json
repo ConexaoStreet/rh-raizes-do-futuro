@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/protect-build.mjs",
     "lint": "eslint . && node scripts/check-source.mjs",
     "test": "vitest run",
     "test:database": "node tests/database.mjs",
     "test:e2e": "playwright test",
     "verify": "npm run lint && npm run test && npm run test:database && npm run build && npm run check:bundle",
-    "check:bundle": "node scripts/check-bundle-budget.mjs"
+    "check:bundle": "node scripts/check-bundle-budget.mjs",
+    "check:protection": "node scripts/protect-build.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",
@@ -47,7 +48,8 @@
     "eslint-plugin-react-hooks": "5.2.0",
     "globals": "16.4.0",
     "supabase": "2.117.0",
-    "prettier": "3.6.2"
+    "prettier": "3.6.2",
+    "terser": "5.51.2"
   },
   "overrides": {
     "uuid": "11.1.1",
