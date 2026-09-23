@@ -82,6 +82,7 @@ export default function TIControl() {
   const [maintenanceTitle, setMaintenanceTitle] = useState("");
   const [maintenanceMessage, setMaintenanceMessage] = useState("");
   const [datasulResult, setDatasulResult] = useState<unknown>(null);
+  const [platformResult, setPlatformResult] = useState<unknown>(null);
   const [busy, setBusy] = useState("");
 
   useEffect(() => {
@@ -98,6 +99,19 @@ export default function TIControl() {
       .update({ value: json(value), updated_at: new Date().toISOString() })
       .eq("key", key);
     if (error) throw error;
+  }
+
+  async function invokePlatform() {
+    setBusy("platform");
+    const ok = await runAction(async () => {
+      const { data, error } = await client().functions.invoke("platform-bridge", {
+        body: { action: "status" },
+      });
+      if (error) throw error;
+      setPlatformResult(data);
+    }, "Status de GitHub e Vercel atualizado.");
+    setBusy("");
+    if (ok) settings.reload();
   }
 
   async function invokeDatasul(action: "health" | "preview") {
@@ -330,7 +344,14 @@ export default function TIControl() {
             <h2>Conexões administrativas</h2>
             <p>Essas integrações vão permitir gerenciar deploy, código, logs e comunicação sem sair da Central de T.I.</p>
           </div>
-          <Settings2 size={25} />
+          <button
+            className="secondary"
+            disabled={busy !== ""}
+            onClick={() => void invokePlatform()}
+          >
+            <RefreshCw size={17} className={busy === "platform" ? "spin" : ""} />
+            Verificar plataforma
+          </button>
         </div>
         <div className="ti-connection-list">
           <ConnectionRow
@@ -351,6 +372,15 @@ export default function TIControl() {
             detail="HTML institucional e alertas"
             status={statusLabel(email.status)}
           />
+        </div>
+        {platformResult !== null && (
+          <pre className="ti-result">{JSON.stringify(platformResult, null, 2)}</pre>
+        )}
+        <div className="ti-secret-note">
+          <AlertTriangle size={18} />
+          <span>
+            Para leitura direta pelo app ainda faltam <strong>GITHUB_TOKEN</strong>, <strong>VERCEL_TOKEN</strong> e <strong>VERCEL_TEAM_ID</strong> nos Secrets do Supabase.
+          </span>
         </div>
       </section>
     </>
