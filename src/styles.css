@@ -3078,3 +3078,224 @@ td small {
     padding-bottom: calc(50px + env(safe-area-inset-bottom));
   }
 }
+
+
+.theme-toggle {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+}
+.theme-toggle:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.theme-toggle-compact span { display: none; }
+
+html[data-theme="dark"] {
+  --ink: #e9f1eb;
+  --muted: #9aaba1;
+  --line: #2a3b33;
+  --green: #9ac9ab;
+  --lime: #bddb79;
+  --dark: #0b1512;
+  --paper: #111e19;
+  background: #09120f;
+  color: var(--ink);
+}
+html[data-theme="dark"] body {
+  background: #09120f;
+  color: var(--ink);
+}
+html[data-theme="dark"] .main-column,
+html[data-theme="dark"] .page-content {
+  background: #09120f;
+}
+html[data-theme="dark"] .topbar {
+  background: rgba(13, 25, 21, .92);
+  border-color: var(--line);
+  color: var(--ink);
+  backdrop-filter: blur(16px);
+}
+html[data-theme="dark"] .topbar-left,
+html[data-theme="dark"] .slash,
+html[data-theme="dark"] .stat-label,
+html[data-theme="dark"] .stat-detail,
+html[data-theme="dark"] .eyebrow,
+html[data-theme="dark"] .empty,
+html[data-theme="dark"] .loading,
+html[data-theme="dark"] .legend,
+html[data-theme="dark"] .muted,
+html[data-theme="dark"] small {
+  color: var(--muted);
+}
+html[data-theme="dark"] button:not(.primary):not(.danger-button),
+html[data-theme="dark"] .button:not(.primary),
+html[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] .period-picker,
+html[data-theme="dark"] .search-input,
+html[data-theme="dark"] .search-trigger,
+html[data-theme="dark"] .list-item,
+html[data-theme="dark"] .sticky-toolbar,
+html[data-theme="dark"] .calendar-day,
+html[data-theme="dark"] .modal,
+html[data-theme="dark"] .account-menu,
+html[data-theme="dark"] .stat,
+html[data-theme="dark"] .panel {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--line);
+}
+html[data-theme="dark"] button:hover:not(:disabled):not(.primary):not(.danger-button),
+html[data-theme="dark"] .button:hover:not(.primary),
+html[data-theme="dark"] .account-menu a:hover,
+html[data-theme="dark"] .list-item:hover,
+html[data-theme="dark"] tr:hover td {
+  background: #17261f;
+  border-color: #385044;
+}
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: #73887d;
+}
+html[data-theme="dark"] input:focus,
+html[data-theme="dark"] textarea:focus,
+html[data-theme="dark"] select:focus {
+  border-color: #789b83;
+  outline-color: rgba(154, 201, 171, .18);
+}
+html[data-theme="dark"] th,
+html[data-theme="dark"] .calendar-weekday,
+html[data-theme="dark"] .calendar-blank {
+  background: #0d1915;
+  color: #91a399;
+  border-color: var(--line);
+}
+html[data-theme="dark"] td,
+html[data-theme="dark"] table,
+html[data-theme="dark"] .panel-footer,
+html[data-theme="dark"] .chart-summary > div {
+  border-color: var(--line);
+}
+html[data-theme="dark"] .attendance-banner,
+html[data-theme="dark"] .privacy-banner,
+html[data-theme="dark"] .comment,
+html[data-theme="dark"] .notification-row.unread,
+html[data-theme="dark"] .calendar-day.has-course,
+html[data-theme="dark"] .period-shortcuts button,
+html[data-theme="dark"] .theme-tags span {
+  background: #15231c;
+  border-color: #304338;
+  color: #dce8df;
+}
+html[data-theme="dark"] .banner-icon,
+html[data-theme="dark"] .start-attendance-icon,
+html[data-theme="dark"] .security-icon,
+html[data-theme="dark"] .avatar {
+  background: #1b3025;
+  color: #b9d69e;
+}
+html[data-theme="dark"] .auth-page {
+  background: #09120f;
+}
+html[data-theme="dark"] .auth-form,
+html[data-theme="dark"] .auth-card,
+html[data-theme="dark"] .auth-panel {
+  color: var(--ink);
+}
+html[data-theme="dark"] .notice {
+  background: #17251d;
+  border-color: #34483a;
+  color: #c7d8ca;
+}
+html[data-theme="dark"] .notice.danger {
+  background: #2a1715;
+  border-color: #633630;
+  color: #efb3ac !important;
+}
+html[data-theme="dark"] .badge {
+  background: #1a2822;
+  color: #b7c7bd;
+}
+html[data-theme="dark"] .badge-active,
+html[data-theme="dark"] .badge-present,
+html[data-theme="dark"] .badge-accepted,
+html[data-theme="dark"] .badge-completed,
+html[data-theme="dark"] .badge-finalized {
+  background: #173025;
+  color: #9bd0ad;
+}
+html[data-theme="dark"] .badge-pending,
+html[data-theme="dark"] .badge-editing,
+html[data-theme="dark"] .badge-late,
+html[data-theme="dark"] .badge-following,
+html[data-theme="dark"] .badge-maintenance,
+html[data-theme="dark"] .maintenance-notice {
+  background: #302718;
+  border-color: #5b4727;
+  color: #e2bd76;
+}
+html[data-theme="dark"] .badge-absent,
+html[data-theme="dark"] .badge-blocked,
+html[data-theme="dark"] .badge-suspended,
+html[data-theme="dark"] .badge-rejected {
+  background: #321c19;
+  color: #e7a098;
+}
+html[data-theme="dark"] .badge-justified,
+html[data-theme="dark"] .badge-open,
+html[data-theme="dark"] .badge-recognition {
+  background: #18263b;
+  color: #a9bfe3;
+}
+html[data-theme="dark"] .badge-inactive,
+html[data-theme="dark"] .badge-archived {
+  background: #222925;
+  color: #a4afa8;
+}
+html[data-theme="dark"] .modal-overlay {
+  background: rgba(1, 7, 5, .72);
+}
+html[data-theme="dark"] .modal {
+  box-shadow: 0 28px 90px rgba(0,0,0,.48);
+}
+html[data-theme="dark"] .search-trigger,
+html[data-theme="dark"] .theme-toggle {
+  background: #13211b;
+}
+html[data-theme="dark"] .notification-bell > span {
+  background: var(--lime);
+  color: #1b2b20;
+}
+html[data-theme="dark"] .diff-table .changed td {
+  background: #2c2919;
+}
+html[data-theme="dark"] .progress-track {
+  background: #1d2d25;
+}
+html[data-theme="dark"] .status-selected.present {
+  background: #173025;
+  border-color: #355b42;
+  color: #a9d3b5;
+}
+html[data-theme="dark"] .status-selected.absent {
+  background: #30211b;
+  border-color: #654638;
+  color: #e0ac8c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

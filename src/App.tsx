@@ -39,6 +39,7 @@ import { client, rpc, runAction, useAsync, useDebounce } from "./api";
 import { Brand, Loading, Modal } from "./components";
 import { EntityPage, specs } from "./entities";
 import { captureNavigation } from "./telemetry";
+import { ThemeToggle } from "./theme";
 import Dashboard from "./Dashboard";
 const Attendance = lazy(() => import("./Attendance"));
 const People = lazy(() => import("./People"));
@@ -299,6 +300,7 @@ function Shell() {
             </span>
           </div>
           <div className="topbar-actions">
+            <ThemeToggle compact />
             <button
               className="search-trigger"
               aria-label="Busca global"

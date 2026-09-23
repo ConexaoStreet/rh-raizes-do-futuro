@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { client, updateSetting } from "./api";
 import { Brand, useAuth } from "./auth";
+import { ThemeToggle } from "./theme";
 
 type SettingRow = { key: string; value: unknown };
 type JsonObject = Record<string, unknown>;
@@ -118,7 +119,13 @@ export default function App() {
     setEmployeesPath(string(datasul.employees_path));
     setMaintenanceTitle(string(site.maintenance_title, "Sistema em manutenção"));
     setMaintenanceMessage(string(site.maintenance_message, "Alguns recursos podem ficar temporariamente indisponíveis."));
-  }, [settings]);
+  }, [
+    datasul.company_id,
+    datasul.employees_path,
+    datasul.health_path,
+    site.maintenance_message,
+    site.maintenance_title,
+  ]);
 
   const healthScore = useMemo(() => {
     const states = [
@@ -260,6 +267,7 @@ export default function App() {
             <h1>{titleFor(view)}</h1>
           </div>
           <div className="operator">
+            <ThemeToggle compact />
             <div>
               <strong>{user.profile.full_name}</strong>
               <span>{user.roles.join(" · ")}</span>

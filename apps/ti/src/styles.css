@@ -982,3 +982,158 @@ pre {
     font-size: 1.1rem;
   }
 }
+
+
+.theme-toggle {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 11px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+.theme-toggle:hover:not(:disabled) { transform: translateY(-1px); }
+.theme-toggle-compact span { display: none; }
+
+html[data-theme="light"] {
+  --bg: #f4f7f4;
+  --bg-soft: #edf2ee;
+  --panel: #ffffff;
+  --panel-2: #f6f8f6;
+  --border: #dfe7e1;
+  --text: #20352b;
+  --muted: #6f8076;
+  --green: #39745b;
+  --green-strong: #245e4b;
+  --accent: #8c7d35;
+  --danger: #b3544c;
+  --warning: #9a6b2f;
+  --shadow: 0 18px 44px rgba(28, 56, 43, .09);
+  background: var(--bg);
+  color: var(--text);
+}
+html[data-theme="light"] body,
+html[data-theme="light"] .app-shell {
+  background:
+    radial-gradient(circle at 80% 10%, rgba(90, 139, 111, .08), transparent 22rem),
+    linear-gradient(180deg, #f7f9f7 0%, #eef3ef 100%);
+  color: var(--text);
+}
+html[data-theme="light"] .sidebar {
+  background: #173027;
+  border-color: rgba(255,255,255,.08);
+}
+html[data-theme="light"] .brand img {
+  filter: brightness(0) invert(1) sepia(.12) saturate(.5);
+}
+html[data-theme="light"] .topbar {
+  background: rgba(255,255,255,.88);
+  border-color: var(--border);
+  color: var(--text);
+}
+html[data-theme="light"] .hero {
+  background:
+    radial-gradient(circle at 84% 12%, rgba(190, 217, 128, .22), transparent 18rem),
+    linear-gradient(135deg, #e8f2ea 0%, #dceadf 60%, #d5e4d8 100%);
+  border-color: #cdddcf;
+  box-shadow: var(--shadow);
+}
+html[data-theme="light"] .hero h2 { color: #173328; }
+html[data-theme="light"] .hero p,
+html[data-theme="light"] .health-ring span { color: #5f776a; }
+html[data-theme="light"] .health-ring {
+  background: rgba(255,255,255,.6);
+  border-color: rgba(57,116,91,.18);
+  box-shadow: inset 0 0 0 12px rgba(57,116,91,.04);
+}
+html[data-theme="light"] .health-ring strong { color: #4a694f; }
+html[data-theme="light"] .service-card,
+html[data-theme="light"] .panel,
+html[data-theme="light"] .login-card,
+html[data-theme="light"] .access-card {
+  background: rgba(255,255,255,.94);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+html[data-theme="light"] .service-icon,
+html[data-theme="light"] .panel-icon,
+html[data-theme="light"] .audit-icon {
+  color: #477961;
+  background: #edf4ef;
+  border-color: #dfebe3;
+}
+html[data-theme="light"] input,
+html[data-theme="light"] textarea {
+  background: #ffffff;
+  color: var(--text);
+  border-color: #d5e1d8;
+}
+html[data-theme="light"] input:focus,
+html[data-theme="light"] textarea:focus {
+  background: #fff;
+  border-color: #7fa590;
+  box-shadow: 0 0 0 3px rgba(57,116,91,.1);
+}
+html[data-theme="light"] pre {
+  background: #17241f;
+  color: #dce9df;
+  border-color: #243b31;
+}
+html[data-theme="light"] .maintenance-state {
+  background: #f7f9f7;
+  border-color: var(--border);
+}
+html[data-theme="light"] .notice {
+  background: #fff7e8;
+  border-color: #ead7af;
+  color: #765526;
+}
+html[data-theme="light"] .state-row {
+  border-color: #e8ede9;
+}
+html[data-theme="light"] .state-row span,
+html[data-theme="light"] .field > span,
+html[data-theme="light"] .panel-copy,
+html[data-theme="light"] .operator span,
+html[data-theme="light"] .service-text span {
+  color: var(--muted);
+}
+html[data-theme="light"] .eyebrow { color: #698073; }
+html[data-theme="light"] .theme-toggle {
+  background: #f7f9f7;
+  color: #315d49;
+}
+html[data-theme="light"] .badge.ok {
+  background: #e8f4eb;
+  color: #39764d;
+}
+html[data-theme="light"] .badge.warn {
+  background: #fff2dc;
+  color: #8e6327;
+}
+html[data-theme="light"] .badge.error {
+  background: #fbe7e4;
+  color: #a34f47;
+}
+html[data-theme="light"] .login-panel,
+html[data-theme="light"] .access-page {
+  background: #eef3ef;
+}
+html[data-theme="light"] .operator-avatar {
+  background: linear-gradient(135deg, #a9d1b7, #ded49d);
+  color: #173027;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
