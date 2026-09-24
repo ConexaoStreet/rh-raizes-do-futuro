@@ -10,7 +10,8 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { Eye, EyeOff, KeyRound, LogOut, Mail, ShieldCheck } from "lucide-react";
 import { client, configured, rpc, supabase } from "./api";
-import { ThemeToggle } from "./theme";\nimport { LoginMascot } from "./LoginMascot";
+import { ThemeToggle } from "./theme";
+import { LoginMascot } from "./LoginMascot";
 
 type Bootstrap = {
   profile: {
@@ -252,7 +253,8 @@ function Login({
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loginMode, setLoginMode] = useState<"password" | "code">("password");\n  const [mascotMood, setMascotMood] = useState<"idle" | "email" | "password" | "peek" | "code" | "error" | "success">("idle");
+  const [loginMode, setLoginMode] = useState<"password" | "code">("password");
+  const [mascotMood, setMascotMood] = useState<"idle" | "email" | "password" | "peek" | "code" | "error" | "success">("idle");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
