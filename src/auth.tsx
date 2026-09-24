@@ -585,16 +585,6 @@ function Login({ configured: ready }: { configured: boolean }) {
         </button>
       </div>
 
-      {mode === "login" && (
-        <button
-          type="button"
-          className="manager-entry-button"
-          onClick={() => setMode("manager")}
-        >
-          <ShieldCheck size={17} />
-          Ativar acesso de gestor
-        </button>
-      )}
     </AuthFrame>
   );
 }

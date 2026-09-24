@@ -1,4 +1,4 @@
-# X100TOTAL — Relatório de execução
+# X100TOTAL - Relatório de execução
 
 Data: 22/09/2026
 

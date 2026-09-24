@@ -1,5 +1,5 @@
 insert into public.classes(name,code,active)
-values ('Turma 16807 — Anhanguera Guarulhos','16807',true)
+values ('Turma 16807 - Anhanguera Guarulhos','16807',true)
 on conflict (code) do update set name=excluded.name,active=true;
 
 insert into public.departments(name,active)

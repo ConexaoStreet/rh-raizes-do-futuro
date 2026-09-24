@@ -61,7 +61,7 @@ export function tableRows(
       Colaborador: row.name,
       Matrícula: row.registration,
       Presença: label(row.status),
-      Entrada: String(row.actual_arrival || "—").slice(0, 5),
+      Entrada: String(row.actual_arrival || "-").slice(0, 5),
       "Atraso (min)": row.delay_minutes,
       Manutenções: row.maintenance_count,
     }));
@@ -267,9 +267,9 @@ export async function buildPdf(
       body: [
         [
           "Presença",
-          m.attendance_rate === null ? "—" : `${number(m.attendance_rate, 1)}%`,
+          m.attendance_rate === null ? "-" : `${number(m.attendance_rate, 1)}%`,
           snapshot.previous.attendance_rate === null
-            ? "—"
+            ? "-"
             : `${number(snapshot.previous.attendance_rate, 1)}%`,
         ],
         ["Faltas", m.absent, snapshot.previous.absent],
@@ -320,7 +320,7 @@ export async function buildPdf(
         head: [keys],
         body: rows.map((row) => {
           const record = row as Record<string, unknown>;
-          return keys.map((key) => String(record[key] ?? "—"));
+          return keys.map((key) => String(record[key] ?? "-"));
         }),
         styles: { fontSize: 8, cellPadding: 2.4, overflow: "linebreak" },
         headStyles: { fillColor: [36, 94, 75] },

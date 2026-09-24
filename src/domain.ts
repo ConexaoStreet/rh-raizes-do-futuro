@@ -51,15 +51,15 @@ export const labels: Record<string, string> = {
   COLLABORATOR: "Colaborador",
 };
 export const label = (value: unknown) =>
-  labels[String(value)] || String(value ?? "—");
+  labels[String(value)] || String(value ?? "-");
 export const number = (value: number | null | undefined, digits = 0) =>
   value == null
-    ? "—"
+    ? "-"
     : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: digits }).format(
         value,
       );
 export function dateLabel(value: string | null | undefined, time = false) {
-  if (!value) return "—";
+  if (!value) return "-";
   return new Intl.DateTimeFormat(
     "pt-BR",
     time

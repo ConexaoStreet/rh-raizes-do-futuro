@@ -1,4 +1,4 @@
-# Cloudflare — produção principal
+# Cloudflare - produção principal
 
 Este repositório mantém dois frontends independentes:
 

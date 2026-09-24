@@ -1,4 +1,4 @@
-# Vercel — configuração inicial
+# Vercel - configuração inicial
 
 Projeto GitHub: `ConexaoStreet/rh-raizes-do-futuro`
 

@@ -182,7 +182,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 title="Presença"
                 value={
                   stats.attendance_rate === null
-                    ? "—"
+                    ? "-"
                     : `${number(stats.attendance_rate, 1)}%`
                 }
                 detail={`${stats.present} presenças no período`}
@@ -192,7 +192,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 title="Pontualidade"
                 value={
                   stats.punctuality_rate === null
-                    ? "—"
+                    ? "-"
                     : `${number(stats.punctuality_rate, 1)}%`
                 }
                 detail={`${stats.late} registros com atraso`}

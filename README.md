@@ -1,4 +1,4 @@
-# Raízes do Futuro — Gestão de RH
+# Raízes do Futuro - Gestão de RH
 
 Sistema de gestão de RH para acompanhamento de colaboradores, presença, justificativas, feedbacks, desempenho, avaliação da gestão, relatórios e administração.
 
@@ -14,10 +14,10 @@ A Edge Function `email-2fa` utiliza secrets do Supabase: `OTP_HMAC_SECRET`, `RES
 
 ## Comandos
 
-- `npm run dev` — desenvolvimento
-- `npm run build` — build de produção
-- `npm run test:database` — regressão do banco
-- `npm run verify` — lint, testes e build
+- `npm run dev` - desenvolvimento
+- `npm run build` - build de produção
+- `npm run test:database` - regressão do banco
+- `npm run verify` - lint, testes e build
 
 ## Segurança
 

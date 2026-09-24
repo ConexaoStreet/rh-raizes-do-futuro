@@ -205,7 +205,7 @@ function EmployeeProfile() {
               value={
                 filled.length
                   ? `${Math.round((present.length / filled.length) * 100)}%`
-                  : "—"
+                  : "-"
               }
             />
             <Stat
@@ -235,7 +235,7 @@ function EmployeeProfile() {
             ].map(([title, value]) => (
               <div key={title}>
                 <small>{title}</small>
-                <strong>{value || "—"}</strong>
+                <strong>{value || "-"}</strong>
               </div>
             ))}
           </section>
@@ -743,7 +743,7 @@ function Occurrences({
                       <Badge value={row.status} />
                     </td>
                     <td data-label="Entrada">
-                      {row.actual_arrival?.slice(0, 5) || "—"}
+                      {row.actual_arrival?.slice(0, 5) || "-"}
                     </td>
                     <td data-label="Atraso">{row.delay_minutes} min</td>
                     <td className="row-actions">

@@ -252,7 +252,7 @@ export default function Reports({
                 title="Presença"
                 value={
                   data.data.metrics.attendance_rate === null
-                    ? "—"
+                    ? "-"
                     : `${number(data.data.metrics.attendance_rate, 1)}%`
                 }
               />
@@ -454,7 +454,7 @@ function ReportTable({ rows }: { rows: Record<string, unknown>[] }) {
             <tr key={i}>
               {Object.entries(row).map(([key, value]) => (
                 <td data-label={key} key={key}>
-                  {String(value ?? "—")}
+                  {String(value ?? "-")}
                 </td>
               ))}
             </tr>

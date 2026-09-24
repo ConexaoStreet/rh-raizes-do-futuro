@@ -748,68 +748,110 @@ function RoleAssignmentsHistory({ id }: { id: string }) {
   );
 }
 
+type RoleAssignmentHistory = Row<"user_role_history"> & {
+  profiles: { full_name: string } | null;
+};
+
 function RoleHistory({ id, onSaved }: { id: string; onSaved: () => void }) {
   const data = useAsync(async () => {
-    const { data, error } = await client()
-      .from("audit_logs")
-      .select("*")
-      .eq("entity_id", id)
-      .eq("module", "roles")
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (error) throw error;
-    return data;
+    const [changes, assignments] = await Promise.all([
+      client()
+        .from("audit_logs")
+        .select("*")
+        .eq("entity_id", id)
+        .eq("module", "roles")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      client()
+        .from("user_role_history")
+        .select("*,profiles!user_role_history_user_id_fkey(full_name)")
+        .eq("role_id", id)
+        .order("created_at", { ascending: false })
+        .limit(200),
+    ]);
+    if (changes.error || assignments.error)
+      throw changes.error || assignments.error;
+    return {
+      changes: changes.data,
+      assignments: assignments.data as unknown as RoleAssignmentHistory[],
+    };
   }, [id]);
+
   return (
     <>
       {data.loading ? (
         <Loading />
       ) : (
-        data.data?.map((row) => (
-          <div className="timeline-item" key={row.id}>
-            <strong>{row.actor_name || "Sistema"}</strong>
-            <span>{dateLabel(row.created_at, true)}</span>
-            <details>
-              <summary>Antes e depois</summary>
-              <JsonDiff before={row.old_values} after={row.new_values} />
-            </details>
-            {row.action === "save_role" &&
-              row.old_values &&
-              typeof row.context === "object" &&
-              row.context &&
-              "old_permissions" in row.context && (
-                <button
-                  onClick={() => {
-                    const reason = prompt(
-                      "Motivo para restaurar a configuração anterior:",
-                    );
-                    if (reason)
-                      void runAction(async () => {
-                        const { data: role, error } = await client()
-                          .from("roles")
-                          .select("*")
-                          .eq("id", id)
-                          .single();
-                        if (error) throw error;
-                        const context = row.context as {
-                          old_permissions: string[];
-                        };
-                        await rpc("save_role", {
-                          payload: row.old_values,
-                          permission_identifiers: context.old_permissions,
-                          expected_version: role.version,
-                          reason,
-                        });
-                        data.reload();
-                        onSaved();
-                      });
-                  }}
-                >
-                  Restaurar configuração
-                </button>
-              )}
-          </div>
-        ))
+        <>
+          <h3>Alterações do cargo</h3>
+          {!data.data?.changes.length ? (
+            <Empty text="Nenhuma alteração registrada." />
+          ) : (
+            data.data.changes.map((row) => (
+              <div className="timeline-item" key={row.id}>
+                <strong>{row.actor_name || "Sistema"}</strong>
+                <span>{dateLabel(row.created_at, true)}</span>
+                <details>
+                  <summary>Antes e depois</summary>
+                  <JsonDiff before={row.old_values} after={row.new_values} />
+                </details>
+                {row.action === "save_role" &&
+                  row.old_values &&
+                  typeof row.context === "object" &&
+                  row.context &&
+                  "old_permissions" in row.context && (
+                    <button
+                      onClick={() => {
+                        const reason = prompt(
+                          "Motivo para restaurar a configuração anterior:",
+                        );
+                        if (reason)
+                          void runAction(async () => {
+                            const { data: role, error } = await client()
+                              .from("roles")
+                              .select("*")
+                              .eq("id", id)
+                              .single();
+                            if (error) throw error;
+                            const context = row.context as {
+                              old_permissions: string[];
+                            };
+                            await rpc("save_role", {
+                              payload: row.old_values,
+                              permission_identifiers: context.old_permissions,
+                              expected_version: role.version,
+                              reason,
+                            });
+                            data.reload();
+                            onSaved();
+                          });
+                      }}
+                    >
+                      Restaurar configuração
+                    </button>
+                  )}
+              </div>
+            ))
+          )}
+
+          <h3>Atribuições e remoções</h3>
+          {!data.data?.assignments.length ? (
+            <Empty text="Nenhuma atribuição de usuário registrada." />
+          ) : (
+            data.data.assignments.map((row) => (
+              <div className="timeline-item" key={row.id}>
+                <strong>{row.profiles?.full_name || "Usuário"}</strong>
+                <span>
+                  {row.action === "assigned" ? "Cargo atribuído" : "Cargo removido"}
+                </span>
+                <small>
+                  {dateLabel(row.created_at, true)}
+                  {row.source ? ` · ${row.source}` : ""}
+                </small>
+              </div>
+            ))
+          )}
+        </>
       )}
     </>
   );
