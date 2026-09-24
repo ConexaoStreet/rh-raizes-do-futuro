@@ -183,10 +183,11 @@ function Login() {
         const result = claim as {
           token_hash?: string;
           code_id?: string;
+          claim_token?: string;
           error?: string;
         };
 
-        if (!result.token_hash || !result.code_id)
+        if (!result.token_hash || !result.code_id || !result.claim_token)
           throw new Error(result.error || "INVALID_CODE");
 
         const { data: verified, error: verifyError } =
@@ -203,6 +204,7 @@ function Login() {
             body: {
               action: "confirm",
               code_id: result.code_id,
+              claim_token: result.claim_token,
             },
             headers: {
               Authorization: `Bearer ${verified.session.access_token}`,
@@ -312,6 +314,39 @@ function Login() {
                     </button>
                   </div>
                 </label>
+                <button
+                  type="button"
+                  className="text-button forgot-password"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    setError("");
+                    try {
+                      const emailInput = document.querySelector<HTMLInputElement>(
+                        'input[name="email"]',
+                      );
+                      const email = emailInput?.value.trim() || "";
+                      if (!email) {
+                        setError("Digite seu e-mail primeiro.");
+                        return;
+                      }
+                      const redirectTo =
+                        new URL("/", window.location.origin).href;
+                      const { error: resetError } =
+                        await client().auth.resetPasswordForEmail(email, {
+                          redirectTo,
+                        });
+                      if (resetError) throw resetError;
+                      setError("Enviamos o link de redefinição para o seu e-mail.");
+                    } catch {
+                      setError("Não foi possível enviar a recuperação de senha.");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Esqueci minha senha
+                </button>
               </>
             ) : (
               <label>
