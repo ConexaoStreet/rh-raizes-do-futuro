@@ -4,7 +4,8 @@ import { AuthBoundary } from "./auth";
 import App from "./App";
 import "./styles.css";
 import { initializeTheme } from "./theme";
-import ErrorBoundary from "./ErrorBoundary";\nimport { CinematicGate } from "./CinematicGate";
+import ErrorBoundary from "./ErrorBoundary";
+import { CinematicGate } from "./CinematicGate";
 
 initializeTheme();
 
