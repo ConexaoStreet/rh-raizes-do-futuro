@@ -244,9 +244,11 @@ function useRegistrationOptions() {
   const [options, setOptions] = useState<RegistrationOptions | null>(null);
   useEffect(() => {
     let active = true;
-    void rpc("registration_options", {})
-      .then((value) => {
-        if (active) setOptions(value as unknown as RegistrationOptions);
+    void client()
+      .functions.invoke("registration-bootstrap", { body: { action: "options" } })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (active) setOptions(data as RegistrationOptions);
       })
       .catch((error) => captureError("registration_options", error));
     return () => {
@@ -268,8 +270,14 @@ function usePreRegistrationMatch(name: string) {
     }
     setChecking(true);
     const timer = window.setTimeout(() => {
-      void rpc("match_pre_registered_user", { full_name: clean })
-        .then((value) => setResult(value as unknown as PreRegistrationMatch))
+      void client()
+        .functions.invoke("registration-bootstrap", {
+          body: { action: "match", full_name: clean },
+        })
+        .then(({ data, error }) => {
+          if (error) throw error;
+          setResult(data as PreRegistrationMatch);
+        })
         .catch((error) => {
           captureError("pre_registration_match", error);
           setResult(null);

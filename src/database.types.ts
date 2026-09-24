@@ -1398,14 +1398,6 @@ export type Database = {
         Args: { identifier: string | null };
         Returns: undefined;
       };
-      match_pre_registered_user: {
-        Args: { full_name: string };
-        Returns: Json;
-      };
-      registration_options: {
-        Args: Record<string, never>;
-        Returns: Json;
-      };
       register_push_subscription: {
         Args: {
           endpoint_value: string;
