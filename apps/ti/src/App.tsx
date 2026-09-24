@@ -1115,12 +1115,12 @@ export default function App() {
                     </div>
                     <div className="datasul-pulse-card">
                       <span>COMPANY ID</span>
-                      <strong>{companyId || "—"}</strong>
+                      <strong>{companyId || "-"}</strong>
                       <small>empresa em contexto</small>
                     </div>
                     <div className="datasul-pulse-card">
                       <span>HEALTH PATH</span>
-                      <strong className="mono-value">{healthPath || "—"}</strong>
+                      <strong className="mono-value">{healthPath || "-"}</strong>
                       <small>endpoint de verificação</small>
                     </div>
                   </div>
