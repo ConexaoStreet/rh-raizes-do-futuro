@@ -48,26 +48,43 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState("");
+  const [recoveringPassword, setRecoveringPassword] = useState(false);
+  const [secureTransition, setSecureTransition] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!supabase) {
       setLoading(false);
       return;
     }
+
     try {
       const {
         data: { session: current },
+        error: sessionError,
       } = await supabase.auth.getSession();
+
+      if (sessionError) throw sessionError;
       setSession(current);
+
       if (!current) {
         setUser(null);
+        setFailed("");
         return;
       }
+
+      const {
+        data: { user: verifiedUser },
+        error: userError,
+      } = await supabase.auth.getUser(current.access_token);
+
+      if (userError || !verifiedUser)
+        throw userError || new Error("SESSION_INVALID");
+
       const next = (await rpc("bootstrap")) as Bootstrap;
       setUser(next);
       setFailed("");
     } catch {
-      setFailed("Não foi possível validar esta sessão.");
+      setFailed("Não foi possível validar esta sessão com segurança.");
       setUser(null);
     } finally {
       setLoading(false);
@@ -75,42 +92,104 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refresh();
-    if (!supabase) return;
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
-      if (event === "SIGNED_OUT") setUser(null);
-      setTimeout(() => void refresh(), 0);
+
+      if (event === "PASSWORD_RECOVERY") {
+        setRecoveringPassword(true);
+        setSecureTransition(false);
+        setUser(null);
+        setFailed("");
+        setLoading(false);
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        setRecoveringPassword(false);
+        setSecureTransition(false);
+        setUser(null);
+        setFailed("");
+        setLoading(false);
+        return;
+      }
+
+      window.setTimeout(() => void refresh(), 0);
     });
+
+    void refresh();
     return () => subscription.unsubscribe();
   }, [refresh]);
 
-  if (loading) return <Splash label="Validando acesso técnico..." />;
+  if (loading || secureTransition)
+    return (
+      <Splash
+        label={
+          secureTransition
+            ? "Concluindo autenticação protegida..."
+            : "Validando acesso técnico..."
+        }
+      />
+    );
+
   if (!configured)
     return (
       <AccessFrame>
         <ShieldCheck size={34} />
+        <span className="eyebrow">CONFIGURAÇÃO</span>
         <h1>Configuração necessária</h1>
         <p>Conecte este frontend ao projeto Supabase do Raízes do Futuro.</p>
       </AccessFrame>
     );
-  if (!session) return <Login />;
+
+  if (recoveringPassword && session)
+    return (
+      <PasswordRecovery
+        onComplete={() => {
+          setRecoveringPassword(false);
+          setUser(null);
+          setSession(null);
+        }}
+      />
+    );
+
+  if (!session)
+    return (
+      <Login
+        onAuthenticated={refresh}
+        onSecureTransition={setSecureTransition}
+      />
+    );
+
   if (failed)
     return (
       <AccessFrame>
         <ShieldCheck size={34} />
+        <span className="eyebrow">SESSÃO</span>
         <h1>Sessão interrompida</h1>
         <p>{failed}</p>
-        <button onClick={() => void client().auth.signOut()}>Voltar ao login</button>
+        <button
+          className="primary-button"
+          onClick={() => void client().auth.signOut()}
+        >
+          Voltar ao login
+        </button>
       </AccessFrame>
     );
+
   if (!user) return <Splash label="Carregando permissões..." />;
+
   if (!user.profile.onboarded_at || user.profile.status !== "active")
     return (
       <AccessFrame>
         <Mail size={34} />
+        <span className="eyebrow">CONTA</span>
         <h1>Acesso técnico indisponível</h1>
         <p>Conclua e valide seu cadastro pelo sistema de RH antes de usar a Central de T.I.</p>
         <button onClick={() => void client().auth.signOut()}>
@@ -119,12 +198,15 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         </button>
       </AccessFrame>
     );
+
   if (user.privileged && !user.mfa_verified)
     return <Verification onDone={refresh} />;
+
   if (!user.permissions.includes("ti.view"))
     return (
       <AccessFrame>
         <ShieldCheck size={34} />
+        <span className="eyebrow">PERMISSÕES</span>
         <h1>Sem permissão de T.I</h1>
         <p>Esta conta não possui acesso à administração técnica do Raízes do Futuro.</p>
         <button onClick={() => void client().auth.signOut()}>
@@ -133,10 +215,12 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         </button>
       </AccessFrame>
     );
+
   if (!user.ready)
     return (
       <AccessFrame>
         <ShieldCheck size={34} />
+        <span className="eyebrow">SEGURANÇA</span>
         <h1>Acesso indisponível</h1>
         <p>A sessão não atende aos requisitos de segurança atuais.</p>
         <button onClick={() => void client().auth.signOut()}>Sair</button>
@@ -157,9 +241,16 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
   );
 }
 
-function Login() {
+function Login({
+  onAuthenticated,
+  onSecureTransition,
+}: {
+  onAuthenticated: () => Promise<void>;
+  onSecureTransition: (active: boolean) => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loginMode, setLoginMode] = useState<"password" | "code">("password");
 
@@ -167,6 +258,7 @@ function Login() {
     event.preventDefault();
     setBusy(true);
     setError("");
+    setStatus("");
 
     try {
       const form = new FormData(event.currentTarget);
@@ -190,6 +282,8 @@ function Login() {
         if (!result.token_hash || !result.code_id || !result.claim_token)
           throw new Error(result.error || "INVALID_CODE");
 
+        onSecureTransition(true);
+
         const { data: verified, error: verifyError } =
           await client().auth.verifyOtp({
             token_hash: result.token_hash,
@@ -211,14 +305,13 @@ function Login() {
             },
           });
 
-        if (
-          confirmError ||
-          !(confirmed as { ok?: boolean } | null)?.ok
-        ) {
+        if (confirmError || !(confirmed as { ok?: boolean } | null)?.ok) {
           await client().auth.signOut();
           throw confirmError || new Error("CONFIRM_FAILED");
         }
 
+        await onAuthenticated();
+        onSecureTransition(false);
         return;
       }
 
@@ -228,14 +321,18 @@ function Login() {
         email,
         password,
       });
+
       if (signInError) throw signInError;
+      await onAuthenticated();
     } catch (caught) {
+      onSecureTransition(false);
       const message =
         caught instanceof Error ? caught.message : "ACCESS_FAILED";
+
       setError(
         loginMode === "code"
           ? message.includes("RATE_LIMITED")
-            ? "Muitas tentativas. Aguarde alguns minutos."
+            ? "Muitas tentativas. Aguarde alguns minutos e tente novamente."
             : "Código inválido, expirado ou já utilizado."
           : "E-mail ou senha inválidos.",
       );
@@ -244,23 +341,68 @@ function Login() {
     }
   }
 
+  async function requestPasswordReset() {
+    setBusy(true);
+    setError("");
+    setStatus("");
+
+    try {
+      const emailInput = document.querySelector<HTMLInputElement>(
+        'input[name="email"]',
+      );
+      const email = emailInput?.value.trim() || "";
+
+      if (!email) {
+        setError("Digite seu e-mail primeiro.");
+        return;
+      }
+
+      const redirectTo = new URL("/", window.location.origin).href;
+      const { error: resetError } =
+        await client().auth.resetPasswordForEmail(email, { redirectTo });
+
+      if (resetError) throw resetError;
+      setStatus(
+        "Link de redefinição enviado. Abra o e-mail para concluir a alteração.",
+      );
+    } catch {
+      setError("Não foi possível enviar a recuperação de senha.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="login-page">
       <div className="login-theme-control"><ThemeToggle compact /></div>
+
       <section className="login-brand">
         <Brand />
         <div className="login-brand-copy">
-          <span>CONTROLE TÉCNICO</span>
-          <h1>T.I Raízes do Futuro</h1>
-          <p>Administração, integrações, segurança, deploys e operação técnica em um ambiente separado do RH.</p>
+          <span>RAÍZES DO FUTURO · OPERAÇÃO DIGITAL</span>
+          <h1>Central de T.I.</h1>
+          <p>
+            Administração, integrações, segurança, deploys e operação técnica
+            em um ambiente separado do RH.
+          </p>
+          <div className="login-trust-row">
+            <span><ShieldCheck size={15} /> MFA obrigatório</span>
+            <span><ShieldCheck size={15} /> Acesso auditado</span>
+            <span><ShieldCheck size={15} /> Sessão protegida</span>
+          </div>
+        </div>
+        <div className="login-brand-foot">
+          Ambiente administrativo reservado a pessoas autorizadas.
         </div>
       </section>
+
       <section className="login-panel">
         <div className="login-card">
           <div className="security-badge"><ShieldCheck size={22} /></div>
           <span className="eyebrow">ACESSO RESTRITO</span>
           <h2>Entrar na Central de T.I</h2>
-          <p>Use a mesma conta administrativa do Raízes do Futuro.</p>
+          <p>Use sua conta administrativa ou um código semanal autorizado.</p>
+
           <div className="login-mode-switch" role="tablist" aria-label="Forma de acesso">
             <button
               type="button"
@@ -270,9 +412,10 @@ function Login() {
               onClick={() => {
                 setLoginMode("password");
                 setError("");
+                setStatus("");
               }}
             >
-              Senha
+              E-mail e senha
             </button>
             <button
               type="button"
@@ -282,17 +425,25 @@ function Login() {
               onClick={() => {
                 setLoginMode("code");
                 setError("");
+                setStatus("");
               }}
             >
-              Código de acesso
+              Código semanal
             </button>
           </div>
+
           <form onSubmit={submit}>
             {loginMode === "password" ? (
               <>
                 <label>
                   <span>E-mail</span>
-                  <input name="email" type="email" autoComplete="email" required />
+                  <input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="nome@empresa.com.br"
+                    required
+                  />
                 </label>
                 <label>
                   <span>Senha</span>
@@ -301,6 +452,7 @@ function Login() {
                       name="password"
                       type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
+                      placeholder="Sua senha"
                       required
                     />
                     <button
@@ -314,36 +466,12 @@ function Login() {
                     </button>
                   </div>
                 </label>
+
                 <button
                   type="button"
                   className="text-button forgot-password"
                   disabled={busy}
-                  onClick={async () => {
-                    setBusy(true);
-                    setError("");
-                    try {
-                      const emailInput = document.querySelector<HTMLInputElement>(
-                        'input[name="email"]',
-                      );
-                      const email = emailInput?.value.trim() || "";
-                      if (!email) {
-                        setError("Digite seu e-mail primeiro.");
-                        return;
-                      }
-                      const redirectTo =
-                        new URL("/", window.location.origin).href;
-                      const { error: resetError } =
-                        await client().auth.resetPasswordForEmail(email, {
-                          redirectTo,
-                        });
-                      if (resetError) throw resetError;
-                      setError("Enviamos o link de redefinição para o seu e-mail.");
-                    } catch {
-                      setError("Não foi possível enviar a recuperação de senha.");
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
+                  onClick={() => void requestPasswordReset()}
                 >
                   Esqueci minha senha
                 </button>
@@ -362,23 +490,127 @@ function Login() {
                   required
                 />
                 <small>
-                  Cada código funciona uma única vez e é substituído toda terça-feira.
+                  Uso único. A confirmação cria uma sessão técnica verificada e auditada.
                 </small>
               </label>
             )}
+
             {error && <div className="form-error" role="alert">{error}</div>}
-            <button className="primary-button" disabled={busy}>
+            {status && <div className="form-success" role="status">{status}</div>}
+
+            <button className="primary-button login-submit" disabled={busy}>
               <KeyRound size={18} />
               {busy
                 ? "Validando..."
                 : loginMode === "code"
                   ? "Entrar com código"
-                  : "Entrar"}
+                  : "Entrar com segurança"}
             </button>
           </form>
+
+          <div className="login-card-foot">
+            <ShieldCheck size={14} />
+            <span>
+              Permissões e sessão são verificadas novamente antes de abrir o console.
+            </span>
+          </div>
         </div>
       </section>
     </div>
+  );
+}
+
+function PasswordRecovery({ onComplete }: { onComplete: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <AccessFrame>
+      <KeyRound size={34} />
+      <span className="eyebrow">RECUPERAÇÃO SEGURA</span>
+      <h1>Crie uma nova senha</h1>
+      <p>
+        Depois da alteração, a sessão de recuperação será encerrada e você
+        entrará novamente pela Central de T.I.
+      </p>
+
+      <form
+        className="recovery-form"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          setBusy(true);
+          setError("");
+
+          try {
+            const form = new FormData(event.currentTarget);
+            const password = String(form.get("password") || "");
+            const confirmPassword = String(form.get("confirm_password") || "");
+
+            if (password.length < 8) {
+              setError("Use uma senha com pelo menos 8 caracteres.");
+              return;
+            }
+
+            if (password !== confirmPassword) {
+              setError("As senhas não são iguais.");
+              return;
+            }
+
+            const { error: updateError } =
+              await client().auth.updateUser({ password });
+
+            if (updateError) throw updateError;
+
+            await client().auth.signOut({ scope: "local" });
+            onComplete();
+          } catch {
+            setError("Não foi possível alterar a senha. Solicite um novo link.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <label className="recovery-field">
+          <span>Nova senha</span>
+          <div className="password-field">
+            <input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+              onClick={() => setShowPassword((current) => !current)}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </label>
+
+        <label className="recovery-field">
+          <span>Confirmar nova senha</span>
+          <input
+            name="confirm_password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+        </label>
+
+        {error && <div className="form-error" role="alert">{error}</div>}
+
+        <button className="primary-button" disabled={busy}>
+          <KeyRound size={17} />
+          {busy ? "Atualizando..." : "Salvar nova senha"}
+        </button>
+      </form>
+    </AccessFrame>
   );
 }
 

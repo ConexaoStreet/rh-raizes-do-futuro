@@ -1,12 +1,14 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0'
+const DEFAULT_ALLOWED_ORIGINS=new Set(['https://ti-raizes-do-futuro.vercel.app','http://127.0.0.1:4174','http://localhost:4174'])
+const allowedOrigins=()=>new Set([...DEFAULT_ALLOWED_ORIGINS,...(Deno.env.get('ALLOWED_ORIGINS')||'').split(',').map(x=>x.trim()).filter(Boolean)])
 const required=(name:string)=>{const value=Deno.env.get(name);if(!value)throw new Error('CONFIGURATION_REQUIRED');return value}
 const headers=(origin:string)=>({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin','Cache-Control':'no-store','Content-Type':'application/json'})
 async function hashCode(userId:string,sessionId:string,code:string){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(required('OTP_HMAC_SECRET')),{name:'HMAC',hash:'SHA-256'},false,['sign']);const result=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(`${userId}:${sessionId}:${code}`));return Array.from(new Uint8Array(result)).map(n=>n.toString(16).padStart(2,'0')).join('')}
 function generateCode(){const buffer=new Uint32Array(1);let n:number;do{crypto.getRandomValues(buffer);n=buffer[0]}while(n>=4294000000);return String(n%1000000).padStart(6,'0')}
 Deno.serve(async request=>{
  const origin=request.headers.get('origin')||''
- const allowed=(Deno.env.get('ALLOWED_ORIGINS')||'').split(',').map(x=>x.trim()).filter(Boolean)
- if(!allowed.includes(origin))return new Response(null,{status:403})
+ const allowed=allowedOrigins()
+ if(!allowed.has(origin))return new Response(null,{status:403})
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:headers(origin)})
  if(request.method!=='POST')return new Response(null,{status:405,headers:headers(origin)})
  const respond=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:headers(origin)})
