@@ -52,6 +52,7 @@ type View =
   | "integrations"
   | "site"
   | "security"
+  | "support"
   | "logs";
 
 type SettingRow = { key: string; value: unknown };
@@ -112,6 +113,20 @@ type DatasulOperation = {
   success: boolean;
   duration_ms: number;
   error_message: string | null;
+};
+type SupportTicket = {
+  id: string;
+  user_id: string;
+  category: string;
+  subject: string;
+  description: string;
+  page_path: string;
+  page_title: string;
+  technical_context: JsonObject;
+  attachment_path: string | null;
+  status: "open" | "in_progress" | "resolved" | "closed";
+  created_at: string;
+  updated_at: string;
 };
 type SessionRow = {
   id: string;
@@ -219,6 +234,15 @@ function numberValue(value: unknown, fallback = 0) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+function errorText(value: unknown) {
+  if (value instanceof Error) return value.message;
+  if (value && typeof value === "object" && "message" in value) {
+    const message = (value as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+  }
+  return "Falha inesperada.";
+}
+
 function formatBytes(value: number | null | undefined) {
   const bytes = value || 0;
   if (bytes < 1024) return bytes + " B";
@@ -278,6 +302,8 @@ export default function App() {
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [datasulOps, setDatasulOps] = useState<DatasulOperation[]>([]);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
+  const [moduleErrors, setModuleErrors] = useState<Record<string, string>>({});
   const [database, setDatabase] = useState<DatabaseSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
@@ -371,116 +397,177 @@ export default function App() {
   async function reload() {
     setLoading(true);
     setError("");
-    try {
-      const [
-        settingsResult,
-        auditResult,
-        profilesResult,
-        employeesResult,
-        rolesResult,
-        userRolesResult,
-        departmentsResult,
-        positionsResult,
-        classesResult,
-        datasulOpsResult,
-        snapshotResult,
-        inventoryResult,
-      ] = await Promise.all([
-        client().from("settings").select("key,value").in("key", settingKeys),
-        client()
-          .from("audit_logs")
-          .select(
-            "id,created_at,actor_name,action,module,event_type,severity,success",
-          )
-          .order("created_at", { ascending: false })
-          .limit(80),
-        client()
-          .from("profiles")
-          .select(
-            "id,full_name,email,phone,status,last_seen_at,espro_photo_path,espro_photo_status,espro_photo_rejection_reason",
-          )
-          .order("full_name")
-          .limit(500),
-        client()
-          .from("employees")
-          .select(
-            "id,profile_id,full_name,email,phone,registration,status,member_group,access_role_code,class_id,department_id,job_position_id,manager_id,version",
-          )
-          .order("full_name")
-          .limit(1000),
-        client()
-          .from("roles")
-          .select("id,code,name,level,privileged")
-          .eq("active", true)
-          .eq("archived", false)
-          .order("level", { ascending: false }),
-        client().from("user_roles").select("user_id,role_id").limit(2000),
-        client()
-          .from("departments")
-          .select("id,name")
-          .eq("active", true)
-          .order("name"),
-        client()
-          .from("job_positions")
-          .select("id,name")
-          .eq("active", true)
-          .order("name"),
-        client()
-          .from("classes")
-          .select("id,name,code")
-          .eq("active", true)
-          .order("name"),
-        client()
-          .from("ti_datasul_operations")
-          .select(
-            "id,created_at,actor_name,method,path,response_status,success,duration_ms,error_message",
-          )
-          .order("created_at", { ascending: false })
-          .limit(100),
-        rpc("ti_snapshot"),
-        invokeFunction("ti-admin-bridge", { action: "inventory" }),
-      ]);
+    const tasks: { key: string; run: () => Promise<void> }[] = [
+      {
+        key: "configurações",
+        run: async () => {
+          const result = await client()
+            .from("settings")
+            .select("key,value")
+            .in("key", settingKeys);
+          if (result.error) throw result.error;
+          const nextSettings: Record<string, JsonObject> = {};
+          for (const row of (result.data || []) as SettingRow[]) {
+            nextSettings[row.key] = object(row.value);
+          }
+          setSettings(nextSettings);
+        },
+      },
+      {
+        key: "auditoria",
+        run: async () => {
+          const result = await client()
+            .from("audit_logs")
+            .select("id,created_at,actor_name,action,module,event_type,severity,success")
+            .order("created_at", { ascending: false })
+            .limit(80);
+          if (result.error) throw result.error;
+          setAudit((result.data || []) as AuditRow[]);
+        },
+      },
+      {
+        key: "usuários",
+        run: async () => {
+          const result = await client()
+            .from("profiles")
+            .select("id,full_name,email,phone,status,last_seen_at,espro_photo_path,espro_photo_status,espro_photo_rejection_reason")
+            .order("full_name")
+            .limit(500);
+          if (result.error) throw result.error;
+          setProfiles((result.data || []) as ProfileRow[]);
+        },
+      },
+      {
+        key: "colaboradores",
+        run: async () => {
+          const result = await client()
+            .from("employees")
+            .select("id,profile_id,full_name,email,phone,registration,status,member_group,access_role_code,class_id,department_id,job_position_id,manager_id,version")
+            .order("full_name")
+            .limit(1000);
+          if (result.error) throw result.error;
+          setEmployees((result.data || []) as EmployeeRow[]);
+        },
+      },
+      {
+        key: "cargos",
+        run: async () => {
+          const result = await client()
+            .from("roles")
+            .select("id,code,name,level,privileged")
+            .eq("active", true)
+            .eq("archived", false)
+            .order("level", { ascending: false });
+          if (result.error) throw result.error;
+          setRoles((result.data || []) as RoleRow[]);
+        },
+      },
+      {
+        key: "permissões",
+        run: async () => {
+          const result = await client()
+            .from("user_roles")
+            .select("user_id,role_id")
+            .limit(2000);
+          if (result.error) throw result.error;
+          setUserRoles((result.data || []) as UserRoleRow[]);
+        },
+      },
+      {
+        key: "departamentos",
+        run: async () => {
+          const result = await client()
+            .from("departments")
+            .select("id,name")
+            .eq("active", true)
+            .order("name");
+          if (result.error) throw result.error;
+          setDepartments((result.data || []) as NamedRow[]);
+        },
+      },
+      {
+        key: "cargos RH",
+        run: async () => {
+          const result = await client()
+            .from("job_positions")
+            .select("id,name")
+            .eq("active", true)
+            .order("name");
+          if (result.error) throw result.error;
+          setPositions((result.data || []) as NamedRow[]);
+        },
+      },
+      {
+        key: "turmas",
+        run: async () => {
+          const result = await client()
+            .from("classes")
+            .select("id,name,code")
+            .eq("active", true)
+            .order("name");
+          if (result.error) throw result.error;
+          setClasses((result.data || []) as ClassRow[]);
+        },
+      },
+      {
+        key: "Datasul",
+        run: async () => {
+          const result = await client()
+            .from("ti_datasul_operations")
+            .select("id,created_at,actor_name,method,path,response_status,success,duration_ms,error_message")
+            .order("created_at", { ascending: false })
+            .limit(100);
+          if (result.error) throw result.error;
+          setDatasulOps((result.data || []) as DatasulOperation[]);
+        },
+      },
+      {
+        key: "chamados",
+        run: async () => {
+          const result = await client()
+            .from("ti_support_tickets")
+            .select("id,user_id,category,subject,description,page_path,page_title,technical_context,attachment_path,status,created_at,updated_at")
+            .order("created_at", { ascending: false })
+            .limit(250);
+          if (result.error) throw result.error;
+          setSupportTickets((result.data || []) as SupportTicket[]);
+        },
+      },
+      {
+        key: "indicadores",
+        run: async () => {
+          setSnapshot(object(await rpc("ti_snapshot")) as Snapshot);
+        },
+      },
+      {
+        key: "inventário",
+        run: async () => {
+          setInventory(
+            object(await invokeFunction("ti-admin-bridge", { action: "inventory" })) as Inventory,
+          );
+        },
+      },
+    ];
 
-      const results = [
-        settingsResult,
-        auditResult,
-        profilesResult,
-        employeesResult,
-        rolesResult,
-        userRolesResult,
-        departmentsResult,
-        positionsResult,
-        classesResult,
-        datasulOpsResult,
-      ];
-      const failed = results.find((result) => result.error);
-      if (failed?.error) throw failed.error;
-
-      const nextSettings: Record<string, JsonObject> = {};
-      for (const row of (settingsResult.data || []) as SettingRow[]) {
-        nextSettings[row.key] = object(row.value);
+    const results = await Promise.allSettled(tasks.map((task) => task.run()));
+    const failures: Record<string, string> = {};
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        failures[tasks[index].key] = errorText(result.reason);
       }
-      setSettings(nextSettings);
-      setAudit((auditResult.data || []) as AuditRow[]);
-      setProfiles((profilesResult.data || []) as ProfileRow[]);
-      setEmployees((employeesResult.data || []) as EmployeeRow[]);
-      setRoles((rolesResult.data || []) as RoleRow[]);
-      setUserRoles((userRolesResult.data || []) as UserRoleRow[]);
-      setDepartments((departmentsResult.data || []) as NamedRow[]);
-      setPositions((positionsResult.data || []) as NamedRow[]);
-      setClasses((classesResult.data || []) as ClassRow[]);
-      setDatasulOps((datasulOpsResult.data || []) as DatasulOperation[]);
-      setSnapshot(object(snapshotResult) as Snapshot);
-      setInventory(object(inventoryResult) as Inventory);
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Não foi possível carregar a Central T.I.",
+    });
+    setModuleErrors(failures);
+
+    const failedCount = Object.keys(failures).length;
+    if (failedCount === tasks.length) {
+      setError("A Central T.I. não conseguiu carregar nenhum módulo. Verifique a sessão e o Supabase.");
+    } else if (failedCount > 0) {
+      setNotice(
+        `Central carregada parcialmente: ${failedCount} módulo(s) indisponível(is). O restante continua operacional.`,
       );
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -589,11 +676,22 @@ export default function App() {
   }
 
   async function saveMaintenance() {
-    await updateSetting("ti_site", {
-      ...site,
-      maintenance_title: maintenanceTitle,
-      maintenance_message: maintenanceMessage,
-    });
+    const title = maintenanceTitle.trim() || "Sistema em manutenção";
+    const message =
+      maintenanceMessage.trim() ||
+      "Estamos realizando ajustes no sistema. Tente novamente em instantes.";
+    await Promise.all([
+      updateSetting("maintenance", {
+        ...maintenance,
+        title,
+        message,
+      }),
+      updateSetting("ti_site", {
+        ...site,
+        maintenance_title: title,
+        maintenance_message: message,
+      }),
+    ]);
     await reload();
   }
 
@@ -607,9 +705,17 @@ export default function App() {
       )
     )
       return;
+    const title = maintenanceTitle.trim() || "Sistema em manutenção";
+    const message =
+      maintenanceMessage.trim() ||
+      "Estamos realizando ajustes no sistema. Tente novamente em instantes.";
     await updateSetting("maintenance", {
       ...maintenance,
       enabled: next,
+      title,
+      message,
+      started_at: next ? new Date().toISOString() : null,
+      ended_at: next ? null : new Date().toISOString(),
     });
     await reload();
   }
@@ -743,6 +849,18 @@ export default function App() {
     );
   }
 
+  async function updateSupportTicketStatus(
+    ticketId: string,
+    status: SupportTicket["status"],
+  ) {
+    const { error: updateError } = await client()
+      .from("ti_support_tickets")
+      .update({ status })
+      .eq("id", ticketId);
+    if (updateError) throw updateError;
+    await reload();
+  }
+
   async function sendNotification(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!notificationTarget) throw new Error("Selecione um usuário.");
@@ -787,6 +905,7 @@ export default function App() {
     { view: "integrations", label: "GitHub e Vercel", icon: <GitBranch /> },
     { view: "site", label: "Site RH", icon: <Globe2 />, permission: "ti.manage" },
     { view: "security", label: "Segurança", icon: <ShieldCheck />, permission: "ti.security.view" },
+    { view: "support", label: "Chamados T.I.", icon: <Wrench />, permission: "ti.manage" },
     { view: "logs", label: "Logs", icon: <Activity /> },
   ];
 
@@ -865,6 +984,35 @@ export default function App() {
         <div className="content">
           {error && <Notice tone="error">{error}</Notice>}
           {notice && <Notice tone="ok">{notice}</Notice>}
+          {Object.keys(moduleErrors).length > 0 && (
+            <div className="module-health-warning">
+              <AlertTriangle size={18} />
+              <div>
+                <strong>Operação parcial</strong>
+                <span>
+                  {Object.entries(moduleErrors)
+                    .map(([module]) => module)
+                    .join(" · ")}
+                </span>
+              </div>
+              <button onClick={() => void run("reload", reload)}>
+                <RefreshCw size={15} /> Tentar novamente
+              </button>
+            </div>
+          )}
+          {flag(maintenance.enabled) && view !== "datasul" && (
+            <button
+              className="maintenance-console-strip"
+              onClick={() => setView("datasul")}
+            >
+              <Wrench size={18} />
+              <span>
+                <strong>RH em manutenção</strong>
+                Acesso técnico permanece ativo. Abrir Datasul.
+              </span>
+              <ArrowUpRight size={16} />
+            </button>
+          )}
           {loading ? (
             <div className="loading-panel">
               <div className="loader" />
@@ -922,6 +1070,41 @@ export default function App() {
 
               {view === "datasul" && (
                 <>
+                  {flag(maintenance.enabled) && (
+                    <section className="datasul-maintenance-banner" role="status" aria-live="polite">
+                      <div className="datasul-maintenance-icon">
+                        <Wrench size={30} />
+                      </div>
+                      <div className="datasul-maintenance-copy">
+                        <span>MANUTENÇÃO GLOBAL ATIVA</span>
+                        <h2>
+                          {text(
+                            maintenance.title,
+                            text(site.maintenance_title, "Sistema em manutenção"),
+                          )}
+                        </h2>
+                        <p>
+                          {text(
+                            maintenance.message,
+                            text(
+                              site.maintenance_message,
+                              "Estamos realizando ajustes no sistema. O acesso será liberado novamente assim que a manutenção for concluída.",
+                            ),
+                          )}
+                        </p>
+                        <small>
+                          O RH está bloqueado para usuários comuns. A Central T.I. e este console Datasul continuam ativos para diagnóstico e correção; qualquer operação aqui continua afetando dados reais.
+                        </small>
+                      </div>
+                      <button
+                        className="maintenance-manage-button"
+                        onClick={() => setView("site")}
+                      >
+                        <Settings2 size={16} />
+                        Gerenciar manutenção
+                      </button>
+                    </section>
+                  )}
                   <div className="two-columns">
                     <Panel title="Conexão Datasul RH" kicker="CONFIGURAÇÃO" icon={<Database />}>
                       <div className="form-grid">
@@ -1395,6 +1578,86 @@ export default function App() {
                 </>
               )}
 
+              {view === "support" && (
+                <>
+                  <div className="support-summary">
+                    <Stat
+                      title="Abertos"
+                      value={supportTickets.filter((ticket) => ticket.status === "open").length}
+                      detail="aguardando triagem"
+                    />
+                    <Stat
+                      title="Em andamento"
+                      value={supportTickets.filter((ticket) => ticket.status === "in_progress").length}
+                      detail="em atendimento"
+                    />
+                    <Stat
+                      title="Resolvidos"
+                      value={supportTickets.filter((ticket) => ticket.status === "resolved").length}
+                      detail="solucionados"
+                    />
+                    <Stat
+                      title="Total"
+                      value={supportTickets.length}
+                      detail="chamados carregados"
+                    />
+                  </div>
+                  <Panel title="Fila de chamados T.I." kicker="SUPORTE INTERNO" icon={<Wrench />}>
+                    {supportTickets.length === 0 ? (
+                      <Empty text="Nenhum chamado de T.I. registrado." />
+                    ) : (
+                      <div className="ticket-list">
+                        {supportTickets.map((ticket) => {
+                          const owner = profiles.find((profile) => profile.id === ticket.user_id);
+                          return (
+                            <article className="ticket-card" key={ticket.id}>
+                              <div className="ticket-card-head">
+                                <div>
+                                  <span className="eyebrow">{ticket.category.toUpperCase()}</span>
+                                  <h3>{ticket.subject}</h3>
+                                  <small>
+                                    {owner?.full_name || ticket.user_id} · {formatDate(ticket.created_at)}
+                                  </small>
+                                </div>
+                                <select
+                                  aria-label={"Status do chamado " + ticket.subject}
+                                  value={ticket.status}
+                                  onChange={(event) =>
+                                    void run(
+                                      "ticket-" + ticket.id,
+                                      () =>
+                                        updateSupportTicketStatus(
+                                          ticket.id,
+                                          event.target.value as SupportTicket["status"],
+                                        ),
+                                      "Chamado atualizado.",
+                                    )
+                                  }
+                                >
+                                  <option value="open">Aberto</option>
+                                  <option value="in_progress">Em andamento</option>
+                                  <option value="resolved">Resolvido</option>
+                                  <option value="closed">Fechado</option>
+                                </select>
+                              </div>
+                              <p>{ticket.description}</p>
+                              <div className="ticket-meta">
+                                <code>{ticket.page_path || "/"}</code>
+                                <span>{ticket.page_title || "Página não informada"}</span>
+                              </div>
+                              <details>
+                                <summary>Contexto técnico</summary>
+                                <pre>{JSON.stringify(ticket.technical_context || {}, null, 2)}</pre>
+                              </details>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </Panel>
+                </>
+              )}
+
               {view === "logs" && (
                 <>
                   <Panel title="Auditoria geral" kicker="ÚLTIMOS EVENTOS" icon={<Activity />}>
@@ -1441,6 +1704,7 @@ function titleFor(view: View) {
     integrations: "GitHub e Vercel",
     site: "Controle do site",
     security: "Segurança",
+    support: "Chamados de T.I.",
     logs: "Logs e auditoria",
   }[view];
 }
