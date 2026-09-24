@@ -291,7 +291,6 @@ export function LoginMascot({
       aria-hidden="true"
     >
       <div className="root-mascot-body">
-        <div className="root-mascot-chest" />
       </div>
       <div className="root-mascot-ear ear-left">
         <div className="root-mascot-ear-inner" />
