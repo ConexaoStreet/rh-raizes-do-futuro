@@ -400,7 +400,7 @@ function Login({
 
       <section className="login-panel">
         <div className="login-stage">
-          <LoginMascot mood={mascotMood} />
+          <LoginMascot mood={mascotMood} placement="login" scopeSelector=".login-stage" />
         <div className="login-card">
           <div className="security-badge"><ShieldCheck size={22} /></div>
           <span className="eyebrow">ACESSO RESTRITO</span>
