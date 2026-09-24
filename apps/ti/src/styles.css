@@ -2633,12 +2633,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   border-radius: 18% 82% 28% 72%;
   transform: rotate(24deg);
 }
-.root-mascot-ear-inner {
-  position: absolute;
-  inset: 8px 9px 10px;
-  border-radius: inherit;
-  background: radial-gradient(circle at 50% 30%,rgba(173,132,116,.26),rgba(90,75,64,.08) 70%);
-}
 .root-mascot-brow {
   position: absolute;
   z-index: 5;
