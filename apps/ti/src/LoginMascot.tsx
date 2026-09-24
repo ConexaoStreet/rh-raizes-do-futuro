@@ -293,10 +293,8 @@ export function LoginMascot({
       <div className="root-mascot-body">
       </div>
       <div className="root-mascot-ear ear-left">
-        <div className="root-mascot-ear-inner" />
       </div>
       <div className="root-mascot-ear ear-right">
-        <div className="root-mascot-ear-inner" />
       </div>
       <div className="root-mascot-head">
         <div className="root-mascot-brow brow-left" />
