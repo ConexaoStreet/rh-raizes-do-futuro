@@ -13,7 +13,6 @@ import {
   BellRing,
   Boxes,
   CheckCircle2,
-  CircleDot,
   Database,
   FileClock,
   FolderOpen,
