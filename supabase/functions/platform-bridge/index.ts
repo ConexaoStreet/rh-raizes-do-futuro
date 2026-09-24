@@ -18,16 +18,15 @@ function secret(name: string) {
 
 async function githubStatus(repo: string, branch: string) {
   const token = secret("GITHUB_TOKEN");
-  if (!token) return { configured: false, status: "needs_secret" };
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "Raizes-do-Futuro-TI",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(
     `https://api.github.com/repos/${repo}/actions/runs?branch=${encodeURIComponent(branch)}&per_page=5`,
-    {
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${token}`,
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    },
+    { headers },
   );
   const raw = await res.text();
   let data: unknown = raw;
@@ -36,13 +35,21 @@ async function githubStatus(repo: string, branch: string) {
   } catch {
     data = raw.slice(0, 3000);
   }
-  if (!res.ok) return { configured: true, status: "error", http_status: res.status, data };
+  if (!res.ok)
+    return {
+      configured: Boolean(token),
+      status: res.status === 403 && !token ? "partial" : "error",
+      http_status: res.status,
+      data,
+      mode: token ? "authenticated" : "public",
+    };
   const runs = Array.isArray((data as { workflow_runs?: unknown[] })?.workflow_runs)
     ? (data as { workflow_runs: Record<string, unknown>[] }).workflow_runs
     : [];
   return {
     configured: true,
-    status: "connected",
+    status: token ? "connected" : "partial",
+    mode: token ? "authenticated" : "public",
     runs: runs.map((run) => ({
       id: run.id,
       name: run.name,
@@ -57,10 +64,36 @@ async function githubStatus(repo: string, branch: string) {
   };
 }
 
-async function vercelStatus(project: string) {
+async function vercelStatus(project: string, productionUrl: string | null) {
   const token = secret("VERCEL_TOKEN");
   const teamId = secret("VERCEL_TEAM_ID");
-  if (!token) return { configured: false, status: "needs_secret" };
+  if (!token) {
+    if (!productionUrl) return { configured: false, status: "needs_secret" };
+    try {
+      const started = performance.now();
+      const health = await fetch(productionUrl, {
+        method: "GET",
+        redirect: "follow",
+        headers: { "User-Agent": "Raizes-do-Futuro-TI-Health" },
+      });
+      return {
+        configured: false,
+        status: health.ok ? "partial" : "error",
+        mode: "health_only",
+        production_url: productionUrl,
+        http_status: health.status,
+        duration_ms: Math.round(performance.now() - started),
+      };
+    } catch (error) {
+      return {
+        configured: false,
+        status: "error",
+        mode: "health_only",
+        production_url: productionUrl,
+        error: error instanceof Error ? error.message : "health_failed",
+      };
+    }
+  }
   const query = new URLSearchParams({ projectId: project, limit: "5" });
   if (teamId) query.set("teamId", teamId);
   const res = await fetch(`https://api.vercel.com/v13/deployments?${query.toString()}`, {
@@ -115,10 +148,14 @@ Deno.serve(
     const repo = String(github.repository || "ConexaoStreet/rh-raizes-do-futuro");
     const branch = String(github.branch || "main");
     const project = String(vercel.project || "rh-raizes-do-futuro");
+    const productionUrl =
+      typeof vercel.production_url === "string" && vercel.production_url
+        ? vercel.production_url
+        : null;
 
     const [githubResult, vercelResult] = await Promise.all([
       githubStatus(repo, branch),
-      vercelStatus(project),
+      vercelStatus(project, productionUrl),
     ]);
 
     const now = new Date().toISOString();
@@ -129,7 +166,7 @@ Deno.serve(
         ctx.supabase.from("settings").update({
           value: {
             ...github,
-            enabled: githubResult.configured,
+            enabled: githubResult.status === "connected" || githubResult.status === "partial",
             status: githubResult.status,
             last_check_at: now,
             last_error: githubResult.status === "error" ? "Falha ao consultar GitHub." : null,
@@ -138,7 +175,7 @@ Deno.serve(
         ctx.supabase.from("settings").update({
           value: {
             ...vercel,
-            enabled: vercelResult.configured,
+            enabled: vercelResult.status === "connected" || vercelResult.status === "partial",
             status: vercelResult.status,
             last_check_at: now,
             last_error: vercelResult.status === "error" ? "Falha ao consultar Vercel." : null,
