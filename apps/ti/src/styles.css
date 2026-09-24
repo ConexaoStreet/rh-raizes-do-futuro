@@ -2421,7 +2421,7 @@ html[data-theme="light"] .ticket-card {
 @keyframes cinematicScan { to{transform:translateX(650%)} }
 @keyframes cinematicNoise { 50%{transform:translate(2px,-1px)} }
 
-/* Login — custom editorial composition */
+/* Login - custom editorial composition */
 .login-stage {
   position: relative;
   width: min(100%, 500px);
