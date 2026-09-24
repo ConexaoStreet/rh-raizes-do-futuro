@@ -2430,85 +2430,6 @@ html[data-theme="light"] .ticket-card {
   position: relative;
   z-index: 3;
 }
-.login-mascot {
-  position: absolute;
-  z-index: 4;
-  width: 122px;
-  height: 104px;
-  top: -75px;
-  right: 36px;
-  transition: transform .34s cubic-bezier(.16,1,.3,1);
-  filter: drop-shadow(0 18px 26px rgba(0,0,0,.22));
-}
-.mascot-head {
-  position: absolute;
-  width: 92px;
-  height: 72px;
-  left: 15px;
-  top: 22px;
-  border-radius: 34px 34px 29px 29px;
-  border: 1px solid rgba(173,222,188,.18);
-  background: linear-gradient(145deg,#183127,#0d1c16);
-}
-.mascot-leaf {
-  position:absolute;
-  width:35px;
-  height:14px;
-  top:13px;
-  border-radius:90% 10% 90% 10%;
-  background:#82bb91;
-  transform-origin:100% 100%;
-}
-.leaf-left{left:18px;transform:rotate(28deg)}
-.leaf-right{right:18px;transform:scaleX(-1) rotate(28deg);background:#afcf78}
-.mascot-eye {
-  position:absolute;
-  width:18px;height:18px;top:25px;
-  border-radius:50%;
-  background:#eaf4ed;
-  overflow:hidden;
-}
-.eye-left{left:21px}.eye-right{right:21px}
-.mascot-eye i {
-  position:absolute;
-  width:7px;height:7px;left:6px;top:6px;
-  border-radius:50%;background:#08110e;
-  transition:transform .2s ease;
-}
-.mascot-mouth {
-  position:absolute;left:39px;top:52px;width:14px;height:5px;
-  border-bottom:2px solid #9bb9a5;border-radius:0 0 14px 14px;
-}
-.mascot-hand {
-  position:absolute;bottom:0;width:31px;height:20px;
-  border-radius:16px 16px 9px 9px;background:#173026;border:1px solid rgba(173,222,188,.15);
-}
-.hand-left{left:17px}.hand-right{right:17px}
-.mascot-note {
-  position:absolute;
-  right:96px;top:12px;
-  min-width:128px;
-  padding:8px 10px;
-  border:1px solid rgba(173,222,188,.13);
-  border-radius:10px 10px 2px 10px;
-  background:rgba(8,17,14,.94);
-  color:#90a89a;
-  font-size:.62rem;
-  white-space:nowrap;
-  opacity:0;
-  transform:translateY(5px);
-  transition:.22s ease;
-}
-.login-mascot:hover .mascot-note,
-.login-mascot:not(.mood-idle) .mascot-note { opacity:1;transform:none; }
-.mood-email .mascot-eye i{transform:translateX(-3px)}
-.mood-password .mascot-eye i{transform:translateY(5px)}
-.mood-peek .mascot-eye i{transform:scale(1.4)}
-.mood-code .mascot-eye i{transform:translateX(3px)}
-.mood-error{animation:mascotNo .38s ease}
-.mood-error .mascot-mouth{border-bottom-color:#df8f87;transform:rotate(180deg)}
-.mood-success{transform:translateY(-8px) rotate(4deg)}
-@keyframes mascotNo{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
 .login-panel {
   background:
     radial-gradient(circle at 82% 14%, rgba(119,178,137,.08), transparent 20rem),
@@ -2628,8 +2549,6 @@ html[data-theme="light"] .datasul-command-header {
 }
 html[data-theme="light"] .datasul-command-copy p{color:#617369}
 html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#dfe9e2}
-html[data-theme="light"] .login-mascot .mascot-note{background:#fff;color:#607268}
-html[data-theme="light"] .mascot-head{background:linear-gradient(145deg,#dfece3,#cdded2)}
 
 @media(max-width:980px){
   .datasul-command-header{grid-template-columns:1fr;align-items:start}
@@ -2639,7 +2558,6 @@ html[data-theme="light"] .mascot-head{background:linear-gradient(145deg,#dfece3,
 @media(max-width:620px){
   .datasul-command-header{padding:24px 20px;border-radius:18px}
   .datasul-pulse-grid{grid-template-columns:1fr 1fr}
-  .login-mascot{right:18px;top:-66px;transform:scale(.86)}
 }
 @media(prefers-reduced-motion:reduce){
   .cinematic-intro *,.login-mascot{animation:none!important;transition:none!important}
