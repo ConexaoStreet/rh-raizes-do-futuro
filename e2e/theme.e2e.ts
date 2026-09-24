@@ -105,32 +105,32 @@ test("PWA assets stay available", async ({ request }) => {
 });
 
 
-test("manager first access stays isolated from regular signup", async ({ page }) => {
+test("first access uses the pre-registered onboarding flow", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Ativar acesso de gestor" }).click();
+  await page.getByRole("button", { name: "Ativar cadastro" }).click();
 
   await expect(
-    page.getByRole("heading", { name: "Ative seu acesso de gestão" }),
+    page.getByRole("heading", { name: "Ativar meu cadastro" }),
   ).toBeVisible();
-  await expect(page.getByLabel("Código temporário")).toBeVisible();
-  await expect(page.getByText("Matrícula")).toHaveCount(0);
-  await expect(page.getByText("ACESSO EXCLUSIVO DE GESTOR")).toBeVisible();
-
-  await page.getByRole("button", { name: "Voltar ao login" }).click();
-  await expect(page.getByRole("heading", { name: "Entrar" })).toBeVisible();
+  await expect(page.getByLabel("Nome completo")).toBeVisible();
+  await expect(page.getByLabel("Gmail")).toBeVisible();
+  await expect(page.getByLabel("Telefone")).toBeVisible();
+  await expect(page.getByLabel("Senha", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Confirmar senha")).toBeVisible();
+  await expect(page.getByLabel("Turma")).toBeVisible();
+  await expect(page.getByLabel("Departamento")).toBeVisible();
+  await expect(page.getByLabel("Cargo")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Ativar acesso de gestor" }),
+  ).toHaveCount(0);
 });
 
-
-test("valid Gmail passes native browser validation in manager activation", async ({ page }) => {
+test("valid Gmail passes native browser validation in first access", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Ativar acesso de gestor" }).click();
-  await page.getByLabel("Código temporário").fill("ABCDEFGHIJKL");
-  const continueButton = page.getByRole("button", { name: "Continuar" });
-  await continueButton.evaluate((element) => element.removeAttribute("disabled"));
-  await continueButton.click();
+  await page.getByRole("button", { name: "Ativar cadastro" }).click();
 
-  const email = page.locator('input[name="manager_email"]');
-  await email.fill("nicolasmartferreira@gmail.com");
+  const email = page.locator('input[name="email"]');
+  await email.fill("gabrielasssantos09@gmail.com");
 
   const valid = await email.evaluate(
     (element) => (element as HTMLInputElement).checkValidity(),
