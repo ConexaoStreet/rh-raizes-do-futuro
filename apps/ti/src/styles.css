@@ -2592,18 +2592,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
     inset 0 -12px 25px rgba(0,0,0,.22);
   animation: rootMascotBreath 4.8s ease-in-out infinite;
 }
-.root-mascot-chest {
-  position: absolute;
-  left: 20px;
-  top: 19px;
-  width: 44px;
-  height: 39px;
-  border-radius: 50% 50% 44% 44%;
-  background:
-    radial-gradient(circle at 50% 10%, rgba(218,229,217,.15), transparent 58%),
-    linear-gradient(180deg,rgba(117,150,125,.23),rgba(42,78,58,.06));
-  opacity: .85;
-}
 .root-mascot-head {
   position: absolute;
   z-index: 3;
