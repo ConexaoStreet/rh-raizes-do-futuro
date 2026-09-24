@@ -2317,3 +2317,330 @@ html[data-theme="light"] .ticket-card {
     width: 100%;
   }
 }
+
+
+/* DATASUL PRODUCT REDESIGN · 2026-09 */
+.cinematic-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #040806;
+  color: #f1f7f3;
+  isolation: isolate;
+}
+.cinematic-noise {
+  position: absolute;
+  inset: -30%;
+  opacity: .045;
+  background-image:
+    linear-gradient(90deg, transparent 0 49%, rgba(255,255,255,.6) 50%, transparent 51%),
+    linear-gradient(transparent 0 49%, rgba(255,255,255,.4) 50%, transparent 51%);
+  background-size: 5px 5px;
+  animation: cinematicNoise .24s steps(2) infinite;
+}
+.cinematic-mark {
+  width: 150px;
+  height: 180px;
+  position: relative;
+  filter: drop-shadow(0 0 32px rgba(126, 214, 157, .16));
+  animation: cinematicMark 2.1s cubic-bezier(.19,1,.22,1) both;
+}
+.cinematic-mark i {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  width: 5px;
+  height: 122px;
+  border-radius: 99px;
+  transform-origin: 50% 100%;
+  background: linear-gradient(180deg, #bfeebf, #447c58 58%, #172c21);
+}
+.cinematic-mark i:nth-child(1){ transform: translateX(-50%) rotate(-27deg); }
+.cinematic-mark i:nth-child(2){ transform: translateX(-50%); height:145px; }
+.cinematic-mark i:nth-child(3){ transform: translateX(-50%) rotate(27deg); }
+.cinematic-root {
+  position: absolute;
+  width: 2px;
+  height: 54vh;
+  bottom: -18vh;
+  left: 50%;
+  background: linear-gradient(180deg, rgba(135,218,162,.75), transparent);
+  transform-origin: top;
+  opacity: 0;
+  animation: cinematicRoot 1.9s .2s ease-out forwards;
+}
+.cinematic-root.root-a{ transform: rotate(24deg); }
+.cinematic-root.root-b{ transform: rotate(-19deg); animation-delay:.34s; }
+.cinematic-root.root-c{ transform: rotate(3deg); animation-delay:.42s; }
+.cinematic-wordmark {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 125px);
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  opacity: 0;
+  animation: cinematicType .8s 1.2s ease-out forwards;
+}
+.cinematic-wordmark span {
+  font-size: clamp(2rem, 5vw, 4.7rem);
+  line-height: .9;
+  font-weight: 850;
+  letter-spacing: -.065em;
+}
+.cinematic-wordmark b {
+  margin-top: 4px;
+  font-size: clamp(.72rem, 1.4vw, 1.1rem);
+  letter-spacing: .38em;
+  color: #a8cbb4;
+}
+.cinematic-wordmark small {
+  margin-top: 18px;
+  font-size: .56rem;
+  letter-spacing: .24em;
+  color: #577061;
+}
+.cinematic-scan {
+  position: absolute;
+  inset: 0;
+  width: 18%;
+  background: linear-gradient(90deg, transparent, rgba(181,238,193,.13), transparent);
+  transform: translateX(-150%);
+  animation: cinematicScan 1.4s 1.1s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes cinematicMark {
+  0%{ opacity:0; transform:scale(.66); filter:blur(18px); }
+  48%{ opacity:1; filter:blur(0); }
+  100%{ opacity:1; transform:scale(1); }
+}
+@keyframes cinematicRoot { 0%{opacity:0;scale:1 .05} 100%{opacity:.7;scale:1 1} }
+@keyframes cinematicType { from{opacity:0;transform:translate(-50%,14px)} to{opacity:1;transform:translate(-50%,0)} }
+@keyframes cinematicScan { to{transform:translateX(650%)} }
+@keyframes cinematicNoise { 50%{transform:translate(2px,-1px)} }
+
+/* Login - custom editorial composition */
+.login-stage {
+  position: relative;
+  width: min(100%, 500px);
+}
+.login-card {
+  position: relative;
+  z-index: 3;
+}
+.login-mascot {
+  position: absolute;
+  z-index: 4;
+  width: 122px;
+  height: 104px;
+  top: -75px;
+  right: 36px;
+  transition: transform .34s cubic-bezier(.16,1,.3,1);
+  filter: drop-shadow(0 18px 26px rgba(0,0,0,.22));
+}
+.mascot-head {
+  position: absolute;
+  width: 92px;
+  height: 72px;
+  left: 15px;
+  top: 22px;
+  border-radius: 34px 34px 29px 29px;
+  border: 1px solid rgba(173,222,188,.18);
+  background: linear-gradient(145deg,#183127,#0d1c16);
+}
+.mascot-leaf {
+  position:absolute;
+  width:35px;
+  height:14px;
+  top:13px;
+  border-radius:90% 10% 90% 10%;
+  background:#82bb91;
+  transform-origin:100% 100%;
+}
+.leaf-left{left:18px;transform:rotate(28deg)}
+.leaf-right{right:18px;transform:scaleX(-1) rotate(28deg);background:#afcf78}
+.mascot-eye {
+  position:absolute;
+  width:18px;height:18px;top:25px;
+  border-radius:50%;
+  background:#eaf4ed;
+  overflow:hidden;
+}
+.eye-left{left:21px}.eye-right{right:21px}
+.mascot-eye i {
+  position:absolute;
+  width:7px;height:7px;left:6px;top:6px;
+  border-radius:50%;background:#08110e;
+  transition:transform .2s ease;
+}
+.mascot-mouth {
+  position:absolute;left:39px;top:52px;width:14px;height:5px;
+  border-bottom:2px solid #9bb9a5;border-radius:0 0 14px 14px;
+}
+.mascot-hand {
+  position:absolute;bottom:0;width:31px;height:20px;
+  border-radius:16px 16px 9px 9px;background:#173026;border:1px solid rgba(173,222,188,.15);
+}
+.hand-left{left:17px}.hand-right{right:17px}
+.mascot-note {
+  position:absolute;
+  right:96px;top:12px;
+  min-width:128px;
+  padding:8px 10px;
+  border:1px solid rgba(173,222,188,.13);
+  border-radius:10px 10px 2px 10px;
+  background:rgba(8,17,14,.94);
+  color:#90a89a;
+  font-size:.62rem;
+  white-space:nowrap;
+  opacity:0;
+  transform:translateY(5px);
+  transition:.22s ease;
+}
+.login-mascot:hover .mascot-note,
+.login-mascot:not(.mood-idle) .mascot-note { opacity:1;transform:none; }
+.mood-email .mascot-eye i{transform:translateX(-3px)}
+.mood-password .mascot-eye i{transform:translateY(5px)}
+.mood-peek .mascot-eye i{transform:scale(1.4)}
+.mood-code .mascot-eye i{transform:translateX(3px)}
+.mood-error{animation:mascotNo .38s ease}
+.mood-error .mascot-mouth{border-bottom-color:#df8f87;transform:rotate(180deg)}
+.mood-success{transform:translateY(-8px) rotate(4deg)}
+@keyframes mascotNo{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.login-panel {
+  background:
+    radial-gradient(circle at 82% 14%, rgba(119,178,137,.08), transparent 20rem),
+    linear-gradient(180deg,#070f0c,#09130f);
+}
+.login-brand {
+  background:
+    linear-gradient(90deg,rgba(5,12,9,.18),transparent 55%),
+    radial-gradient(circle at 18% 14%,rgba(137,194,154,.12),transparent 24rem),
+    linear-gradient(145deg,#07110d,#0b1c15 54%,#10251b);
+}
+.login-brand-copy h1 {
+  max-width: 700px;
+  font-size: clamp(3.3rem,7vw,7.7rem);
+  letter-spacing:-.075em;
+  line-height:.84;
+}
+.login-card {
+  border-radius: 24px;
+  background: linear-gradient(180deg,rgba(17,31,25,.98),rgba(12,23,18,.98));
+  box-shadow:0 38px 100px rgba(0,0,0,.30);
+}
+
+/* Datasul operations */
+.datasul-command-header {
+  min-height: 212px;
+  padding: 30px 32px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 280px;
+  align-items:end;
+  gap:32px;
+  border:1px solid rgba(151,201,169,.12);
+  border-radius:24px;
+  background:
+    linear-gradient(90deg,rgba(7,19,14,.35),transparent),
+    radial-gradient(circle at 88% 20%,rgba(176,204,112,.11),transparent 16rem),
+    linear-gradient(135deg,#0d2018,#132c21 64%,#10261c);
+  box-shadow:0 26px 70px rgba(0,0,0,.17);
+}
+.datasul-command-copy h2 {
+  margin:8px 0 10px;
+  max-width:780px;
+  font-size:clamp(1.85rem,3.5vw,3.5rem);
+  line-height:.98;
+  letter-spacing:-.055em;
+}
+.datasul-command-copy p {
+  margin:0;
+  max-width:760px;
+  color:#9fb6aa;
+  font-size:.83rem;
+  line-height:1.65;
+}
+.datasul-command-status {
+  align-self:stretch;
+  min-height:150px;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  border-left:1px solid rgba(187,218,200,.12);
+}
+.datasul-command-status > span {
+  color:#708d7d;font-size:.58rem;font-weight:800;letter-spacing:.16em;
+}
+.datasul-command-status strong {
+  margin-top:8px;font-size:1.08rem;
+}
+.datasul-command-status strong.ok{color:#92d0a6}
+.datasul-command-status strong.warn{color:#dfb46c}
+.datasul-command-status strong.error{color:#eb958d}
+.datasul-command-status small{margin-top:7px;color:#6e8478;font-size:.63rem;line-height:1.45}
+.datasul-pulse-grid {
+  margin:14px 0 18px;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.datasul-pulse-card {
+  min-height:96px;
+  padding:16px 17px;
+  border:1px solid rgba(186,216,198,.09);
+  border-radius:14px;
+  background:rgba(13,25,20,.68);
+}
+.datasul-pulse-card span,.datasul-pulse-card strong,.datasul-pulse-card small{display:block}
+.datasul-pulse-card span{color:#70877a;font-size:.56rem;font-weight:800;letter-spacing:.12em}
+.datasul-pulse-card strong{margin-top:9px;font-size:1.25rem;letter-spacing:-.035em}
+.datasul-pulse-card small{margin-top:4px;color:#687b70;font-size:.61rem}
+.datasul-pulse-card .mono-value{font-family:"SFMono-Regular",Consolas,monospace;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.datasul-primary-grid{align-items:start}
+.datasul-primary-grid > .panel {
+  border-radius:20px;
+  background:linear-gradient(180deg,rgba(15,30,24,.9),rgba(11,23,18,.88));
+}
+.datasul-history-shell {
+  margin-top:18px;
+}
+.datasul-history-shell .panel {
+  border-radius:20px;
+  overflow:hidden;
+}
+.datasul-history-shell table thead {
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+.datasul-history-shell tbody tr:hover {
+  background:rgba(143,199,163,.045);
+}
+
+html[data-theme="light"] .datasul-command-header {
+  background:
+    radial-gradient(circle at 88% 20%,rgba(129,164,70,.08),transparent 16rem),
+    linear-gradient(135deg,#f7fbf8,#edf5ef 65%,#f3f8f4);
+  border-color:#d8e6dc;
+}
+html[data-theme="light"] .datasul-command-copy p{color:#617369}
+html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#dfe9e2}
+html[data-theme="light"] .login-mascot .mascot-note{background:#fff;color:#607268}
+html[data-theme="light"] .mascot-head{background:linear-gradient(145deg,#dfece3,#cdded2)}
+
+@media(max-width:980px){
+  .datasul-command-header{grid-template-columns:1fr;align-items:start}
+  .datasul-command-status{border-left:0;border-top:1px solid rgba(187,218,200,.12);min-height:auto;padding-left:0}
+  .datasul-pulse-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .datasul-command-header{padding:24px 20px;border-radius:18px}
+  .datasul-pulse-grid{grid-template-columns:1fr 1fr}
+  .login-mascot{right:18px;top:-66px;transform:scale(.86)}
+}
+@media(prefers-reduced-motion:reduce){
+  .cinematic-intro *,.login-mascot{animation:none!important;transition:none!important}
+}

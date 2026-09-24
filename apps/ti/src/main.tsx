@@ -5,6 +5,7 @@ import App from "./App";
 import "./styles.css";
 import { initializeTheme } from "./theme";
 import ErrorBoundary from "./ErrorBoundary";
+import { CinematicGate } from "./CinematicGate";
 
 initializeTheme();
 
@@ -31,9 +32,11 @@ if ("serviceWorker" in navigator) {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
-      <AuthBoundary>
-        <App />
-      </AuthBoundary>
+      <CinematicGate>
+        <AuthBoundary>
+          <App />
+        </AuthBoundary>
+      </CinematicGate>
     </ErrorBoundary>
   </StrictMode>,
 );

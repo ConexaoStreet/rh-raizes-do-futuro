@@ -11,6 +11,7 @@ import type { Session } from "@supabase/supabase-js";
 import { Eye, EyeOff, KeyRound, LogOut, Mail, ShieldCheck } from "lucide-react";
 import { client, configured, rpc, supabase } from "./api";
 import { ThemeToggle } from "./theme";
+import { LoginMascot } from "./LoginMascot";
 
 type Bootstrap = {
   profile: {
@@ -253,6 +254,7 @@ function Login({
   const [status, setStatus] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loginMode, setLoginMode] = useState<"password" | "code">("password");
+  const [mascotMood, setMascotMood] = useState<"idle" | "email" | "password" | "peek" | "code" | "error" | "success">("idle");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -397,6 +399,8 @@ function Login({
       </section>
 
       <section className="login-panel">
+        <div className="login-stage">
+          <LoginMascot mood={mascotMood} />
         <div className="login-card">
           <div className="security-badge"><ShieldCheck size={22} /></div>
           <span className="eyebrow">ACESSO RESTRITO</span>
@@ -442,6 +446,8 @@ function Login({
                     type="email"
                     autoComplete="email"
                     placeholder="nome@empresa.com.br"
+                    onFocus={() => setMascotMood("email")}
+                    onBlur={() => setMascotMood("idle")}
                     required
                   />
                 </label>
@@ -453,6 +459,8 @@ function Login({
                       type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
                       placeholder="Sua senha"
+                      onFocus={() => setMascotMood(showPassword ? "peek" : "password")}
+                      onBlur={() => setMascotMood("idle")}
                       required
                     />
                     <button
@@ -460,7 +468,7 @@ function Login({
                       className="password-toggle"
                       aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
                       aria-pressed={showPassword}
-                      onClick={() => setShowPassword((current) => !current)}
+                      onClick={() => setShowPassword((current) => { const next = !current; setMascotMood(next ? "peek" : "password"); return next; })}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -482,6 +490,8 @@ function Login({
                 <input
                   className="weekly-access-code"
                   name="access_code"
+                  onFocus={() => setMascotMood("code")}
+                  onBlur={() => setMascotMood("idle")}
                   inputMode="text"
                   autoComplete="one-time-code"
                   placeholder="RFXX-XXXX-XXXX-XXXX-XXXX-XX"
@@ -514,6 +524,7 @@ function Login({
               Permissões e sessão são verificadas novamente antes de abrir o console.
             </span>
           </div>
+        </div>
         </div>
       </section>
     </div>

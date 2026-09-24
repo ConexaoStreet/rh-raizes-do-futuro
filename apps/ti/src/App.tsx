@@ -1079,6 +1079,51 @@ export default function App() {
 
               {view === "datasul" && (
                 <>
+                  <section className="datasul-command-header">
+                    <div className="datasul-command-copy">
+                      <span className="eyebrow">OPERAÇÃO · DATASUL</span>
+                      <h2>Conexão, diagnóstico e API em uma única superfície.</h2>
+                      <p>
+                        Um console operacional para trabalhar com endpoints reais,
+                        acompanhar resposta, auditar requisições e entender o estado
+                        da integração sem perder contexto.
+                      </p>
+                    </div>
+                    <div className="datasul-command-status">
+                      <span>ESTADO DA INTEGRAÇÃO</span>
+                      <strong className={toneFor(datasul.status)}>
+                        {labelStatus(datasul.status)}
+                      </strong>
+                      <small>
+                        {text(datasul.last_check_at)
+                          ? "Última verificação " + formatDate(text(datasul.last_check_at))
+                          : "Ainda não verificado nesta sessão"}
+                      </small>
+                    </div>
+                  </section>
+
+                  <div className="datasul-pulse-grid">
+                    <div className="datasul-pulse-card">
+                      <span>OPERAÇÕES · 24H</span>
+                      <strong>{numberValue(snapshot.datasul_operations_24h)}</strong>
+                      <small>requisições registradas</small>
+                    </div>
+                    <div className="datasul-pulse-card">
+                      <span>FALHAS · 24H</span>
+                      <strong>{numberValue(snapshot.datasul_failures_24h)}</strong>
+                      <small>eventos que pedem atenção</small>
+                    </div>
+                    <div className="datasul-pulse-card">
+                      <span>COMPANY ID</span>
+                      <strong>{companyId || "-"}</strong>
+                      <small>empresa em contexto</small>
+                    </div>
+                    <div className="datasul-pulse-card">
+                      <span>HEALTH PATH</span>
+                      <strong className="mono-value">{healthPath || "-"}</strong>
+                      <small>endpoint de verificação</small>
+                    </div>
+                  </div>
                   {flag(maintenance.enabled) && (
                     <section className="datasul-maintenance-banner" role="status" aria-live="polite">
                       <div className="datasul-maintenance-icon">
@@ -1114,7 +1159,7 @@ export default function App() {
                       </button>
                     </section>
                   )}
-                  <div className="two-columns">
+                  <div className="two-columns datasul-primary-grid">
                     <Panel title="Conexão Datasul RH" kicker="CONFIGURAÇÃO" icon={<Database />}>
                       <div className="form-grid">
                         <Field label="Company ID">
@@ -1188,6 +1233,7 @@ export default function App() {
                       <pre>{JSON.stringify(datasulResult, null, 2)}</pre>
                     </Panel>
                   )}
+                  <div className="datasul-history-shell">
                   <Panel title="Histórico Datasul" kicker="AUDITORIA DE API" icon={<FileClock />}>
                     <div className="table-wrap">
                       <table>
@@ -1208,6 +1254,7 @@ export default function App() {
                       </table>
                     </div>
                   </Panel>
+                  </div>
                 </>
               )}
 
