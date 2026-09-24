@@ -849,6 +849,15 @@ export default function App() {
     );
   }
 
+  async function openSupportAttachment(ticket: SupportTicket) {
+    if (!ticket.attachment_path) return;
+    const { data, error: signedError } = await client()
+      .storage.from("ti-support")
+      .createSignedUrl(ticket.attachment_path, 300);
+    if (signedError) throw signedError;
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
   async function updateSupportTicketStatus(
     ticketId: string,
     status: SupportTicket["status"],
@@ -1644,6 +1653,18 @@ export default function App() {
                               <div className="ticket-meta">
                                 <code>{ticket.page_path || "/"}</code>
                                 <span>{ticket.page_title || "Página não informada"}</span>
+                                {ticket.attachment_path && (
+                                  <button
+                                    onClick={() =>
+                                      void run(
+                                        "ticket-attachment-" + ticket.id,
+                                        () => openSupportAttachment(ticket),
+                                      )
+                                    }
+                                  >
+                                    <FolderOpen size={14} /> Abrir anexo
+                                  </button>
+                                )}
                               </div>
                               <details>
                                 <summary>Contexto técnico</summary>
