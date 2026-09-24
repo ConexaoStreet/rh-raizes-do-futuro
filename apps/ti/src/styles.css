@@ -2859,12 +2859,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   70% { transform: rotate(-1deg) translateY(-1px); }
   100% { transform: rotate(0); }
 }
-html[data-theme="light"] .root-mascot-head,
-html[data-theme="light"] .root-mascot-body,
-html[data-theme="light"] .root-mascot-paw,
-html[data-theme="light"] .root-mascot-ear {
-  border-color: rgba(47,83,62,.14);
-}
 html[data-theme="light"] .root-mascot-head {
   background:
     radial-gradient(ellipse at 28% 28%,rgba(255,255,255,.46),transparent 24%),
