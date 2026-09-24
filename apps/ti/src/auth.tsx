@@ -312,6 +312,7 @@ function Login({
           throw confirmError || new Error("CONFIRM_FAILED");
         }
 
+        setMascotMood("success");
         await onAuthenticated();
         onSecureTransition(false);
         return;
@@ -325,11 +326,13 @@ function Login({
       });
 
       if (signInError) throw signInError;
+      setMascotMood("success");
       await onAuthenticated();
     } catch (caught) {
       onSecureTransition(false);
       const message =
         caught instanceof Error ? caught.message : "ACCESS_FAILED";
+      setMascotMood("error");
 
       setError(
         loginMode === "code"
