@@ -87,6 +87,7 @@ export const specs: Record<string, EntitySpec> = {
     columns: [
       { key: "full_name", label: "Nome" },
       { key: "department_id", label: "Setor", type: "reference" },
+      { key: "access_role_code", label: "Cargo", type: "option" },
       { key: "member_group", label: "Grupo", type: "option" },
       { key: "status", label: "Situação", type: "status" },
     ],
@@ -104,6 +105,18 @@ export const specs: Record<string, EntitySpec> = {
         ]),
       },
       { key: "registration", label: "Código interno", required: true },
+      {
+        key: "access_role_code",
+        label: "Cargo de acesso",
+        type: "select",
+        required: true,
+        options: options([
+          ["COLLABORATOR", "Colaborador"],
+          ["MANAGER", "Gestor"],
+          ["DIRECTOR", "Diretor"],
+          ["INSTRUCTOR", "Instrutor"],
+        ]),
+      },
       { key: "email", label: "E-mail", type: "email" },
       { key: "phone", label: "Telefone", type: "tel" },
       {
@@ -660,12 +673,12 @@ export function EntityPage({
                         ) : column.type === "reference" ? (
                           refs.data?.[field?.reference || ""]?.find(
                             (item) => item.value === value,
-                          )?.label || "—"
+                          )?.label || "-"
                         ) : column.type === "option" ? (
                           field?.options?.find((item) => item.value === value)
-                            ?.label || "—"
+                            ?.label || "-"
                         ) : (
-                          String(value ?? "—")
+                          String(value ?? "-")
                         );
                       return (
                         <td key={column.key} data-label={column.label}>

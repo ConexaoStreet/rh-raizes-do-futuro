@@ -233,6 +233,7 @@ function PasswordInput({
 type RegistrationOptions = {
   class: { id: string; name: string; code: string } | null;
   departments: { id: string; name: string }[];
+  roles: { code: string; name: string }[];
 };
 type PreRegistrationMatch = {
   matched: boolean;
@@ -344,6 +345,7 @@ function Login({ configured: ready }: { configured: boolean }) {
       if (mode === "signup") {
         const phone = String(data.get("phone")).trim();
         const departmentId = String(data.get("department_id")).trim();
+        const roleCode = String(data.get("role_code")).trim().toUpperCase();
 
         if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
           toast.error("Use um endereço @gmail.com válido.");
@@ -361,6 +363,10 @@ function Login({ configured: ready }: { configured: boolean }) {
           toast.error("Selecione seu departamento.");
           return;
         }
+        if (!options?.roles.some((role) => role.code === roleCode)) {
+          toast.error("Selecione seu cargo.");
+          return;
+        }
         if (password !== data.get("confirmation")) {
           toast.error("As senhas precisam ser iguais.");
           return;
@@ -374,6 +380,7 @@ function Login({ configured: ready }: { configured: boolean }) {
               full_name: nameMatch.result.canonical_name || signupName.trim(),
               phone,
               requested_department_id: departmentId,
+              requested_role_code: roleCode,
             },
             emailRedirectTo: redirect,
           },
@@ -518,6 +525,18 @@ function Login({ configured: ready }: { configured: boolean }) {
                   ))}
                 </select>
               </Field>
+              <Field label="Cargo">
+                <select name="role_code" required defaultValue="COLLABORATOR">
+                  {options?.roles.map((role) => (
+                    <option key={role.code} value={role.code}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <span className="muted">
+                Cargos com acesso elevado só são liberados quando já estiverem autorizados no cadastro-base.
+              </span>
               <span className="muted">Use pelo menos 12 caracteres na senha.</span>
             </>
           )}
@@ -817,6 +836,9 @@ function Onboarding({
   const [departmentId, setDepartmentId] = useState(
     user.profile.requested_department_id || "",
   );
+  const [roleCode, setRoleCode] = useState(
+    user.profile.requested_role_code || "COLLABORATOR",
+  );
   const options = useRegistrationOptions();
   const nameMatch = usePreRegistrationMatch(name);
 
@@ -839,6 +861,7 @@ function Onboarding({
           full_name: name,
           phone,
           department_id: departmentId,
+          role_code: roleCode,
           terms: form.get("terms") === "on",
         }),
       });
@@ -858,6 +881,10 @@ function Onboarding({
         toast.error("Selecione um departamento válido.");
       else if (message.includes("INVALID_PHONE"))
         toast.error("Informe um telefone válido.");
+      else if (message.includes("ROLE_NOT_AUTHORIZED"))
+        toast.error("Esse cargo não está autorizado no seu cadastro pré-existente. Procure o RH para corrigir o cargo.");
+      else if (message.includes("INVALID_ROLE") || message.includes("ROLE_NOT_CONFIGURED"))
+        toast.error("Selecione um cargo válido.");
       else if (message.includes("TERMS_REQUIRED"))
         toast.error("É necessário aceitar o uso dos dados.");
       else toast.error(errorMessage(error));
@@ -935,6 +962,21 @@ function Onboarding({
             {options?.departments.map((department) => (
               <option key={department.id} value={department.id}>
                 {department.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Cargo">
+          <select
+            name="role_code"
+            required
+            value={roleCode}
+            onChange={(event) => setRoleCode(event.target.value)}
+          >
+            {options?.roles.map((role) => (
+              <option key={role.code} value={role.code}>
+                {role.name}
               </option>
             ))}
           </select>

@@ -60,16 +60,16 @@ export default function Performance() {
     <>
       <Heading title="Notas e evolução" eyebrow="DESENVOLVIMENTO">
         {can("performance.manage") && (
-          <>
-            <Link className="button" to="/configuracoes/ciclos">
-              <Settings2 size={17} />
-              Ciclos
-            </Link>
-            <button className="primary" onClick={() => setEdit(null)}>
-              <Plus size={18} />
-              Nova nota
-            </button>
-          </>
+          <Link className="button" to="/configuracoes/ciclos">
+            <Settings2 size={17} />
+            Ciclos
+          </Link>
+        )}
+        {can("performance.grade") && (
+          <button className="primary" onClick={() => setEdit(null)}>
+            <Plus size={18} />
+            Nova nota
+          </button>
         )}
       </Heading>
       <section className="panel">
@@ -126,7 +126,7 @@ export default function Performance() {
                     <td>{row.released ? "Liberada" : "Reservada"}</td>
                     <td className="row-actions">
                       <button onClick={() => setEdit(row)}>
-                        {can("performance.manage") ? "Editar" : "Ver notas"}
+                        {can("performance.grade") ? "Editar" : "Ver notas"}
                       </button>
                     </td>
                   </tr>
@@ -189,7 +189,7 @@ function ReviewForm({
       criteria: criteria.data,
     };
   }, []);
-  const editable = can("performance.manage");
+  const editable = can("performance.grade");
   return (
     <Modal
       open

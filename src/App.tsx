@@ -360,10 +360,16 @@ function Shell() {
                   {user.profile.full_name.split(" ")[0]}
                   <small>
                     {user.roles.includes("SUPER_ADMIN")
-                      ? "Administrador Total"
-                      : user.privileged
-                        ? "Gestor"
-                        : "Colaborador"}
+                      ? "Desenvolvedor"
+                      : user.roles.includes("TI_ADMIN")
+                        ? "Administrador T.I."
+                        : user.roles.includes("DIRECTOR")
+                          ? "Diretor"
+                          : user.roles.includes("MANAGER")
+                            ? "Gestor"
+                            : user.roles.includes("INSTRUCTOR")
+                              ? "Instrutor"
+                              : "Colaborador"}
                   </small>
                 </span>
                 <ChevronsUpDown size={15} />

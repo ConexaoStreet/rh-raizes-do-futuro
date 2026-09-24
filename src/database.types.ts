@@ -1036,6 +1036,7 @@ export type Database = {
           registration: string | null;
           requested_class: string | null;
           requested_department_id: string | null;
+          requested_role_code: string | null;
           status: string;
           onboarded_at: string | null;
           terms_accepted_at: string | null;
@@ -1052,6 +1053,7 @@ export type Database = {
           registration?: string | null;
           requested_class?: string | null;
           requested_department_id?: string | null;
+          requested_role_code?: string | null;
           status?: string;
           onboarded_at?: string | null;
           terms_accepted_at?: string | null;
@@ -1293,6 +1295,47 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_role_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          role_id: string | null;
+          role_code: string;
+          role_name: string;
+          action: string;
+          changed_by: string | null;
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          role_id?: string | null;
+          role_code: string;
+          role_name: string;
+          action: string;
+          changed_by?: string | null;
+          source?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_role_history"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "user_role_history_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_role_history_role_id_fkey";
+            columns: ["role_id"];
+            isOneToOne: false;
+            referencedRelation: "roles";
             referencedColumns: ["id"];
           },
         ];

@@ -465,7 +465,7 @@ function RolesPage() {
                   </span>
                   <div className="role-meta">
                     <Badge value={role.active ? "active" : "inactive"} />
-                    {role.privileged && <span>2FA obrigatório</span>}
+                    {role.privileged && <span>Acesso elevado</span>}
                   </div>
                   <div className="actions">
                     {role.code !== "SUPER_ADMIN" && (
@@ -548,7 +548,7 @@ function RolesPage() {
                                   l.permission_id === p.id,
                               )
                                 ? "✓"
-                                : "—"}
+                                : "-"}
                             </span>
                           </td>
                         ))}
@@ -577,7 +577,12 @@ function RolesPage() {
         onClose={() => setHistoryId("")}
         wide
       >
-        {historyId && <RoleHistory id={historyId} onSaved={data.reload} />}
+        {historyId && (
+          <>
+            <RoleHistory id={historyId} onSaved={data.reload} />
+            <RoleAssignmentsHistory id={historyId} />
+          </>
+        )}
       </Modal>
     </>
   );
@@ -709,6 +714,40 @@ function RoleForm({
     </Modal>
   );
 }
+function RoleAssignmentsHistory({ id }: { id: string }) {
+  const data = useAsync(async () => {
+    const { data, error } = await client()
+      .from("user_role_history")
+      .select("*,profiles!user_role_history_user_id_fkey(full_name)")
+      .eq("role_id", id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    return data;
+  }, [id]);
+
+  return (
+    <section className="panel padded">
+      <div className="panel-heading">
+        <h3>Histórico de atribuições</h3>
+      </div>
+      {data.loading ? (
+        <Loading />
+      ) : !data.data?.length ? (
+        <Empty text="Nenhuma atribuição registrada." />
+      ) : (
+        data.data.map((row) => (
+          <div className="timeline-item" key={row.id}>
+            <strong>{row.profiles?.full_name || "Usuário"}</strong>
+            <span>{row.action === "assigned" ? "Cargo atribuído" : "Cargo removido"}</span>
+            <small>{dateLabel(row.created_at, true)}</small>
+          </div>
+        ))
+      )}
+    </section>
+  );
+}
+
 function RoleHistory({ id, onSaved }: { id: string; onSaved: () => void }) {
   const data = useAsync(async () => {
     const { data, error } = await client()
@@ -813,12 +852,12 @@ function JsonDiff({
               <td>
                 {typeof old[key] === "object"
                   ? JSON.stringify(old[key])
-                  : String(old[key] ?? "—")}
+                  : String(old[key] ?? "-")}
               </td>
               <td>
                 {typeof next[key] === "object"
                   ? JSON.stringify(next[key])
-                  : String(next[key] ?? "—")}
+                  : String(next[key] ?? "-")}
               </td>
             </tr>
           ))}
@@ -975,7 +1014,7 @@ function Audit() {
             <div className="audit-context">
               {typeof selected.context === "object" &&
                 "reason" in selected.context && (
-                  <p>Motivo: {String(selected.context.reason || "—")}</p>
+                  <p>Motivo: {String(selected.context.reason || "-")}</p>
                 )}
             </div>
           )}
