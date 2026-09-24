@@ -53,6 +53,32 @@ function scan(directory) {
 }
 
 roots.forEach(scan);
+
+const typographyRoots = ["."];
+
+function scanTypography(directory) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    if ([".git", "node_modules", "dist", ".vercel"].includes(entry.name))
+      continue;
+    const filename = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      scanTypography(filename);
+      continue;
+    }
+    if (
+      !/\.(ts|tsx|js|mjs|css|sql|md|json|jsonc|toml|yml|yaml|html|txt)$/.test(
+        filename,
+      )
+    )
+      continue;
+    const source = fs.readFileSync(filename, "utf8");
+    if (source.includes("\u2014"))
+      failures.push(filename + ": caractere tipográfico proibido");
+  }
+}
+
+typographyRoots.forEach(scanTypography);
+
 if (failures.length) {
   process.stderr.write(failures.join("\n") + "\n");
   process.exit(1);
