@@ -231,11 +231,14 @@ function UsersPage() {
                       {dateLabel(p.last_seen_at, true)}
                     </td>
                     <td className="row-actions">
-                      {(can("user.manage") ||
-                        (can("user.approve") && p.status === "pending")) && (
-                        <button onClick={() => setSelected(p)}>
-                          {p.status === "pending" ? "Aprovar" : "Gerenciar"}
-                        </button>
+                      {p.status === "pending" ? (
+                        <span className="muted">Aguardando primeiro acesso</span>
+                      ) : (
+                        can("user.manage") && (
+                          <button onClick={() => setSelected(p)}>
+                            Gerenciar
+                          </button>
+                        )
                       )}
                       {can("user.manage") && (
                         <button

@@ -230,45 +230,152 @@ function PasswordInput({
     </div>
   );
 }
+type RegistrationOptions = {
+  class: { id: string; name: string; code: string } | null;
+  departments: { id: string; name: string }[];
+};
+type PreRegistrationMatch = {
+  matched: boolean;
+  canonical_name?: string;
+  reason?: string;
+};
+
+function useRegistrationOptions() {
+  const [options, setOptions] = useState<RegistrationOptions | null>(null);
+  useEffect(() => {
+    let active = true;
+    void rpc("registration_options", {})
+      .then((value) => {
+        if (active) setOptions(value as unknown as RegistrationOptions);
+      })
+      .catch((error) => captureError("registration_options", error));
+    return () => {
+      active = false;
+    };
+  }, []);
+  return options;
+}
+
+function usePreRegistrationMatch(name: string) {
+  const [result, setResult] = useState<PreRegistrationMatch | null>(null);
+  const [checking, setChecking] = useState(false);
+  useEffect(() => {
+    const clean = name.trim();
+    if (clean.length < 4) {
+      setResult(null);
+      setChecking(false);
+      return;
+    }
+    setChecking(true);
+    const timer = window.setTimeout(() => {
+      void rpc("match_pre_registered_user", { full_name: clean })
+        .then((value) => setResult(value as unknown as PreRegistrationMatch))
+        .catch((error) => {
+          captureError("pre_registration_match", error);
+          setResult(null);
+        })
+        .finally(() => setChecking(false));
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [name]);
+  return { result, checking };
+}
+
 function Login({ configured: ready }: { configured: boolean }) {
   const [mode, setMode] = useState<"login" | "signup" | "recover" | "manager">("login");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [signupName, setSignupName] = useState("");
+  const options = useRegistrationOptions();
+  const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
+
+  async function resendVerification() {
+    if (!verificationEmail) return;
+    setBusy(true);
+    try {
+      const redirect = new URL(import.meta.env.BASE_URL, location.origin).href;
+      const { error } = await client().auth.resend({
+        type: "signup",
+        email: verificationEmail,
+        options: { emailRedirectTo: redirect },
+      });
+      if (error) throw error;
+      toast.success("E-mail de verificação reenviado.");
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!ready) return;
     setBusy(true);
     const data = new FormData(event.currentTarget);
     try {
-      const email = String(data.get("email")).trim();
+      const email = String(data.get("email")).trim().toLowerCase();
       const password = String(data.get("password"));
       const redirect = new URL(import.meta.env.BASE_URL, location.origin).href;
+
       if (mode === "login") {
-        const { error } = await client().auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
+        const { error } = await client().auth.signInWithPassword({ email, password });
+        if (error) {
+          if (/email not confirmed/i.test(error.message)) {
+            setVerificationEmail(email);
+            setSent(true);
+            return;
+          }
+          throw error;
+        }
         await rpc("authenticate_event", { action_name: "login" });
         capture("login_success");
       }
+
       if (mode === "signup") {
+        const phone = String(data.get("phone")).trim();
+        const departmentId = String(data.get("department_id")).trim();
+
+        if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+          toast.error("Use um endereço @gmail.com válido.");
+          return;
+        }
+        if (!nameMatch.result?.matched) {
+          toast.error("Digite o nome completo exatamente como está no cadastro pré-existente.");
+          return;
+        }
+        if (phone.length < 8) {
+          toast.error("Informe um número de telefone válido.");
+          return;
+        }
+        if (!departmentId) {
+          toast.error("Selecione seu departamento.");
+          return;
+        }
         if (password !== data.get("confirmation")) {
           toast.error("As senhas precisam ser iguais.");
           return;
         }
+
         const { error } = await client().auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: String(data.get("full_name")).trim() },
+            data: {
+              full_name: nameMatch.result.canonical_name || signupName.trim(),
+              phone,
+              requested_department_id: departmentId,
+            },
             emailRedirectTo: redirect,
           },
         });
         if (error) throw error;
         capture("signup_submitted");
+        setVerificationEmail(email);
         setSent(true);
       }
+
       if (mode === "recover") {
         const { error } = await client().auth.resetPasswordForEmail(email, {
           redirectTo: redirect + "?flow=recovery",
@@ -284,6 +391,7 @@ function Login({ configured: ready }: { configured: boolean }) {
       setBusy(false);
     }
   }
+
   if (mode === "manager") {
     return (
       <ManagerActivation
@@ -295,12 +403,15 @@ function Login({ configured: ready }: { configured: boolean }) {
       />
     );
   }
+
   return (
     <AuthFrame>
-      <div className="eyebrow">SEU ESPAÇO NO RH</div>
+      <div className="eyebrow">
+        {mode === "signup" ? "PRIMEIRO ACESSO" : "SEU ESPAÇO NO RH"}
+      </div>
       <h1>
         {mode === "signup"
-          ? "Criar cadastro"
+          ? "Ativar meu cadastro"
           : mode === "recover"
             ? "Recuperar acesso"
             : "Entrar"}
@@ -311,35 +422,98 @@ function Login({ configured: ready }: { configured: boolean }) {
         </div>
       )}
       {sent ? (
-        <div className="notice">Confira seu e-mail para continuar.</div>
+        <div className="form-stack">
+          <div className="notice">
+            {mode === "recover"
+              ? "Confira seu e-mail para redefinir a senha."
+              : "Confira seu Gmail e abra o link de verificação. Depois entre com seu e-mail e senha."}
+          </div>
+          {verificationEmail && mode !== "recover" && (
+            <button type="button" disabled={busy} onClick={() => void resendVerification()}>
+              Reenviar verificação
+            </button>
+          )}
+        </div>
       ) : (
         <form onSubmit={submit} className="form-stack">
           {mode === "signup" && (
-            <Field label="Nome completo">
-              <input
-                name="full_name"
-                autoComplete="name"
-                required
-                minLength={2}
-              />
+            <>
+              <Field label="Nome completo">
+                <input
+                  name="full_name"
+                  autoComplete="name"
+                  value={signupName}
+                  onChange={(event) => setSignupName(event.target.value)}
+                  required
+                  minLength={4}
+                />
+              </Field>
+              {nameMatch.checking ? (
+                <span className="muted">Procurando seu cadastro...</span>
+              ) : nameMatch.result?.matched ? (
+                <div className="notice">
+                  Cadastro localizado: <strong>{nameMatch.result.canonical_name}</strong>
+                </div>
+              ) : signupName.trim().length >= 4 ? (
+                <span className="muted">
+                  Ainda não localizamos esse nome na base pré-cadastrada.
+                </span>
+              ) : (
+                <span className="muted">
+                  Digite seu nome completo para o sistema localizar seu cadastro.
+                </span>
+              )}
+            </>
+          )}
+
+          <Field label={mode === "signup" ? "Gmail" : "E-mail"}>
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              inputMode="email"
+            />
+          </Field>
+
+          {mode === "signup" && (
+            <Field label="Telefone">
+              <input name="phone" type="tel" autoComplete="tel" required minLength={8} />
             </Field>
           )}
-          <Field label="E-mail">
-            <input name="email" type="email" autoComplete="email" required />
-          </Field>
+
           {mode !== "recover" && (
             <Field label="Senha">
               <PasswordInput minLength={mode === "login" ? 1 : 12} />
             </Field>
           )}
+
           {mode === "signup" && (
             <>
               <Field label="Confirmar senha">
                 <PasswordInput name="confirmation" />
               </Field>
-              <span className="muted">Use pelo menos 12 caracteres.</span>
+              <Field label="Turma">
+                <input
+                  value={options?.class?.name || "Turma padrão"}
+                  readOnly
+                  aria-readonly="true"
+                />
+              </Field>
+              <Field label="Departamento">
+                <select name="department_id" required defaultValue="">
+                  <option value="">Selecionar departamento</option>
+                  {options?.departments.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <span className="muted">Use pelo menos 12 caracteres na senha.</span>
             </>
           )}
+
           {mode === "login" && (
             <button
               type="button"
@@ -349,11 +523,19 @@ function Login({ configured: ready }: { configured: boolean }) {
               Esqueci minha senha
             </button>
           )}
-          <button className="primary large" disabled={busy || !ready}>
+
+          <button
+            className="primary large"
+            disabled={
+              busy ||
+              !ready ||
+              (mode === "signup" && (!options || !nameMatch.result?.matched))
+            }
+          >
             {busy
               ? "Aguarde..."
               : mode === "signup"
-                ? "Criar cadastro"
+                ? "Verificar Gmail e continuar"
                 : mode === "recover"
                   ? "Enviar link"
                   : "Entrar"}
@@ -361,18 +543,21 @@ function Login({ configured: ready }: { configured: boolean }) {
           </button>
         </form>
       )}
+
       <div className="auth-switch">
         {mode === "login" ? "Primeiro acesso? " : ""}
         <button
           className="text-button"
           onClick={() => {
             setSent(false);
+            setVerificationEmail("");
             setMode(mode === "login" ? "signup" : "login");
           }}
         >
-          {mode === "login" ? "Criar cadastro" : "Voltar ao login"}
+          {mode === "login" ? "Ativar cadastro" : "Voltar ao login"}
         </button>
       </div>
+
       {mode === "login" && (
         <button
           type="button"
@@ -619,47 +804,134 @@ function Onboarding({
   onDone: () => Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
+  const [name, setName] = useState(user.profile.full_name || "");
+  const [phone, setPhone] = useState(user.profile.phone || "");
+  const [departmentId, setDepartmentId] = useState(
+    user.profile.requested_department_id || "",
+  );
+  const options = useRegistrationOptions();
+  const nameMatch = usePreRegistrationMatch(name);
+
+  async function finish(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!nameMatch.result?.matched) {
+      toast.error("O nome precisa corresponder a um cadastro pré-existente.");
+      return;
+    }
+    if (!departmentId) {
+      toast.error("Selecione seu departamento.");
+      return;
+    }
+
+    setBusy(true);
+    const form = new FormData(event.currentTarget);
+    try {
+      await rpc("complete_profile", {
+        payload: json({
+          full_name: name,
+          phone,
+          department_id: departmentId,
+          terms: form.get("terms") === "on",
+        }),
+      });
+      toast.success("Cadastro reconhecido e acesso liberado.");
+      await onDone();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes("PRE_REGISTRATION_NOT_FOUND"))
+        toast.error("Não encontramos esse nome entre os cadastros pré-existentes.");
+      else if (message.includes("PRE_REGISTRATION_AMBIGUOUS"))
+        toast.error("Há mais de um cadastro com esse nome. Procure o RH.");
+      else if (message.includes("PRE_REGISTRATION_ALREADY_LINKED"))
+        toast.error("Esse cadastro já está vinculado a outra conta.");
+      else if (message.includes("EMAIL_NOT_VERIFIED"))
+        toast.error("Verifique seu Gmail antes de concluir.");
+      else if (message.includes("INVALID_DEPARTMENT"))
+        toast.error("Selecione um departamento válido.");
+      else if (message.includes("INVALID_PHONE"))
+        toast.error("Informe um telefone válido.");
+      else if (message.includes("TERMS_REQUIRED"))
+        toast.error("É necessário aceitar o uso dos dados.");
+      else toast.error(errorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <AuthFrame>
       <div className="eyebrow">PRIMEIRO ACESSO</div>
-      <h1>Seu cadastro</h1>
+      <h1>Confirme seus dados</h1>
       <div className="steps">
-        <span className="done">1. Acesso</span>
-        <span className="active">2. Perfil</span>
-        <span>3. Aprovação</span>
+        <span className="done">1. Gmail verificado</span>
+        <span className="active">2. Identificação</span>
+        <span>3. Acesso</span>
       </div>
-      <form
-        className="form-stack"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          const form = new FormData(e.currentTarget);
-          await runAction(async () => {
-            await rpc("complete_profile", {
-              payload: json({
-                ...Object.fromEntries(form),
-                terms: form.get("terms") === "on",
-              }),
-            });
-            await onDone();
-          });
-          setBusy(false);
-        }}
-      >
+
+      <form className="form-stack" onSubmit={finish}>
         <Field label="Nome completo">
           <input
             name="full_name"
-            defaultValue={user.profile.full_name}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            autoComplete="name"
             required
-            minLength={2}
+            minLength={4}
           />
         </Field>
+
+        {nameMatch.checking ? (
+          <span className="muted">Localizando seu cadastro...</span>
+        ) : nameMatch.result?.matched ? (
+          <div className="notice">
+            Cadastro reconhecido: <strong>{nameMatch.result.canonical_name}</strong>
+          </div>
+        ) : (
+          <span className="muted">
+            O nome precisa ser o mesmo do cadastro já existente no RH.
+          </span>
+        )}
+
+        <Field label="Gmail">
+          <input value={user.profile.email} readOnly aria-readonly="true" />
+        </Field>
+
         <Field label="Telefone">
-          <input name="phone" type="tel" />
+          <input
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            required
+            minLength={8}
+          />
         </Field>
+
         <Field label="Turma">
-          <input name="requested_class" required />
+          <input
+            value={options?.class?.name || user.profile.requested_class || "Turma padrão"}
+            readOnly
+            aria-readonly="true"
+          />
         </Field>
+
+        <Field label="Departamento">
+          <select
+            name="department_id"
+            required
+            value={departmentId}
+            onChange={(event) => setDepartmentId(event.target.value)}
+          >
+            <option value="">Selecionar departamento</option>
+            {options?.departments.map((department) => (
+              <option key={department.id} value={department.id}>
+                {department.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
         <details className="privacy">
           <summary>Uso dos seus dados</summary>
           <p>
@@ -670,12 +942,23 @@ function Onboarding({
             autoria. Para corrigir seus dados, procure o RH.
           </p>
         </details>
+
         <label className="check">
           <input type="checkbox" name="terms" required />
           Li e aceito o uso dos dados para a gestão do RH.
         </label>
-        <button className="primary" disabled={busy}>
-          Concluir cadastro
+
+        <button
+          className="primary"
+          disabled={
+            busy ||
+            !options ||
+            !nameMatch.result?.matched ||
+            phone.trim().length < 8 ||
+            !departmentId
+          }
+        >
+          {busy ? "Ativando..." : "Ativar meu acesso"}
         </button>
       </form>
     </AuthFrame>

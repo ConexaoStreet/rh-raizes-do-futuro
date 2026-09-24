@@ -1035,6 +1035,7 @@ export type Database = {
           phone: string | null;
           registration: string | null;
           requested_class: string | null;
+          requested_department_id: string | null;
           status: string;
           onboarded_at: string | null;
           terms_accepted_at: string | null;
@@ -1050,6 +1051,7 @@ export type Database = {
           phone?: string | null;
           registration?: string | null;
           requested_class?: string | null;
+          requested_department_id?: string | null;
           status?: string;
           onboarded_at?: string | null;
           terms_accepted_at?: string | null;
@@ -1059,7 +1061,15 @@ export type Database = {
           version?: number;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "profiles_requested_department_id_fkey";
+            columns: ["requested_department_id"];
+            isOneToOne: false;
+            referencedRelation: "departments";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       releases: {
         Row: {
@@ -1387,6 +1397,14 @@ export type Database = {
       mark_notification: {
         Args: { identifier: string | null };
         Returns: undefined;
+      };
+      match_pre_registered_user: {
+        Args: { full_name: string };
+        Returns: Json;
+      };
+      registration_options: {
+        Args: Record<string, never>;
+        Returns: Json;
       };
       register_push_subscription: {
         Args: {
