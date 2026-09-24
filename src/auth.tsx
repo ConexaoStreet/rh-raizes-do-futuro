@@ -244,6 +244,7 @@ type PreRegistrationMatch = {
 function useRegistrationOptions() {
   const [options, setOptions] = useState<RegistrationOptions | null>(null);
   useEffect(() => {
+    if (!configured) return;
     let active = true;
     void client()
       .functions.invoke("registration-bootstrap", { body: { action: "options" } })
@@ -264,6 +265,11 @@ function usePreRegistrationMatch(name: string) {
   const [checking, setChecking] = useState(false);
   useEffect(() => {
     const clean = name.trim();
+    if (!configured) {
+      setResult(null);
+      setChecking(false);
+      return;
+    }
     if (clean.length < 4) {
       setResult(null);
       setChecking(false);
