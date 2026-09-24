@@ -1571,3 +1571,42 @@ html[data-theme="light"] .operator-avatar {
   outline: 2px solid #9dceb0;
   outline-offset: 2px;
 }
+
+
+.login-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 18px 0 14px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: rgba(4, 15, 11, .32);
+}
+
+.login-mode-switch button {
+  min-height: 38px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: .74rem;
+  font-weight: 800;
+}
+
+.login-mode-switch button.active {
+  background: rgba(146, 199, 166, .12);
+  border-color: rgba(146, 199, 166, .22);
+  color: var(--text);
+}
+
+.weekly-access-code {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.login-card label small {
+  color: var(--muted);
+  font-size: .66rem;
+  line-height: 1.45;
+}

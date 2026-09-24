@@ -161,20 +161,85 @@ function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loginMode, setLoginMode] = useState<"password" | "code">("password");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") || "").trim();
-    const password = String(form.get("password") || "");
-    const { error: signInError } = await client().auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (signInError) setError("E-mail ou senha inválidos.");
-    setBusy(false);
+
+    try {
+      const form = new FormData(event.currentTarget);
+
+      if (loginMode === "code") {
+        const code = String(form.get("access_code") || "").trim();
+        const { data: claim, error: claimError } =
+          await client().functions.invoke("ti-code-login", {
+            body: { action: "login", code },
+          });
+
+        if (claimError) throw claimError;
+
+        const result = claim as {
+          token_hash?: string;
+          code_id?: string;
+          error?: string;
+        };
+
+        if (!result.token_hash || !result.code_id)
+          throw new Error(result.error || "INVALID_CODE");
+
+        const { data: verified, error: verifyError } =
+          await client().auth.verifyOtp({
+            token_hash: result.token_hash,
+            type: "email",
+          });
+
+        if (verifyError || !verified.session)
+          throw verifyError || new Error("SESSION_UNAVAILABLE");
+
+        const { data: confirmed, error: confirmError } =
+          await client().functions.invoke("ti-code-login", {
+            body: {
+              action: "confirm",
+              code_id: result.code_id,
+            },
+            headers: {
+              Authorization: `Bearer ${verified.session.access_token}`,
+            },
+          });
+
+        if (
+          confirmError ||
+          !(confirmed as { ok?: boolean } | null)?.ok
+        ) {
+          await client().auth.signOut();
+          throw confirmError || new Error("CONFIRM_FAILED");
+        }
+
+        return;
+      }
+
+      const email = String(form.get("email") || "").trim();
+      const password = String(form.get("password") || "");
+      const { error: signInError } = await client().auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) throw signInError;
+    } catch (caught) {
+      const message =
+        caught instanceof Error ? caught.message : "ACCESS_FAILED";
+      setError(
+        loginMode === "code"
+          ? message.includes("RATE_LIMITED")
+            ? "Muitas tentativas. Aguarde alguns minutos."
+            : "Código inválido, expirado ou já utilizado."
+          : "E-mail ou senha inválidos.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -194,35 +259,86 @@ function Login() {
           <span className="eyebrow">ACESSO RESTRITO</span>
           <h2>Entrar na Central de T.I</h2>
           <p>Use a mesma conta administrativa do Raízes do Futuro.</p>
+          <div className="login-mode-switch" role="tablist" aria-label="Forma de acesso">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={loginMode === "password"}
+              className={loginMode === "password" ? "active" : ""}
+              onClick={() => {
+                setLoginMode("password");
+                setError("");
+              }}
+            >
+              Senha
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={loginMode === "code"}
+              className={loginMode === "code" ? "active" : ""}
+              onClick={() => {
+                setLoginMode("code");
+                setError("");
+              }}
+            >
+              Código de acesso
+            </button>
+          </div>
           <form onSubmit={submit}>
-            <label>
-              <span>E-mail</span>
-              <input name="email" type="email" autoComplete="email" required />
-            </label>
-            <label>
-              <span>Senha</span>
-              <div className="password-field">
+            {loginMode === "password" ? (
+              <>
+                <label>
+                  <span>E-mail</span>
+                  <input name="email" type="email" autoComplete="email" required />
+                </label>
+                <label>
+                  <span>Senha</span>
+                  <div className="password-field">
+                    <input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword((current) => !current)}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </label>
+              </>
+            ) : (
+              <label>
+                <span>Código semanal</span>
                 <input
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
+                  className="weekly-access-code"
+                  name="access_code"
+                  inputMode="text"
+                  autoComplete="one-time-code"
+                  placeholder="RFXX-XXXX-XXXX-XXXX-XXXX-XX"
+                  minLength={22}
+                  maxLength={27}
                   required
                 />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
-                  aria-pressed={showPassword}
-                  onClick={() => setShowPassword((current) => !current)}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </label>
+                <small>
+                  Cada código funciona uma única vez e é substituído toda terça-feira.
+                </small>
+              </label>
+            )}
             {error && <div className="form-error" role="alert">{error}</div>}
             <button className="primary-button" disabled={busy}>
               <KeyRound size={18} />
-              {busy ? "Validando..." : "Entrar"}
+              {busy
+                ? "Validando..."
+                : loginMode === "code"
+                  ? "Entrar com código"
+                  : "Entrar"}
             </button>
           </form>
         </div>
