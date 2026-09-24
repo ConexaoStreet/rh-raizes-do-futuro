@@ -1857,7 +1857,6 @@ select:focus-visible {
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,.07);
   background: rgba(5,16,11,.24);
-  backdrop-filter: blur(12px);
 }
 .login-brand-copy {
   max-width: 760px;
@@ -2762,10 +2761,8 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   background: rgba(6,15,10,.91);
   backdrop-filter: blur(12px);
   color: #8fa69a;
-  box-shadow: 0 12px 28px rgba(0,0,0,.18);
   font-size: .58rem;
   font-weight: 650;
-  letter-spacing: .02em;
   white-space: nowrap;
   opacity: 0;
   transform: translate(5px,4px);
