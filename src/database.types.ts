@@ -1388,6 +1388,19 @@ export type Database = {
         Args: { identifier: string | null };
         Returns: undefined;
       };
+      register_push_subscription: {
+        Args: {
+          endpoint_value: string;
+          p256dh_value: string;
+          auth_value: string;
+          user_agent_value: string | null;
+        };
+        Returns: string;
+      };
+      unregister_push_subscription: {
+        Args: { endpoint_value: string };
+        Returns: undefined;
+      };
       my_review_tasks: { Args: Record<string, never>; Returns: Json };
       my_sessions: { Args: { target_user: string | null }; Returns: Json };
       open_attendance: {

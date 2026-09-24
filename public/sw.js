@@ -58,3 +58,43 @@ self.addEventListener("fetch", (event) => {
     })(),
   );
 });
+
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { title: "Raízes do Futuro", body: event.data?.text() || "Nova notificação." };
+  }
+
+  const title = data.title || "Raízes do Futuro";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || "Você tem uma nova notificação no RH.",
+      icon: data.icon || "/icons/icon-192.png",
+      badge: data.badge || "/icons/icon-192.png",
+      tag: data.tag || "raizes-rh",
+      data: { url: data.url || "/#/notificacoes" },
+      renotify: true,
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || "/#/notificacoes";
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then(async (clients) => {
+        for (const client of clients) {
+          if ("navigate" in client) {
+            await client.navigate(target);
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(target);
+      }),
+  );
+});

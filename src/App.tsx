@@ -12,6 +12,7 @@ import {
   Activity,
   BarChart3,
   Bell,
+  BellRing,
   CalendarDays,
   ClipboardCheck,
   Clock3,
@@ -40,6 +41,7 @@ import { client, rpc, runAction, useAsync, useDebounce } from "./api";
 import { Brand, Loading, Modal } from "./components";
 import { captureNavigation } from "./telemetry";
 import { ThemeToggle } from "./theme";
+import { enablePushNotifications, pushSupported } from "./push";
 const Dashboard = lazy(() => import("./Dashboard"));
 const Attendance = lazy(() => import("./Attendance"));
 const People = lazy(() => import("./People"));
@@ -378,6 +380,19 @@ function Shell() {
                     >
                       Meu perfil
                     </Link>
+                  )}
+                  {pushSupported() && (
+                    <button
+                      onClick={() =>
+                        void runAction(
+                          () => enablePushNotifications(),
+                          "Notificações do celular ativadas.",
+                        )
+                      }
+                    >
+                      <BellRing size={17} />
+                      Ativar notificações no celular
+                    </button>
                   )}
                   {installPrompt && (
                     <button
