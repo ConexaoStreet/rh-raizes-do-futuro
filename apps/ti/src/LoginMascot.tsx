@@ -290,7 +290,6 @@ export function LoginMascot({
       style={style}
       aria-hidden="true"
     >
-      <div className="root-mascot-shadow" />
       <div className="root-mascot-body">
         <div className="root-mascot-chest" />
       </div>
@@ -321,8 +320,6 @@ export function LoginMascot({
           <div className="root-mascot-nose" />
           <div className="root-mascot-mouth" />
         </div>
-        <div className="root-mascot-fur fur-left" />
-        <div className="root-mascot-fur fur-right" />
       </div>
       <div className="root-mascot-paw paw-left" />
       <div className="root-mascot-paw paw-right" />
