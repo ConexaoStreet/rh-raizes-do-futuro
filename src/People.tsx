@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Download, FileUp, Paperclip, Plus, TriangleAlert, Upload } from "lucide-react";
+import { Camera, CheckCircle2, Download, FileUp, Paperclip, Plus, TriangleAlert, Upload, XCircle } from "lucide-react";
 import {
   client,
   json,
@@ -221,6 +221,12 @@ function EmployeeProfile() {
             />
             <Stat title="Feedbacks" value={summary.data?.feedbacks || 0} />
           </div>
+          {employee.profile_id && (
+            <EsproPhotoCard
+              profileId={employee.profile_id}
+              own={employee.profile_id === user.profile.id}
+            />
+          )}
           <section className="panel detail-grid">
             {[
               ["Nome completo", employee.full_name],
@@ -258,6 +264,162 @@ function EmployeeProfile() {
     </>
   );
 }
+function EsproPhotoCard({
+  profileId,
+  own,
+}: {
+  profileId: string;
+  own: boolean;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const profile = useAsync(async () => {
+    const { data, error } = await client()
+      .from("profiles")
+      .select(
+        "id,espro_photo_path,espro_photo_status,espro_photo_verification,espro_photo_submitted_at,espro_photo_reviewed_at,espro_photo_rejection_reason",
+      )
+      .eq("id", profileId)
+      .single();
+    if (error) throw error;
+    return data;
+  }, [profileId]);
+
+  const photoUrl = useAsync(async () => {
+    const path = profile.data?.espro_photo_path;
+    if (!path) return null;
+    const { data, error } = await client()
+      .storage.from("espro-profile-photos")
+      .createSignedUrl(path, 120);
+    if (error) throw error;
+    return data.signedUrl;
+  }, [profile.data?.espro_photo_path]);
+
+  async function submitPhoto(file: File) {
+    if (!own) return;
+    if (!["image/jpeg", "image/png"].includes(file.type))
+      throw new Error("Use uma foto JPG ou PNG.");
+    if (file.size > 5 * 1024 * 1024)
+      throw new Error("A foto pode ter no máximo 5 MB.");
+
+    const extension = file.type === "image/png" ? "png" : "jpg";
+    const path = `${profileId}/${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await client()
+      .storage.from("espro-profile-photos")
+      .upload(path, file, {
+        contentType: file.type,
+        upsert: false,
+      });
+    if (uploadError) throw uploadError;
+
+    const { data, error } = await client().functions.invoke(
+      "profile-photo-verify",
+      { body: { path } },
+    );
+    if (error) throw error;
+    const result = data as {
+      ok?: boolean;
+      message?: string;
+      status?: string;
+      verification?: {
+        problems?: string[];
+      };
+    };
+    if (!result.ok) {
+      throw new Error(
+        result.message ||
+          "A foto não passou pela verificação básica.",
+      );
+    }
+  }
+
+  if (profile.loading) return <Loading />;
+  if (profile.error || !profile.data) return <ErrorState retry={profile.reload} />;
+
+  const status = profile.data.espro_photo_status;
+  const verification =
+    profile.data.espro_photo_verification &&
+    typeof profile.data.espro_photo_verification === "object"
+      ? (profile.data.espro_photo_verification as Record<string, unknown>)
+      : {};
+  const width =
+    typeof verification.width === "number" ? verification.width : null;
+  const height =
+    typeof verification.height === "number" ? verification.height : null;
+
+  return (
+    <section className="panel espro-photo-card">
+      <div className="espro-photo-preview">
+        {photoUrl.data ? (
+          <img src={photoUrl.data} alt="Foto Espro" />
+        ) : (
+          <div className="espro-photo-placeholder">
+            <Camera size={32} />
+            <span>Foto Espro</span>
+          </div>
+        )}
+      </div>
+      <div className="espro-photo-content">
+        <div className="panel-heading">
+          <div>
+            <small>IDENTIFICAÇÃO DO PERFIL</small>
+            <h3>Foto Espro</h3>
+          </div>
+          <Badge value={status} />
+        </div>
+        <p>
+          A verificação básica confere se o arquivo é uma imagem válida,
+          tamanho, resolução, proporção plausível e reutilização exata por outra
+          conta. A aprovação final pode ser feita pela equipe de T.I.
+        </p>
+        {width && height && (
+          <small>
+            Verificação: {width} x {height} px
+          </small>
+        )}
+        {profile.data.espro_photo_rejection_reason && (
+          <div className="notice">
+            <XCircle size={18} />
+            <span>{profile.data.espro_photo_rejection_reason}</span>
+          </div>
+        )}
+        {["basic_passed", "approved"].includes(status) && (
+          <div className="notice success">
+            <CheckCircle2 size={18} />
+            <span>
+              {status === "approved"
+                ? "Foto aprovada."
+                : "A foto passou pela verificação básica e aguarda aprovação."}
+            </span>
+          </div>
+        )}
+        {own && (
+          <label className="button upload-button">
+            <Upload size={17} />
+            {uploading ? "Verificando..." : "Adicionar ou trocar Foto Espro"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              disabled={uploading}
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                setUploading(true);
+                await runAction(async () => {
+                  await submitPhoto(file);
+                  profile.reload();
+                  photoUrl.reload();
+                }, "Foto Espro enviada e verificada.");
+                setUploading(false);
+                event.target.value = "";
+              }}
+            />
+          </label>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function EmployeeFeedbacks({ id }: { id: string }) {
   const [selected, setSelected] = useState<Row<"feedbacks"> | null>(null);
   const data = useAsync(async () => {

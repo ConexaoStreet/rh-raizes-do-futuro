@@ -1039,6 +1039,13 @@ export type Database = {
           requested_class: string | null;
           requested_department_id: string | null;
           requested_role_code: string | null;
+          espro_photo_path: string | null;
+          espro_photo_status: string;
+          espro_photo_verification: Json;
+          espro_photo_submitted_at: string | null;
+          espro_photo_reviewed_at: string | null;
+          espro_photo_reviewed_by: string | null;
+          espro_photo_rejection_reason: string | null;
           status: string;
           onboarded_at: string | null;
           terms_accepted_at: string | null;
@@ -1056,6 +1063,13 @@ export type Database = {
           requested_class?: string | null;
           requested_department_id?: string | null;
           requested_role_code?: string | null;
+          espro_photo_path?: string | null;
+          espro_photo_status?: string;
+          espro_photo_verification?: Json;
+          espro_photo_submitted_at?: string | null;
+          espro_photo_reviewed_at?: string | null;
+          espro_photo_reviewed_by?: string | null;
+          espro_photo_rejection_reason?: string | null;
           status?: string;
           onboarded_at?: string | null;
           terms_accepted_at?: string | null;
@@ -1071,6 +1085,13 @@ export type Database = {
             columns: ["requested_department_id"];
             isOneToOne: false;
             referencedRelation: "departments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profiles_espro_photo_reviewed_by_fkey";
+            columns: ["espro_photo_reviewed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
