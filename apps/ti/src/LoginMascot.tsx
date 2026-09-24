@@ -248,7 +248,12 @@ export function LoginMascot({
     };
   }, [scopeSelector]);
 
-  const effectiveMood = trackedMood || mood;
+  const forcedMood =
+    mood === "error" ||
+    mood === "success" ||
+    mood === "alert" ||
+    (placement === "datasul" && mood === "work");
+  const effectiveMood = forcedMood ? mood : trackedMood || mood;
   const style = {
     "--mascot-gaze-x": gaze.x.toFixed(2) + "px",
     "--mascot-gaze-y": gaze.y.toFixed(2) + "px",
