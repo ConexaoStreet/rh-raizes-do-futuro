@@ -36,7 +36,7 @@ export type Bootstrap = {
   ready: boolean;
   server_time: string;
   employee_id: string | null;
-  maintenance: { enabled?: boolean; allow_managers?: boolean };
+  maintenance: { enabled?: boolean; allow_managers?: boolean; title?: string; message?: string; started_at?: string | null };
 };
 const AuthContext = createContext<{
   user: Bootstrap;
@@ -164,8 +164,8 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
     return (
       <AuthFrame>
         <ShieldCheck size={36} />
-        <h1>Sistema em manutenção</h1>
-        <p>Voltaremos em breve.</p>
+        <h1>{user.maintenance.title || "Sistema em manutenção"}</h1>
+        <p>{user.maintenance.message || "Estamos realizando ajustes no sistema. O acesso será liberado novamente assim que a manutenção for concluída."}</p>
         <button onClick={() => void client().auth.signOut()}>Sair</button>
       </AuthFrame>
     );
