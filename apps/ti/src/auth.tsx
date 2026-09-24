@@ -312,6 +312,7 @@ function Login({
           throw confirmError || new Error("CONFIRM_FAILED");
         }
 
+        setMascotMood("success");
         await onAuthenticated();
         onSecureTransition(false);
         return;
@@ -325,11 +326,13 @@ function Login({
       });
 
       if (signInError) throw signInError;
+      setMascotMood("success");
       await onAuthenticated();
     } catch (caught) {
       onSecureTransition(false);
       const message =
         caught instanceof Error ? caught.message : "ACCESS_FAILED";
+      setMascotMood("error");
 
       setError(
         loginMode === "code"
@@ -400,7 +403,7 @@ function Login({
 
       <section className="login-panel">
         <div className="login-stage">
-          <LoginMascot mood={mascotMood} />
+          <LoginMascot mood={mascotMood} placement="login" scopeSelector=".login-stage" />
         <div className="login-card">
           <div className="security-badge"><ShieldCheck size={22} /></div>
           <span className="eyebrow">ACESSO RESTRITO</span>
