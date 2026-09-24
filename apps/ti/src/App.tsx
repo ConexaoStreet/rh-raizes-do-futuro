@@ -39,6 +39,7 @@ import {
 import { client, rpc, updateSetting } from "./api";
 import { Brand, useAuth } from "./auth";
 import { ThemeToggle } from "./theme";
+import { LoginMascot } from "./LoginMascot";
 
 type JsonObject = Record<string, unknown>;
 type View =
@@ -1078,8 +1079,25 @@ export default function App() {
               )}
 
               {view === "datasul" && (
-                <>
+                <div className="datasul-view-root">
                   <section className="datasul-command-header">
+                    <div className="datasul-mascot-perch">
+                      <LoginMascot
+                        placement="datasul"
+                        scopeSelector=".datasul-view-root"
+                        mood={
+                          flag(maintenance.enabled)
+                            ? "alert"
+                            : busy
+                              ? "work"
+                              : error
+                                ? "error"
+                                : notice
+                                  ? "success"
+                                  : "idle"
+                        }
+                      />
+                    </div>
                     <div className="datasul-command-copy">
                       <span className="eyebrow">OPERAÇÃO · DATASUL</span>
                       <h2>Conexão, diagnóstico e API em uma única superfície.</h2>
@@ -1255,7 +1273,7 @@ export default function App() {
                     </div>
                   </Panel>
                   </div>
-                </>
+                </div>
               )}
 
               {view === "users" && (
