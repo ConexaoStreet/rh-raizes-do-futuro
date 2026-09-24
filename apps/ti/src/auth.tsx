@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { KeyRound, LogOut, Mail, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, KeyRound, LogOut, Mail, ShieldCheck } from "lucide-react";
 import { client, configured, rpc, supabase } from "./api";
 import { ThemeToggle } from "./theme";
 
@@ -160,6 +160,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
 function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -200,7 +201,23 @@ function Login() {
             </label>
             <label>
               <span>Senha</span>
-              <input name="password" type="password" autoComplete="current-password" required />
+              <div className="password-field">
+                <input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((current) => !current)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </label>
             {error && <div className="form-error" role="alert">{error}</div>}
             <button className="primary-button" disabled={busy}>
