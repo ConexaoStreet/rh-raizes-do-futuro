@@ -892,14 +892,16 @@ function JsonDiff({
             >
               <td>{key}</td>
               <td>
-                {typeof old[key] === "object"
+                {(typeof old[key] === "object"
                   ? JSON.stringify(old[key])
-                  : String(old[key] ?? "-")}
+                  : String(old[key] ?? "-")
+                ).replaceAll("\u2014", "-")}
               </td>
               <td>
-                {typeof next[key] === "object"
+                {(typeof next[key] === "object"
                   ? JSON.stringify(next[key])
-                  : String(next[key] ?? "-")}
+                  : String(next[key] ?? "-")
+                ).replaceAll("\u2014", "-")}
               </td>
             </tr>
           ))}

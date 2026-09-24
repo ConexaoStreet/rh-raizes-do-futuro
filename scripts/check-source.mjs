@@ -45,6 +45,8 @@ function scan(directory) {
       )
         failures.push(filename + ": comentário encontrado");
     }
+    if (source.includes("\u2014"))
+      failures.push(filename + ": caractere tipográfico proibido");
     if (pendingWords.test(source))
       failures.push(filename + ": pendência no código");
   }
