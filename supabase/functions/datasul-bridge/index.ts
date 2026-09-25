@@ -83,7 +83,7 @@ function sanitize(value: unknown) {
 }
 
 async function hasPermission(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   code: string,
 ) {
   const { data, error } = await supabase.rpc("has_permission", {
@@ -93,7 +93,7 @@ async function hasPermission(
 }
 
 async function recentlyVerified(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
 ) {
   const { data, error } = await supabase.rpc("bootstrap");
   return (
@@ -105,7 +105,7 @@ async function recentlyVerified(
 }
 
 async function actor(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
 ) {
   const {
     data: { user },
