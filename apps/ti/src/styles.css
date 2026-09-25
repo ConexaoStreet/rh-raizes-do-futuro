@@ -2585,7 +2585,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   border-radius: 48% 48% 42% 42%;
   background:
     radial-gradient(circle at 42% 28%, rgba(208,230,214,.18), transparent 30%),
-    repeating-linear-gradient(96deg,rgba(255,255,255,.014) 0 1px,transparent 1px 8px),
     linear-gradient(145deg,#2b4b39 0%,#193226 54%,#0b1e14 100%);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.045),
@@ -2608,7 +2607,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
     radial-gradient(ellipse at 30% 24%, rgba(224,239,227,.2), transparent 21%),
     radial-gradient(ellipse at 70% 28%, rgba(188,218,195,.16), transparent 23%),
     radial-gradient(ellipse at 48% 70%, rgba(4,13,8,.22), transparent 44%),
-    repeating-linear-gradient(100deg,rgba(255,255,255,.018) 0 1px,transparent 1px 7px),
     linear-gradient(145deg,#365744 0%,#213b2d 46%,#10251a 100%);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.05),
@@ -2761,7 +2759,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   border: 1px solid rgba(178,210,190,.12);
   border-radius: 11px 11px 3px 11px;
   background: rgba(6,15,10,.91);
-  backdrop-filter: blur(12px);
   color: #8fa69a;
   font-size: .58rem;
   font-weight: 650;
