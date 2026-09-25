@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2.116.0";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.116.0";
 import { withSupabase } from "npm:@supabase/server";
 
 const DEFAULT_ALLOWED_ORIGINS = new Set([
@@ -83,7 +83,7 @@ function sanitize(value: unknown) {
 }
 
 async function hasPermission(
-  supabase: any,
+  supabase: SupabaseClient,
   code: string,
 ) {
   const { data, error } = await supabase.rpc("has_permission", {
@@ -93,7 +93,7 @@ async function hasPermission(
 }
 
 async function recentlyVerified(
-  supabase: any,
+  supabase: SupabaseClient,
 ) {
   const { data, error } = await supabase.rpc("bootstrap");
   return (
@@ -105,7 +105,7 @@ async function recentlyVerified(
 }
 
 async function actor(
-  supabase: any,
+  supabase: SupabaseClient,
 ) {
   const {
     data: { user },
