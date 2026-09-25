@@ -516,12 +516,12 @@ input[type="radio"] {
   min-height: 100vh;
 }
 .sidebar {
-  width: 250px;
+  width: 264px;
   position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
-  background: var(--dark);
+  background: linear-gradient(180deg, #13271f 0%, #0e1f19 58%, #0a1712 100%);
   color: #d1dcd2;
   display: flex;
   flex-direction: column;
@@ -536,9 +536,10 @@ input[type="radio"] {
   align-items: center;
   gap: 10px;
   margin: 0 17px 20px;
-  padding: 14px 11px;
-  border: 1px solid #37473a;
-  border-radius: 9px;
+  padding: 13px 11px;
+  border: 1px solid #33483b;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.025);
   font-size: 0.82rem;
   color: #e0e8da;
 }
@@ -597,9 +598,10 @@ input[type="radio"] {
   color: #fff;
 }
 .sidebar nav a.active {
-  background: var(--lime);
-  color: #243824;
+  background: #20372c;
+  color: #f3f8f4;
   font-weight: 650;
+  box-shadow: inset 3px 0 0 var(--lime);
 }
 .sidebar-footer {
   border-top: 1px solid #2b3d30;
@@ -617,19 +619,23 @@ input[type="radio"] {
   letter-spacing: 0.1em;
 }
 .main-column {
-  margin-left: 250px;
+  margin-left: 264px;
   min-width: 0;
-  width: calc(100% - 250px);
+  width: calc(100% - 264px);
 }
 .topbar {
-  height: 82px;
-  background: #fff;
+  height: 76px;
+  background: rgba(255, 255, 255, 0.92);
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 37px;
+  padding: 0 40px;
   gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  backdrop-filter: blur(16px);
 }
 .topbar-left {
   font-size: 0.78rem;
@@ -714,9 +720,9 @@ input[type="radio"] {
   background: #f4f6f1;
 }
 .page-content {
-  max-width: 1680px;
+  max-width: 1540px;
   margin: auto;
-  padding: 36px 37px 50px;
+  padding: 34px 42px 54px;
   animation: fade 0.15s;
 }
 .mobile-only {
@@ -727,16 +733,20 @@ input[type="radio"] {
 }
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  margin-bottom: 24px;
+  grid-template-columns: minmax(240px, 1.3fr) repeat(3, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
 }
 .stat {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 22px 24px;
-  min-height: 140px;
+  border-radius: 14px;
+  padding: 20px 22px;
+  min-height: 130px;
+}
+.stats-grid .stat:first-child {
+  background: linear-gradient(145deg, #f2f7ef 0%, #ffffff 72%);
+  border-color: #d7e3d3;
 }
 .stat-label {
   font-size: 0.8rem;
@@ -764,11 +774,12 @@ input[type="radio"] {
   color: #879284;
 }
 .attendance-banner {
-  background: #eaf0df;
+  background: linear-gradient(90deg, #eef4e9 0%, #f8faf5 100%);
   border: 1px solid #d9e4ca;
-  border-radius: 12px;
-  padding: 21px 23px;
-  margin-bottom: 24px;
+  border-left: 3px solid #6e914f;
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 22px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -796,8 +807,8 @@ input[type="radio"] {
 }
 .dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.75fr) minmax(300px, 1fr);
-  gap: 24px;
+  grid-template-columns: minmax(0, 1.9fr) minmax(300px, .9fr);
+  gap: 18px;
   align-items: start;
 }
 .dashboard-grid > .panel {
@@ -2922,15 +2933,15 @@ td small {
   overflow: hidden;
   display: flex;
   align-items: center;
-  gap: 28px;
-  padding: 30px 32px;
+  gap: 24px;
+  padding: 26px 28px;
   margin-bottom: 18px;
-  border-radius: 16px;
+  border-radius: 14px;
   color: #f5f8ee;
   background:
-    radial-gradient(circle at 88% 14%, rgba(188, 218, 112, 0.25), transparent 24%),
-    linear-gradient(135deg, #132a23 0%, #204e3e 62%, #2b624c 100%);
-  border: 1px solid #2d5c49;
+    radial-gradient(circle at 88% 14%, rgba(188, 218, 112, 0.14), transparent 24%),
+    linear-gradient(135deg, #12261f 0%, #1d4536 68%, #284f3e 100%);
+  border: 1px solid #2c5847;
 }
 .raizes-hero:after {
   content: "";
@@ -2990,10 +3001,10 @@ td small {
 }
 .department-pills span {
   border: 1px solid rgba(217,232,196,.2);
-  background: rgba(255,255,255,.075);
+  background: rgba(255,255,255,.06);
   color: #e4ecdc;
-  padding: 6px 10px;
-  border-radius: 999px;
+  padding: 5px 9px;
+  border-radius: 7px;
   font-size: .69rem;
   letter-spacing: .01em;
 }
@@ -3063,9 +3074,9 @@ td small {
   flex-basis: 52px;
 }
 .raizes-hero-logo {
-  width: 96px;
-  height: 96px;
-  flex: 0 0 96px;
+  width: 88px;
+  height: 88px;
+  flex: 0 0 88px;
   object-fit: contain;
   display: block;
   position: relative;
