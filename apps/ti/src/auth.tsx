@@ -12,6 +12,7 @@ import { Eye, EyeOff, KeyRound, LogOut, Mail, ShieldCheck } from "lucide-react";
 import { client, configured, rpc, supabase } from "./api";
 import { ThemeToggle } from "./theme";
 import { LoginMascot } from "./LoginMascot";
+import { PASSWORD_POLICY_MESSAGE, strongPassword } from "./password-policy";
 
 type Bootstrap = {
   profile: {
@@ -561,8 +562,8 @@ function PasswordRecovery({ onComplete }: { onComplete: () => void }) {
             const password = String(form.get("password") || "");
             const confirmPassword = String(form.get("confirm_password") || "");
 
-            if (password.length < 8) {
-              setError("Use uma senha com pelo menos 8 caracteres.");
+            if (!strongPassword(password)) {
+              setError(PASSWORD_POLICY_MESSAGE);
               return;
             }
 
@@ -592,7 +593,7 @@ function PasswordRecovery({ onComplete }: { onComplete: () => void }) {
               name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
-              minLength={8}
+              minLength={12}
               required
             />
             <button
@@ -604,6 +605,7 @@ function PasswordRecovery({ onComplete }: { onComplete: () => void }) {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          <small className="muted">{PASSWORD_POLICY_MESSAGE}</small>
         </label>
 
         <label className="recovery-field">
@@ -612,7 +614,7 @@ function PasswordRecovery({ onComplete }: { onComplete: () => void }) {
             name="confirm_password"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
-            minLength={8}
+            minLength={12}
             required
           />
         </label>
