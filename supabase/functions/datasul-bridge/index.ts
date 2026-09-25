@@ -83,43 +83,6 @@ function parsePayload(raw: string) {
   }
 }
 
-async function permission(
-  supabase: ReturnType<typeof createClient>,
-  code: string,
-) {
-  const { data, error } = await supabase.rpc("has_permission", {
-    permission_code: code,
-  });
-  if (error) return false;
-  return data === true;
-}
-
-async function recentVerification(
-  supabase: ReturnType<typeof createClient>,
-) {
-  const { data, error } = await supabase.rpc("bootstrap");
-  if (error || !data || typeof data !== "object") return false;
-  return (data as Record<string, unknown>).recently_verified === true;
-}
-
-async function actorContext(
-  supabase: ReturnType<typeof createClient>,
-) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { id: null, name: "Sistema" };
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
-  return {
-    id: user.id,
-    name: profile?.full_name || user.email || "Usuário T.I.",
-  };
-}
-
 async function datasulRequest(args: {
   method: string;
   path: string;
@@ -206,9 +169,46 @@ Deno.serve(
     if (req.method !== "POST")
       return response(origin, { error: "METHOD_NOT_ALLOWED" }, 405);
 
+    const permission = async (code: string) => {
+      const { data, error } = await ctx.supabase.rpc("has_permission", {
+        permission_code: code,
+      });
+      return !error && data === true;
+    };
+
+    const recentVerification = async () => {
+      const { data, error } = await ctx.supabase.rpc("bootstrap");
+      return (
+        !error &&
+        Boolean(data) &&
+        typeof data === "object" &&
+        (data as Record<string, unknown>).recently_verified === true
+      );
+    };
+
+    const actorContext = async () => {
+      const {
+        data: { user },
+      } = await ctx.supabase.auth.getUser();
+      if (!user) return { id: null, name: "Sistema" };
+      const { data: profile } = await ctx.supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      const profileName =
+        profile && typeof profile === "object" && "full_name" in profile
+          ? String(profile.full_name || "")
+          : "";
+      return {
+        id: user.id,
+        name: profileName || user.email || "Usuário T.I.",
+      };
+    };
+
     const canRead =
-      (await permission(ctx.supabase, "ti.datasul.read")) ||
-      (await permission(ctx.supabase, "ti.datasul.sync"));
+      (await permission("ti.datasul.read")) ||
+      (await permission("ti.datasul.sync"));
     if (!canRead) return response(origin, { error: "FORBIDDEN" }, 403);
 
     const rawBody = await req.text();
@@ -253,9 +253,9 @@ Deno.serve(
         state: config,
         capabilities: {
           read: canRead,
-          write: await permission(ctx.supabase, "ti.datasul.write"),
-          delete: await permission(ctx.supabase, "ti.datasul.delete"),
-          recently_verified: await recentVerification(ctx.supabase),
+          write: await permission("ti.datasul.write"),
+          delete: await permission("ti.datasul.delete"),
+          recently_verified: await recentVerification(),
         },
         required_secrets: [
           "DATASUL_BASE_URL",
@@ -367,10 +367,10 @@ Deno.serve(
           method === "DELETE"
             ? "ti.datasul.delete"
             : "ti.datasul.write";
-        if (!(await permission(ctx.supabase, required))) {
+        if (!(await permission(required))) {
           return response(origin, { error: "FORBIDDEN" }, 403);
         }
-        if (!(await recentVerification(ctx.supabase))) {
+        if (!(await recentVerification())) {
           return response(
             origin,
             { error: "RECENT_VERIFICATION_REQUIRED" },
@@ -386,7 +386,7 @@ Deno.serve(
         return response(origin, { error: "INVALID_PATH" }, 400);
       }
 
-      const actor = await actorContext(ctx.supabase);
+      const actor = await actorContext();
       const started = Date.now();
       let result:
         | Awaited<ReturnType<typeof datasulRequest>>
