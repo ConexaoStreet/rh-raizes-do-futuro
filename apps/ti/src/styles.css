@@ -2824,7 +2824,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   align-self: end;
   overflow: visible;
   pointer-events: none;
-  border-radius: 42% 42% 30% 30%;
   background: radial-gradient(circle at 50% 68%,rgba(154,210,127,.16),transparent 64%);
 }
 .root-mascot-datasul {
