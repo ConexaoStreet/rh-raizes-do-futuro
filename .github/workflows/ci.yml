@@ -27,6 +27,7 @@ jobs:
       - run: npm run lint
       - run: deno check --no-lock supabase/functions/*/index.ts
       - run: npm run check:privacy
+      - run: node tests/auth-template-sync.mjs
       - run: npm run test -- --passWithNoTests
       - run: npm run test:database
       - run: npm run build

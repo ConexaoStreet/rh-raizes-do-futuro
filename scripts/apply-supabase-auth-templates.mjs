@@ -1,11 +1,15 @@
 import fs from "node:fs";
 
-const token = process.env.SUPABASE_ACCESS_TOKEN || "";
-const projectRef = process.env.SUPABASE_PROJECT_REF || "fiuealmgufpmtgmxxpna";
+const token = (process.env.SUPABASE_ACCESS_TOKEN || "").trim();
+const projectRef = (process.env.SUPABASE_PROJECT_REF || "").trim();
 
 if (!token) {
   console.log("::warning::SUPABASE_ACCESS_TOKEN is not configured. Hosted Auth template sync was skipped.");
   process.exit(0);
+}
+
+if (!projectRef) {
+  throw new Error("SUPABASE_PROJECT_REF is required when SUPABASE_ACCESS_TOKEN is configured.");
 }
 
 const read = (name) => fs.readFileSync(new URL("../supabase/templates/" + name, import.meta.url), "utf8");
