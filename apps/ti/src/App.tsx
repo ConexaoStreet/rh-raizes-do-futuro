@@ -1102,7 +1102,7 @@ export default function App() {
               {view === "datasul" && (
                 <div className="datasul-view-root">
                   <section className="datasul-command-header">
-                    <div className="datasul-mascot-perch">
+                    <div className="datasul-mascot-perch" data-testid="datasul-mascot">
                       <LoginMascot
                         placement="datasul"
                         scopeSelector=".datasul-view-root"
