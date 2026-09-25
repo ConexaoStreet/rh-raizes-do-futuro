@@ -30,7 +30,7 @@ function response(origin: string, body: unknown, status = 200) {
 }
 
 async function hasPermission(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   code: string,
 ) {
   const { data, error } = await supabase.rpc("has_permission", {
@@ -40,7 +40,7 @@ async function hasPermission(
 }
 
 async function recentlyVerified(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
 ) {
   const { data, error } = await supabase.rpc("bootstrap");
   return (
@@ -61,7 +61,7 @@ function adminClient() {
 }
 
 async function actor(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
 ) {
   const {
     data: { user },
@@ -105,7 +105,7 @@ Deno.serve(
       limit?: number;
     };
     const action = body.action || "inventory";
-    let admin: ReturnType<typeof createClient>;
+    let admin: any;
     try {
       admin = adminClient();
     } catch {
