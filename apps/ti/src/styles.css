@@ -122,7 +122,7 @@ button:hover:not(:disabled),
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -132,7 +132,7 @@ button:hover:not(:disabled),
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 24px 18px 18px;
+  padding: 22px 16px 16px;
   background:
     linear-gradient(180deg, rgba(17, 34, 27, .98), rgba(9, 20, 16, .98)),
     radial-gradient(circle at 20% 0%, rgba(146, 199, 166, .12), transparent 16rem);
@@ -244,8 +244,8 @@ main {
 }
 
 .topbar {
-  height: 88px;
-  padding: 0 34px;
+  height: 78px;
+  padding: 0 30px;
   border-bottom: 1px solid var(--border);
   background: rgba(8, 17, 14, .82);
   backdrop-filter: blur(20px);
@@ -2442,38 +2442,38 @@ html[data-theme="light"] .ticket-card {
 }
 .login-brand-copy h1 {
   max-width: 700px;
-  font-size: clamp(3.3rem,7vw,7.7rem);
-  letter-spacing:-.075em;
-  line-height:.84;
+  font-size: clamp(2.9rem,5.4vw,5.8rem);
+  letter-spacing:-.06em;
+  line-height:.9;
 }
 .login-card {
-  border-radius: 24px;
-  background: linear-gradient(180deg,rgba(17,31,25,.98),rgba(12,23,18,.98));
-  box-shadow:0 38px 100px rgba(0,0,0,.30);
+  border-radius: 20px;
+  background: rgba(14,27,21,.98);
+  box-shadow:0 24px 70px rgba(0,0,0,.24);
 }
 
 /* Datasul operations */
 .datasul-command-header {
-  min-height: 230px;
-  padding: 30px 32px;
+  min-height: 214px;
+  padding: 26px 28px;
   display:grid;
-  grid-template-columns:minmax(0,1fr) 184px 280px;
+  grid-template-columns:minmax(0,1fr) 176px 260px;
   align-items:center;
-  gap:28px;
+  gap:24px;
   border:1px solid rgba(151,201,169,.12);
-  border-radius:24px;
+  border-radius:20px;
   background:
-    linear-gradient(90deg,rgba(7,19,14,.35),transparent),
-    radial-gradient(circle at 88% 20%,rgba(176,204,112,.11),transparent 16rem),
-    linear-gradient(135deg,#0d2018,#132c21 64%,#10261c);
-  box-shadow:0 26px 70px rgba(0,0,0,.17);
+    linear-gradient(90deg,rgba(7,19,14,.26),transparent),
+    radial-gradient(circle at 88% 20%,rgba(176,204,112,.07),transparent 16rem),
+    linear-gradient(135deg,#0d2018,#12291f 64%,#10251c);
+  box-shadow:0 18px 50px rgba(0,0,0,.13);
 }
 .datasul-command-copy h2 {
   margin:8px 0 10px;
   max-width:780px;
-  font-size:clamp(1.85rem,3.5vw,3.5rem);
-  line-height:.98;
-  letter-spacing:-.055em;
+  font-size:clamp(1.75rem,3vw,2.8rem);
+  line-height:1;
+  letter-spacing:-.045em;
 }
 .datasul-command-copy p {
   margin:0;
@@ -2508,10 +2508,10 @@ html[data-theme="light"] .ticket-card {
   gap:10px;
 }
 .datasul-pulse-card {
-  min-height:96px;
-  padding:16px 17px;
+  min-height:88px;
+  padding:14px 15px;
   border:1px solid rgba(186,216,198,.09);
-  border-radius:14px;
+  border-radius:12px;
   background:rgba(13,25,20,.68);
 }
 .datasul-pulse-card span,.datasul-pulse-card strong,.datasul-pulse-card small{display:block}
@@ -2521,8 +2521,8 @@ html[data-theme="light"] .ticket-card {
 .datasul-pulse-card .mono-value{font-family:"SFMono-Regular",Consolas,monospace;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .datasul-primary-grid{align-items:start}
 .datasul-primary-grid > .panel {
-  border-radius:20px;
-  background:linear-gradient(180deg,rgba(15,30,24,.9),rgba(11,23,18,.88));
+  border-radius:16px;
+  background:rgba(13,27,21,.9);
 }
 .datasul-history-shell {
   margin-top:18px;
@@ -2816,18 +2816,18 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
 .datasul-mascot-perch {
   position: relative;
   z-index: 5;
-  width: 210px;
-  min-width: 210px;
-  min-height: 204px;
+  width: 196px;
+  min-width: 196px;
+  min-height: 196px;
   display: grid;
   place-items: end center;
   align-self: end;
   overflow: visible;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 68%,rgba(154,210,127,.16),transparent 64%);
+  background: radial-gradient(circle at 50% 68%,rgba(154,210,127,.10),transparent 64%);
 }
 .root-mascot-datasul {
-  transform: scale(1.14);
+  transform: scale(1.08);
   transform-origin: 50% 100%;
 }
 .root-mascot-datasul .root-mascot-note {
