@@ -57,11 +57,17 @@ function moodForField(
   field: HTMLInputElement | HTMLTextAreaElement,
 ): MascotMood {
   const name = field.getAttribute("name") || "";
+  const autocomplete =
+    field instanceof HTMLInputElement ? field.autocomplete.toLowerCase() : "";
+  const passwordField =
+    name.toLowerCase().includes("password") ||
+    autocomplete === "current-password" ||
+    autocomplete === "new-password";
   if (name === "access_code" || field.classList.contains("weekly-access-code"))
     return "code";
   if (field instanceof HTMLInputElement && field.type === "email")
     return "email";
-  if (name.toLowerCase().includes("password")) {
+  if (passwordField) {
     if (field instanceof HTMLInputElement && field.type === "text")
       return "peek";
     return "password";
@@ -109,7 +115,9 @@ function caretPoint(
   let prefix = field.value.slice(0, position);
   if (
     field instanceof HTMLInputElement &&
-    field.getAttribute("name")?.toLowerCase().includes("password") &&
+    (field.getAttribute("name")?.toLowerCase().includes("password") ||
+      field.autocomplete.toLowerCase() === "current-password" ||
+      field.autocomplete.toLowerCase() === "new-password") &&
     field.type === "password"
   ) {
     prefix = "•".repeat(prefix.length);
@@ -140,7 +148,6 @@ function caretPoint(
   return point;
 }
 
-// redeploy marker: Vercel retry 2026-09-24
 export function LoginMascot({
   mood = "idle",
   placement = "login",
