@@ -130,7 +130,7 @@ test("valid Gmail passes native browser validation in first access", async ({ pa
   await page.getByRole("button", { name: "Ativar cadastro" }).click();
 
   const email = page.locator('input[name="email"]');
-  await email.fill("gabrielasssantos09@gmail.com");
+  await email.fill("test.user.e2e@gmail.com");
 
   const valid = await email.evaluate(
     (element) => (element as HTMLInputElement).checkValidity(),
