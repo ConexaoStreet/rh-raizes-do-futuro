@@ -185,23 +185,18 @@ Deno.serve(
     }
 
     const hash = await sha256(bytes);
-    const { data: others, error: duplicateQueryError } = await admin
+    const { data: duplicate, error: duplicateQueryError } = await admin
       .from("profiles")
-      .select("id,espro_photo_verification")
+      .select("id")
       .neq("id", user.id)
-      .limit(1000);
+      .contains("espro_photo_verification", { sha256: hash })
+      .limit(1)
+      .maybeSingle();
     if (duplicateQueryError) {
       return response(origin, { error: "VERIFICATION_UNAVAILABLE" }, 503);
     }
 
-    const reused = (others || []).some((row) => {
-      const verification =
-        row.espro_photo_verification &&
-        typeof row.espro_photo_verification === "object"
-          ? (row.espro_photo_verification as Record<string, unknown>)
-          : {};
-      return verification.sha256 === hash;
-    });
+    const reused = Boolean(duplicate);
     if (reused) problems.push("DUPLICATE_PHOTO");
 
     const status = problems.length ? "rejected" : "basic_passed";
