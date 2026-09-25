@@ -17,9 +17,13 @@ const run = (args, env) =>
     encoding: "utf8",
   });
 
-const skipped = run([scriptPath], cleanEnv);
-assert.equal(skipped.status, 0, skipped.stderr);
-assert.match(skipped.stdout, /Auth hardening was skipped/);
+const missingToken = run([scriptPath], cleanEnv);
+assert.notEqual(
+  missingToken.status,
+  0,
+  "Missing SUPABASE_ACCESS_TOKEN must fail closed.",
+);
+assert.match(missingToken.stderr, /SUPABASE_ACCESS_TOKEN is required/);
 
 const missingProject = run(
   [scriptPath],

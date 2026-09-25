@@ -1,11 +1,6 @@
 name: Supabase Auth Hardening
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "scripts/apply-supabase-auth-hardening.mjs"
-      - ".github/workflows/supabase-auth-hardening.yml"
   workflow_dispatch:
 
 permissions:

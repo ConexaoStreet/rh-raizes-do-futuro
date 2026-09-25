@@ -30,12 +30,15 @@ const run = (args, env) =>
     encoding: "utf8",
   });
 
-const skipped = run([scriptPath], cleanEnv);
-assert.equal(skipped.status, 0, skipped.stderr);
+const missingToken = run([scriptPath], cleanEnv);
+assert.notEqual(
+  missingToken.status,
+  0,
+  "Missing SUPABASE_ACCESS_TOKEN must fail closed.",
+);
 assert.match(
-  skipped.stdout,
-  /Hosted Auth template sync was skipped/,
-  "Missing token must remain a safe skip.",
+  missingToken.stderr,
+  /SUPABASE_ACCESS_TOKEN is required/,
 );
 
 const missingProject = run(
