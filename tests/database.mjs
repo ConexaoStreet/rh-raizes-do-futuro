@@ -162,6 +162,26 @@ await test("Todas as tabelas públicas e privadas usam RLS", async () =>
     ),
     0,
   ));
+await test("Tabelas sensíveis não concedem privilégios ao papel anon", async () => {
+  for (const table of [
+    "public.push_subscriptions",
+    "public.ti_support_tickets",
+    "public.user_role_history",
+  ]) {
+    for (const privilege of ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]) {
+      assert.equal(
+        await value(
+          await root("select has_table_privilege('anon',$1,$2)", [
+            table,
+            privilege,
+          ]),
+        ),
+        false,
+        `${table} ainda concede ${privilege} ao papel anon`,
+      );
+    }
+  }
+});
 await test("Colaborador só lê seu próprio cadastro", async () => {
   const rows = await as("collaborator", "select id from public.employees");
   assert.deepEqual(

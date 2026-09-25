@@ -1,0 +1,26 @@
+name: Supabase Auth Hardening
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/apply-supabase-auth-hardening.mjs"
+      - ".github/workflows/supabase-auth-hardening.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Apply hosted Supabase Auth hardening
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: fiuealmgufpmtgmxxpna
+        run: node scripts/apply-supabase-auth-hardening.mjs
