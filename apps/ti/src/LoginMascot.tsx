@@ -215,6 +215,26 @@ export function LoginMascot({
     const handleInput = (event: Event) => fromEvent(event, true);
     const handleKey = (event: KeyboardEvent) => fromEvent(event, true);
     const handlePointer = (event: MouseEvent) => fromEvent(event);
+    const handlePointerMove = (event: PointerEvent) => {
+      const active = document.activeElement;
+      if (isTrackable(active) && inScope(active)) return;
+      if (scopeSelector) {
+        const target = event.target;
+        if (!(target instanceof Element) || !target.closest(scopeSelector)) return;
+      }
+      const mascot = mascotRef.current;
+      if (!mascot) return;
+      const mascotRect = mascot.getBoundingClientRect();
+      const centerX = mascotRect.left + mascotRect.width * 0.52;
+      const centerY = mascotRect.top + mascotRect.height * 0.42;
+      const dx = event.clientX - centerX;
+      const dy = event.clientY - centerY;
+      setGaze({
+        x: clamp(dx / 34, -6, 6),
+        y: clamp(dy / 38, -4.2, 4.2),
+        tilt: clamp(dx / 220, -2.8, 2.8),
+      });
+    };
     const handleSelection = () => {
       const active = document.activeElement;
       if (isTrackable(active)) update(active);
@@ -238,6 +258,7 @@ export function LoginMascot({
     document.addEventListener("input", handleInput);
     document.addEventListener("keyup", handleKey);
     document.addEventListener("click", handlePointer);
+    document.addEventListener("pointermove", handlePointerMove, { passive: true });
     document.addEventListener("selectionchange", handleSelection);
     window.addEventListener("resize", handleViewport);
     window.addEventListener("scroll", handleViewport, true);
@@ -248,6 +269,7 @@ export function LoginMascot({
       document.removeEventListener("input", handleInput);
       document.removeEventListener("keyup", handleKey);
       document.removeEventListener("click", handlePointer);
+      document.removeEventListener("pointermove", handlePointerMove);
       document.removeEventListener("selectionchange", handleSelection);
       window.removeEventListener("resize", handleViewport);
       window.removeEventListener("scroll", handleViewport, true);
@@ -301,7 +323,8 @@ export function LoginMascot({
         .filter(Boolean)
         .join(" ")}
       style={style}
-      aria-hidden="true"
+      role="img"
+      aria-label={placement === "datasul" ? "Mascote Raízes acompanhando a operação do Datasul" : "Mascote Raízes acompanhando o acesso"}
     >
       <div className="root-mascot-body">
       </div>
