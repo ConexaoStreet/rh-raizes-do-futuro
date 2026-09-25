@@ -15,7 +15,7 @@ function allowedOrigins() {
 }
 
 function cors(origin: string) {
-  const safe = ALLOWED_ORIGINS.has(origin)
+  const safe = allowedOrigins().has(origin)
     ? origin
     : "https://ti-raizes-do-futuro.vercel.app";
   return {
