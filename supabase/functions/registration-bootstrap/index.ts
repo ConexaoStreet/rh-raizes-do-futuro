@@ -30,6 +30,26 @@ function response(origin: string, body: unknown, status = 200) {
   });
 }
 
+function transientJwtError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const value = error as { code?: unknown; message?: unknown };
+  return (
+    value.code === "PGRST303" &&
+    typeof value.message === "string" &&
+    value.message.toLowerCase().includes("future")
+  );
+}
+
+async function withJwtSkewRetry<T extends { error?: unknown }>(
+  operation: () => PromiseLike<T>,
+) {
+  let result = await operation();
+  if (!transientJwtError(result.error)) return result;
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  result = await operation();
+  return result;
+}
+
 function normalizeName(value: string) {
   return value
     .normalize("NFD")
@@ -73,18 +93,22 @@ Deno.serve(async (request) => {
 
     if (body.action === "options") {
       const [classResult, departmentResult] = await Promise.all([
-        admin
-          .from("classes")
-          .select("id,name,code")
-          .eq("active", true)
-          .order("created_at")
-          .limit(1)
-          .maybeSingle(),
-        admin
-          .from("departments")
-          .select("id,name")
-          .eq("active", true)
-          .order("name"),
+        withJwtSkewRetry(() =>
+          admin
+            .from("classes")
+            .select("id,name,code")
+            .eq("active", true)
+            .order("created_at")
+            .limit(1)
+            .maybeSingle(),
+        ),
+        withJwtSkewRetry(() =>
+          admin
+            .from("departments")
+            .select("id,name")
+            .eq("active", true)
+            .order("name"),
+        ),
       ]);
 
       if (classResult.error || departmentResult.error) {
@@ -112,12 +136,14 @@ Deno.serve(async (request) => {
         });
       }
 
-      const { data, error } = await admin
-        .from("employees")
-        .select("full_name")
-        .eq("status", "active")
-        .is("profile_id", null)
-        .limit(1000);
+      const { data, error } = await withJwtSkewRetry(() =>
+        admin
+          .from("employees")
+          .select("full_name")
+          .eq("status", "active")
+          .is("profile_id", null)
+          .limit(1000),
+      );
       if (error) throw error;
 
       const matches = (data || []).filter(
