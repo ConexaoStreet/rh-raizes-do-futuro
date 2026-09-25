@@ -29,3 +29,62 @@ verify_jwt = false
 
 [functions.manager-activation]
 verify_jwt = false
+
+[auth.email.template.invite]
+subject = "Seu acesso ao Raízes do Futuro"
+content_path = "./templates/invite.html"
+
+[auth.email.template.confirmation]
+subject = "Confirme seu Gmail | Raízes do Futuro"
+content_path = "./templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Redefina sua senha | Raízes do Futuro"
+content_path = "./templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Seu acesso seguro | Raízes do Futuro"
+content_path = "./templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "Confirme seu novo e-mail | Raízes do Futuro"
+content_path = "./templates/email_change.html"
+
+[auth.email.template.reauthentication]
+subject = "{{ .Token }} é seu código | Raízes do Futuro"
+content_path = "./templates/reauthentication.html"
+
+[auth.email.notification.password_changed]
+enabled = true
+subject = "Sua senha foi alterada | Raízes do Futuro"
+content_path = "./templates/password_changed_notification.html"
+
+[auth.email.notification.email_changed]
+enabled = true
+subject = "Seu e-mail foi alterado | Raízes do Futuro"
+content_path = "./templates/email_changed_notification.html"
+
+[auth.email.notification.phone_changed]
+enabled = true
+subject = "Seu telefone foi alterado | Raízes do Futuro"
+content_path = "./templates/phone_changed_notification.html"
+
+[auth.email.notification.mfa_factor_enrolled]
+enabled = true
+subject = "Novo método de verificação | Raízes do Futuro"
+content_path = "./templates/mfa_factor_enrolled_notification.html"
+
+[auth.email.notification.mfa_factor_unenrolled]
+enabled = true
+subject = "Método de verificação removido | Raízes do Futuro"
+content_path = "./templates/mfa_factor_unenrolled_notification.html"
+
+[auth.email.notification.identity_linked]
+enabled = true
+subject = "Novo método de entrada conectado | Raízes do Futuro"
+content_path = "./templates/identity_linked_notification.html"
+
+[auth.email.notification.identity_unlinked]
+enabled = true
+subject = "Método de entrada removido | Raízes do Futuro"
+content_path = "./templates/identity_unlinked_notification.html"
