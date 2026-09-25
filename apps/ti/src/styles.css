@@ -2834,18 +2834,9 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   overflow: visible;
   pointer-events: none;
 }
-.datasul-mascot-perch::before {
-  content: "";
-  position: absolute;
-  inset: 18px 8px 0;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 56%,rgba(151,211,170,.18),rgba(73,126,91,.06) 44%,transparent 72%);
-  filter: blur(8px);
-}
 .root-mascot-datasul {
   transform: scale(1.14);
   transform-origin: 50% 100%;
-  filter: drop-shadow(0 18px 28px rgba(0,0,0,.3));
 }
 .root-mascot-datasul .root-mascot-note {
   right: 106px;
