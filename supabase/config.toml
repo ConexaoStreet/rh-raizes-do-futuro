@@ -29,3 +29,47 @@ verify_jwt = false
 
 [functions.manager-activation]
 verify_jwt = false
+
+[auth.email.template.confirmation]
+subject = "Confirme seu e-mail | Raízes do Futuro"
+content_path = "./templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Redefina sua senha | Raízes do Futuro"
+content_path = "./templates/recovery.html"
+
+[auth.email.template.invite]
+subject = "Seu acesso foi autorizado | Raízes do Futuro"
+content_path = "./templates/invite.html"
+
+[auth.email.template.magic_link]
+subject = "Seu link de acesso | Raízes do Futuro"
+content_path = "./templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "Confirme seu novo e-mail | Raízes do Futuro"
+content_path = "./templates/email_change.html"
+
+[auth.email.template.reauthentication]
+subject = "{{ .Token }} é seu código | Raízes do Futuro"
+content_path = "./templates/reauthentication.html"
+
+[auth.email.notification.password_changed]
+enabled = true
+subject = "Sua senha foi alterada | Raízes do Futuro"
+content_path = "./templates/password_changed_notification.html"
+
+[auth.email.notification.email_changed]
+enabled = true
+subject = "Seu e-mail foi alterado | Raízes do Futuro"
+content_path = "./templates/email_changed_notification.html"
+
+[auth.email.notification.mfa_factor_enrolled]
+enabled = true
+subject = "Novo método de verificação | Raízes do Futuro"
+content_path = "./templates/mfa_factor_enrolled_notification.html"
+
+[auth.email.notification.mfa_factor_unenrolled]
+enabled = true
+subject = "Método de verificação removido | Raízes do Futuro"
+content_path = "./templates/mfa_factor_unenrolled_notification.html"
