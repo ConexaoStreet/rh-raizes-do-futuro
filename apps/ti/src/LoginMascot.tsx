@@ -156,6 +156,8 @@ export function LoginMascot({
   const mascotRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<number | null>(null);
   const frameRef = useRef<number | null>(null);
+  const pointerFrameRef = useRef<number | null>(null);
+  const pointerTargetRef = useRef({ x: 0, y: 0 });
   const [trackedMood, setTrackedMood] = useState<MascotMood | null>(null);
   const [typing, setTyping] = useState(false);
   const [gaze, setGaze] = useState<Gaze>({ x: 0, y: 0, tilt: 0 });
@@ -180,6 +182,7 @@ export function LoginMascot({
       }
 
       if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+      if (pointerFrameRef.current) window.cancelAnimationFrame(pointerFrameRef.current);
       frameRef.current = window.requestAnimationFrame(() => {
         const mascot = mascotRef.current;
         if (!mascot) return;
@@ -222,17 +225,22 @@ export function LoginMascot({
         const target = event.target;
         if (!(target instanceof Element) || !target.closest(scopeSelector)) return;
       }
-      const mascot = mascotRef.current;
-      if (!mascot) return;
-      const mascotRect = mascot.getBoundingClientRect();
-      const centerX = mascotRect.left + mascotRect.width * 0.52;
-      const centerY = mascotRect.top + mascotRect.height * 0.42;
-      const dx = event.clientX - centerX;
-      const dy = event.clientY - centerY;
-      setGaze({
-        x: clamp(dx / 34, -6, 6),
-        y: clamp(dy / 38, -4.2, 4.2),
-        tilt: clamp(dx / 220, -2.8, 2.8),
+      pointerTargetRef.current = { x: event.clientX, y: event.clientY };
+      if (pointerFrameRef.current) return;
+      pointerFrameRef.current = window.requestAnimationFrame(() => {
+        pointerFrameRef.current = null;
+        const mascot = mascotRef.current;
+        if (!mascot) return;
+        const mascotRect = mascot.getBoundingClientRect();
+        const centerX = mascotRect.left + mascotRect.width * 0.52;
+        const centerY = mascotRect.top + mascotRect.height * 0.42;
+        const dx = pointerTargetRef.current.x - centerX;
+        const dy = pointerTargetRef.current.y - centerY;
+        setGaze({
+          x: clamp(dx / 34, -6, 6),
+          y: clamp(dy / 38, -4.2, 4.2),
+          tilt: clamp(dx / 220, -2.8, 2.8),
+        });
       });
     };
     const handleSelection = () => {
