@@ -1,6 +1,14 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { withSupabase } from "npm:@supabase/server";
 
+type StorageBucket = {
+  id: string;
+  name: string;
+  public: boolean;
+  file_size_limit?: number | null;
+  allowed_mime_types?: string[] | null;
+};
+
 const ORIGINS = new Set([
   "https://ti-raizes-do-futuro.vercel.app",
   "http://127.0.0.1:4174",
@@ -140,7 +148,7 @@ Deno.serve(
 
       return response(origin, {
         snapshot: snapshotResult.data || null,
-        buckets: (bucketResult.data || []).map((bucket) => ({
+        buckets: (bucketResult.data || []).map((bucket: StorageBucket) => ({
           id: bucket.id,
           name: bucket.name,
           public: bucket.public,
@@ -192,7 +200,7 @@ Deno.serve(
       if (bucketError) {
         return response(origin, { error: "STORAGE_LIST_FAILED" }, 500);
       }
-      if (!(buckets || []).some((item) => item.id === bucket)) {
+      if (!(buckets || []).some((item: StorageBucket) => item.id === bucket)) {
         return response(origin, { error: "INVALID_BUCKET" }, 404);
       }
 
@@ -236,7 +244,7 @@ Deno.serve(
       }
 
       const { data: buckets } = await admin.storage.listBuckets();
-      if (!(buckets || []).some((item) => item.id === bucket)) {
+      if (!(buckets || []).some((item: StorageBucket) => item.id === bucket)) {
         return response(origin, { error: "INVALID_BUCKET" }, 404);
       }
 
