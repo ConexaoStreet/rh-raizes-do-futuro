@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -342,12 +343,30 @@ export default function App() {
   const [notificationBody, setNotificationBody] = useState("");
   const [notificationPath, setNotificationPath] = useState("/");
 
-  const datasul = settings.ti_datasul || {};
-  const github = settings.ti_github || {};
-  const vercel = settings.ti_vercel || {};
-  const email = settings.ti_email || {};
-  const site = settings.ti_site || {};
-  const maintenance = settings.maintenance || {};
+  const datasul = useMemo(
+    () => settings.ti_datasul || {},
+    [settings.ti_datasul],
+  );
+  const github = useMemo(
+    () => settings.ti_github || {},
+    [settings.ti_github],
+  );
+  const vercel = useMemo(
+    () => settings.ti_vercel || {},
+    [settings.ti_vercel],
+  );
+  const email = useMemo(
+    () => settings.ti_email || {},
+    [settings.ti_email],
+  );
+  const site = useMemo(
+    () => settings.ti_site || {},
+    [settings.ti_site],
+  );
+  const maintenance = useMemo(
+    () => settings.maintenance || {},
+    [settings.maintenance],
+  );
 
   const rolesById = useMemo(
     () => Object.fromEntries(roles.map((role) => [role.id, role])),
@@ -366,16 +385,18 @@ export default function App() {
     return map;
   }, [rolesById, userRoles]);
 
-  async function invokeFunction(
-    name: string,
-    body: JsonObject,
-  ): Promise<unknown> {
-    const { data, error: invokeError } = await client().functions.invoke(name, {
-      body,
-    });
-    if (invokeError) throw invokeError;
-    return data;
-  }
+  const invokeFunction = useCallback(
+    async (
+      name: string,
+      body: JsonObject,
+    ): Promise<unknown> => {
+      const { data, error: invokeError } =
+        await client().functions.invoke(name, { body });
+      if (invokeError) throw invokeError;
+      return data;
+    },
+    [],
+  );
 
   async function run(
     key: string,
@@ -395,7 +416,7 @@ export default function App() {
     }
   }
 
-  async function reload() {
+  const reload = useCallback(async () => {
     setLoading(true);
     setError("");
     const tasks: { key: string; run: () => Promise<void> }[] = [
@@ -569,11 +590,11 @@ export default function App() {
     }
 
     setLoading(false);
-  }
+  }, [invokeFunction]);
 
   useEffect(() => {
     void reload();
-  }, []);
+  }, [reload]);
 
   useEffect(() => {
     setCompanyId(text(datasul.company_id));
@@ -1081,7 +1102,7 @@ export default function App() {
               {view === "datasul" && (
                 <div className="datasul-view-root">
                   <section className="datasul-command-header">
-                    <div className="datasul-mascot-perch">
+                    <div className="datasul-mascot-perch" data-testid="datasul-mascot">
                       <LoginMascot
                         placement="datasul"
                         scopeSelector=".datasul-view-root"

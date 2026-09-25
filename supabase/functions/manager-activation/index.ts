@@ -35,14 +35,25 @@ function strongPassword(value: string) {
   );
 }
 
+const DEFAULT_ALLOWED_ORIGINS = new Set([
+  "https://rh-raizes-do-futuro.vercel.app",
+  "http://127.0.0.1:4173",
+  "http://localhost:4173",
+]);
+
+function allowedOrigins() {
+  return new Set([
+    ...DEFAULT_ALLOWED_ORIGINS,
+    ...(Deno.env.get("ALLOWED_ORIGINS") || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  ]);
+}
+
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin") || "";
-  const allowed = (Deno.env.get("ALLOWED_ORIGINS") || "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (!allowed.includes(origin)) return new Response(null, { status: 403 });
+  if (!allowedOrigins().has(origin)) return new Response(null, { status: 403 });
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers: cors(origin) });
   if (request.method !== "POST")

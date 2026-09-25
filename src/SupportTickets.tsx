@@ -157,7 +157,6 @@ export default function SupportTickets() {
 
     setBusy(true);
     const ticketId = crypto.randomUUID();
-    const createdAt = new Date().toISOString();
     const pageUrl = new URL(relatedPath, window.location.origin).href;
     const technicalContext = {
       browser: shortBrowser(navigator.userAgent),
@@ -191,22 +190,25 @@ export default function SupportTickets() {
         signedAttachmentUrl = signed.signedUrl;
       }
 
-      const { error } = await client().from("ti_support_tickets").insert({
-        id: ticketId,
-        user_id: session.user.id,
-        category,
-        subject: subject.trim(),
-        description: description.trim(),
-        page_path: relatedPath,
-        page_url: pageUrl,
-        page_title: relatedLabel,
-        technical_context: technicalContext,
-        attachment_path: attachmentPath,
-        status: "open",
-        created_at: createdAt,
-        updated_at: createdAt,
-      });
+      const { data: ticket, error } = await client()
+        .from("ti_support_tickets")
+        .insert({
+          id: ticketId,
+          user_id: session.user.id,
+          category,
+          subject: subject.trim(),
+          description: description.trim(),
+          page_path: relatedPath,
+          page_url: pageUrl,
+          page_title: relatedLabel,
+          technical_context: technicalContext,
+          attachment_path: attachmentPath,
+          status: "open",
+        })
+        .select("created_at")
+        .single();
       if (error) throw error;
+      const createdAt = ticket.created_at;
 
       const protocol = `TI-${createdAt.slice(0, 10).replaceAll("-", "")}-${ticketId
         .slice(0, 6)

@@ -25,6 +25,7 @@ import { errorMessage } from "./domain";
 import { capture, captureError, setTelemetryUser } from "./telemetry";
 import { shouldRefreshExpiredJwt } from "./auth-errors";
 import { ThemeToggle } from "./theme";
+import { PASSWORD_POLICY_MESSAGE, strongPassword } from "./password-policy";
 import type { Row } from "./database.types";
 export type Bootstrap = {
   profile: Row<"profiles">;
@@ -214,9 +215,11 @@ function AuthFrame({ children }: { children: ReactNode }) {
 function PasswordInput({
   name = "password",
   minLength = 12,
+  autoComplete = "current-password",
 }: {
   name?: string;
   minLength?: number;
+  autoComplete?: "current-password" | "new-password";
 }) {
   const [show, setShow] = useState(false);
   return (
@@ -224,7 +227,7 @@ function PasswordInput({
       <input
         name={name}
         type={show ? "text" : "password"}
-        autoComplete={name === "password" ? "current-password" : "new-password"}
+        autoComplete={autoComplete}
         required
         minLength={minLength}
       />
@@ -382,6 +385,10 @@ function Login({ configured: ready }: { configured: boolean }) {
           toast.error("Selecione seu cargo.");
           return;
         }
+        if (!strongPassword(password)) {
+          toast.error(PASSWORD_POLICY_MESSAGE);
+          return;
+        }
         if (password !== data.get("confirmation")) {
           toast.error("As senhas precisam ser iguais.");
           return;
@@ -514,7 +521,10 @@ function Login({ configured: ready }: { configured: boolean }) {
 
           {mode !== "recover" && (
             <Field label="Senha">
-              <PasswordInput minLength={mode === "login" ? 1 : 12} />
+              <PasswordInput
+                minLength={mode === "login" ? 1 : 12}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+              />
             </Field>
           )}
 
@@ -552,7 +562,7 @@ function Login({ configured: ready }: { configured: boolean }) {
               <span className="muted">
                 Cargos com acesso elevado só são liberados quando já estiverem autorizados no cadastro-base.
               </span>
-              <span className="muted">Use pelo menos 12 caracteres na senha.</span>
+              <span className="muted">{PASSWORD_POLICY_MESSAGE}</span>
             </>
           )}
 
@@ -624,6 +634,10 @@ function ManagerActivation({
     const confirmation = String(form.get("manager_confirmation"));
     if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
       toast.error("Informe um endereço @gmail.com válido.");
+      return;
+    }
+    if (!strongPassword(password)) {
+      toast.error(PASSWORD_POLICY_MESSAGE);
       return;
     }
     if (password !== confirmation) {
@@ -791,10 +805,10 @@ function ManagerActivation({
             Este Gmail receberá o código de 6 dígitos da verificação em duas etapas.
           </div>
           <Field label="Crie sua nova senha">
-            <PasswordInput name="manager_password" />
+            <PasswordInput name="manager_password" autoComplete="new-password" />
           </Field>
           <Field label="Confirmar nova senha">
-            <PasswordInput name="manager_confirmation" />
+            <PasswordInput name="manager_confirmation" autoComplete="new-password" />
           </Field>
           <span className="muted">
             Mínimo de 12 caracteres com maiúscula, minúscula, número e símbolo.
@@ -1145,13 +1159,18 @@ function ResetPassword({ onDone }: { onDone: () => void }) {
         onSubmit={async (e) => {
           e.preventDefault();
           const data = new FormData(e.currentTarget);
-          if (data.get("password") !== data.get("confirmation")) {
+          const password = String(data.get("password"));
+          if (!strongPassword(password)) {
+            toast.error(PASSWORD_POLICY_MESSAGE);
+            return;
+          }
+          if (password !== data.get("confirmation")) {
             toast.error("As senhas precisam ser iguais.");
             return;
           }
           await runAction(async () => {
             const { error } = await client().auth.updateUser({
-              password: String(data.get("password")),
+              password,
             });
             if (error) throw error;
             await client().auth.signOut({ scope: "global" });
@@ -1161,11 +1180,12 @@ function ResetPassword({ onDone }: { onDone: () => void }) {
         }}
       >
         <Field label="Nova senha">
-          <PasswordInput />
+          <PasswordInput autoComplete="new-password" />
         </Field>
         <Field label="Confirmar senha">
-          <PasswordInput name="confirmation" />
+          <PasswordInput name="confirmation" autoComplete="new-password" />
         </Field>
+        <span className="muted">{PASSWORD_POLICY_MESSAGE}</span>
         <button className="primary">Salvar senha</button>
       </form>
     </AuthFrame>

@@ -57,11 +57,17 @@ function moodForField(
   field: HTMLInputElement | HTMLTextAreaElement,
 ): MascotMood {
   const name = field.getAttribute("name") || "";
+  const autocomplete =
+    field instanceof HTMLInputElement ? field.autocomplete.toLowerCase() : "";
+  const passwordField =
+    name.toLowerCase().includes("password") ||
+    autocomplete === "current-password" ||
+    autocomplete === "new-password";
   if (name === "access_code" || field.classList.contains("weekly-access-code"))
     return "code";
   if (field instanceof HTMLInputElement && field.type === "email")
     return "email";
-  if (name.toLowerCase().includes("password")) {
+  if (passwordField) {
     if (field instanceof HTMLInputElement && field.type === "text")
       return "peek";
     return "password";
@@ -109,7 +115,9 @@ function caretPoint(
   let prefix = field.value.slice(0, position);
   if (
     field instanceof HTMLInputElement &&
-    field.getAttribute("name")?.toLowerCase().includes("password") &&
+    (field.getAttribute("name")?.toLowerCase().includes("password") ||
+      field.autocomplete.toLowerCase() === "current-password" ||
+      field.autocomplete.toLowerCase() === "new-password") &&
     field.type === "password"
   ) {
     prefix = "•".repeat(prefix.length);
@@ -140,7 +148,6 @@ function caretPoint(
   return point;
 }
 
-// redeploy marker: Vercel retry 2026-09-24
 export function LoginMascot({
   mood = "idle",
   placement = "login",
@@ -149,6 +156,8 @@ export function LoginMascot({
   const mascotRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<number | null>(null);
   const frameRef = useRef<number | null>(null);
+  const pointerFrameRef = useRef<number | null>(null);
+  const pointerTargetRef = useRef({ x: 0, y: 0 });
   const [trackedMood, setTrackedMood] = useState<MascotMood | null>(null);
   const [typing, setTyping] = useState(false);
   const [gaze, setGaze] = useState<Gaze>({ x: 0, y: 0, tilt: 0 });
@@ -173,6 +182,7 @@ export function LoginMascot({
       }
 
       if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+      if (pointerFrameRef.current) window.cancelAnimationFrame(pointerFrameRef.current);
       frameRef.current = window.requestAnimationFrame(() => {
         const mascot = mascotRef.current;
         if (!mascot) return;
@@ -208,6 +218,31 @@ export function LoginMascot({
     const handleInput = (event: Event) => fromEvent(event, true);
     const handleKey = (event: KeyboardEvent) => fromEvent(event, true);
     const handlePointer = (event: MouseEvent) => fromEvent(event);
+    const handlePointerMove = (event: PointerEvent) => {
+      const active = document.activeElement;
+      if (isTrackable(active) && inScope(active)) return;
+      if (scopeSelector) {
+        const target = event.target;
+        if (!(target instanceof Element) || !target.closest(scopeSelector)) return;
+      }
+      pointerTargetRef.current = { x: event.clientX, y: event.clientY };
+      if (pointerFrameRef.current) return;
+      pointerFrameRef.current = window.requestAnimationFrame(() => {
+        pointerFrameRef.current = null;
+        const mascot = mascotRef.current;
+        if (!mascot) return;
+        const mascotRect = mascot.getBoundingClientRect();
+        const centerX = mascotRect.left + mascotRect.width * 0.52;
+        const centerY = mascotRect.top + mascotRect.height * 0.42;
+        const dx = pointerTargetRef.current.x - centerX;
+        const dy = pointerTargetRef.current.y - centerY;
+        setGaze({
+          x: clamp(dx / 34, -6, 6),
+          y: clamp(dy / 38, -4.2, 4.2),
+          tilt: clamp(dx / 220, -2.8, 2.8),
+        });
+      });
+    };
     const handleSelection = () => {
       const active = document.activeElement;
       if (isTrackable(active)) update(active);
@@ -231,6 +266,7 @@ export function LoginMascot({
     document.addEventListener("input", handleInput);
     document.addEventListener("keyup", handleKey);
     document.addEventListener("click", handlePointer);
+    document.addEventListener("pointermove", handlePointerMove, { passive: true });
     document.addEventListener("selectionchange", handleSelection);
     window.addEventListener("resize", handleViewport);
     window.addEventListener("scroll", handleViewport, true);
@@ -241,6 +277,7 @@ export function LoginMascot({
       document.removeEventListener("input", handleInput);
       document.removeEventListener("keyup", handleKey);
       document.removeEventListener("click", handlePointer);
+      document.removeEventListener("pointermove", handlePointerMove);
       document.removeEventListener("selectionchange", handleSelection);
       window.removeEventListener("resize", handleViewport);
       window.removeEventListener("scroll", handleViewport, true);
@@ -294,7 +331,8 @@ export function LoginMascot({
         .filter(Boolean)
         .join(" ")}
       style={style}
-      aria-hidden="true"
+      role="img"
+      aria-label={placement === "datasul" ? "Mascote Raízes acompanhando a operação do Datasul" : "Mascote Raízes acompanhando o acesso"}
     >
       <div className="root-mascot-body">
       </div>

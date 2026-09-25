@@ -30,6 +30,26 @@ verify_jwt = false
 [functions.manager-activation]
 verify_jwt = false
 
+
+[functions.push-notify]
+verify_jwt = false
+
+
+[functions.registration-bootstrap]
+verify_jwt = false
+
+
+[functions.profile-photo-verify]
+verify_jwt = false
+
+
+[functions.ti-admin-bridge]
+verify_jwt = false
+
+
+[functions.ti-code-login]
+verify_jwt = false
+
 [auth.email.template.invite]
 subject = "Seu acesso ao Raízes do Futuro"
 content_path = "./templates/invite.html"

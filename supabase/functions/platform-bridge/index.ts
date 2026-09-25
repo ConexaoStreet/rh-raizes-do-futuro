@@ -1,14 +1,36 @@
 import { withSupabase } from "npm:@supabase/server";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
-};
+const DEFAULT_ALLOWED_ORIGINS = new Set([
+  "https://ti-raizes-do-futuro.vercel.app",
+  "http://127.0.0.1:4174",
+  "http://localhost:4174",
+]);
 
-function response(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: cors });
+function allowedOrigins() {
+  const extra = (Deno.env.get("ALLOWED_ORIGINS") || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return new Set([...DEFAULT_ALLOWED_ORIGINS, ...extra]);
+}
+
+function cors(origin: string) {
+  const safe = allowedOrigins().has(origin)
+    ? origin
+    : "https://ti-raizes-do-futuro.vercel.app";
+  return {
+    "Access-Control-Allow-Origin": safe,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Cache-Control": "no-store",
+    "Content-Type": "application/json",
+    Vary: "Origin",
+  };
+}
+
+function response(origin: string, body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: cors(origin) });
 }
 
 function secret(name: string) {
@@ -128,19 +150,25 @@ async function vercelStatus(project: string, productionUrl: string | null) {
 
 Deno.serve(
   withSupabase({ auth: "user" }, async (req, ctx) => {
-    if (req.method === "OPTIONS") return new Response(null, { headers: cors });
-    if (req.method !== "POST") return response({ error: "method_not_allowed" }, 405);
+    const origin =
+      req.headers.get("origin") ||
+      "https://ti-raizes-do-futuro.vercel.app";
+    if (!allowedOrigins().has(origin)) return new Response(null, { status: 403 });
+    if (req.method === "OPTIONS")
+      return new Response(null, { status: 204, headers: cors(origin) });
+    if (req.method !== "POST")
+      return response(origin, { error: "METHOD_NOT_ALLOWED" }, 405);
 
     const { data: allowed, error: permissionError } = await ctx.supabase.rpc("has_permission", {
       permission_code: "ti.view",
     });
-    if (permissionError || !allowed) return response({ error: "forbidden" }, 403);
+    if (permissionError || !allowed) return response(origin, { error: "FORBIDDEN" }, 403);
 
     const { data: rows, error: settingsError } = await ctx.supabase
       .from("settings")
       .select("key,value")
       .in("key", ["ti_github", "ti_vercel"]);
-    if (settingsError) return response({ error: "settings_unavailable" }, 500);
+    if (settingsError) return response(origin, { error: "SETTINGS_UNAVAILABLE" }, 500);
 
     const settings = Object.fromEntries((rows || []).map((row) => [row.key, row.value || {}]));
     const github = settings.ti_github as Record<string, unknown>;
@@ -184,7 +212,7 @@ Deno.serve(
       ]);
     }
 
-    return response({
+    return response(origin, {
       github: githubResult,
       vercel: vercelResult,
       required_secrets: {

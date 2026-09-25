@@ -557,18 +557,21 @@ function GlobalSearch({
   const [search, setSearch] = useState("");
   const query = useDebounce(search);
   const navigate = useNavigate();
+  const { can } = useAuth();
   const results = useAsync(async () => {
     if (!open || query.trim().length < 2) return [];
     const clean = query.replace(/[%_]/g, "");
     const requests = [
-      ["employees", "full_name", "Colaborador", "/colaboradores/"],
-      ["feedbacks", "title", "Feedback", "/feedbacks"],
-      ["reports", "title", "Relatório", "/relatorios"],
-      ["events", "title", "Evento", "/configuracoes/eventos"],
-      ["manager_review_cycles", "title", "Avaliação", "/gestao"],
+      ["employees", "full_name", "Colaborador", "/colaboradores/", can("employee.view")],
+      ["feedbacks", "title", "Feedback", "/feedbacks", can("feedback.view")],
+      ["reports", "title", "Relatório", "/relatorios", can("report.view")],
+      ["events", "title", "Evento", "/configuracoes/eventos", can("calendar.manage")],
+      ["manager_review_cycles", "title", "Avaliação", "/gestao", can("review.manage") || can("review.results")],
     ] as const;
     const response = await Promise.all(
-      requests.map(async ([table, column, type, path]) => {
+      requests
+        .filter(([, , , , allowed]) => allowed)
+        .map(async ([table, column, type, path]) => {
         const { data, error } = await client()
           .from(table)
           .select("*")
@@ -581,10 +584,10 @@ function GlobalSearch({
           type,
           path: table === "employees" ? path + row.id : path,
         }));
-      }),
+        }),
     );
     return response.flat();
-  }, [query, open]);
+  }, [query, open, can("employee.view"), can("feedback.view"), can("report.view"), can("calendar.manage"), can("review.manage"), can("review.results")]);
   return (
     <Modal title="Busca global" open={open} onClose={onClose}>
       <div className="search-input">
