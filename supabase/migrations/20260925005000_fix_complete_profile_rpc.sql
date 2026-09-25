@@ -1,4 +1,3 @@
--- Ensure the onboarding RPC is exposed to authenticated users and visible to PostgREST.
 create or replace function public.complete_profile(payload jsonb)
 returns void
 language sql
