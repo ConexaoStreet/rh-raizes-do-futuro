@@ -11,8 +11,12 @@ export async function createDatabase() {
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text);
  alter table storage.objects enable row level security; grant usage on schema storage to authenticated; grant select,insert on storage.objects to authenticated;`);
+  const unsupportedMigrations = new Set([
+    "20260923211930_enable_pg_net_for_tester_provisioning.sql",
+    "20260923211956_disable_pg_net_after_tester_provisioning_attempt.sql",
+  ]);
   for (const file of (await fs.readdir("supabase/migrations"))
-    .filter((f) => f.endsWith(".sql"))
+    .filter((f) => f.endsWith(".sql") && !unsupportedMigrations.has(f))
     .sort())
     await db
       .exec(await fs.readFile(`supabase/migrations/${file}`, "utf8"))
