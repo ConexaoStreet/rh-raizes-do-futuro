@@ -1,7 +1,7 @@
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.116.0";
+import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { withSupabase } from "npm:@supabase/server";
 
-const DEFAULT_ALLOWED_ORIGINS = new Set([
+const PROD_ORIGINS = new Set([
   "https://ti-raizes-do-futuro.vercel.app",
   "https://rh-raizes-do-futuro.vercel.app",
   "http://127.0.0.1:4174",
@@ -13,15 +13,16 @@ function allowedOrigins() {
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
-  return new Set([...DEFAULT_ALLOWED_ORIGINS, ...extra]);
+  return new Set([...PROD_ORIGINS, ...extra]);
 }
 
 function cors(origin: string) {
-  const safe = allowedOrigins().has(origin)
+  const allowed = allowedOrigins();
+  const safeOrigin = allowed.has(origin)
     ? origin
     : "https://ti-raizes-do-futuro.vercel.app";
   return {
-    "Access-Control-Allow-Origin": safe,
+    "Access-Control-Allow-Origin": safeOrigin,
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -43,69 +44,66 @@ function secret(name: string) {
   return value && value.trim() ? value.trim() : null;
 }
 
-function safePath(value: string) {
-  const path = value.trim();
+function safePath(path: string) {
+  const clean = path.trim();
   if (
-    !path.startsWith("/") ||
-    path.includes("://") ||
-    path.includes("\\") ||
-    path.includes("\0") ||
-    path.length > 1200
+    !clean.startsWith("/") ||
+    clean.includes("://") ||
+    clean.includes("\\") ||
+    clean.includes("\0") ||
+    clean.length > 1200
   ) {
     throw new Error("INVALID_PATH");
   }
-  return path;
+  return clean;
 }
 
-function buildUrl(base: string, path: string) {
+function joinUrl(base: string, path: string) {
   const url = new URL(base);
-  url.pathname = safePath(path);
+  const cleanPath = safePath(path);
+  url.pathname = cleanPath;
   url.search = "";
   url.hash = "";
   return url;
 }
 
-function parseResponse(raw: string) {
+function sanitizeForLog(value: unknown) {
+  if (value === null || value === undefined) return null;
+  const raw = JSON.stringify(value);
+  if (raw.length <= 6000) return value;
+  return { truncated: true, preview: raw.slice(0, 6000) };
+}
+
+function parsePayload(raw: string) {
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as unknown;
+    return JSON.parse(raw);
   } catch {
     return { text: raw.slice(0, 12000) };
   }
 }
 
-function sanitize(value: unknown) {
-  if (value === null || value === undefined) return null;
-  const raw = JSON.stringify(value);
-  return raw.length <= 6000
-    ? value
-    : { truncated: true, preview: raw.slice(0, 6000) };
-}
-
-async function hasPermission(
-  supabase: SupabaseClient,
+async function permission(
+  supabase: ReturnType<typeof createClient>,
   code: string,
 ) {
   const { data, error } = await supabase.rpc("has_permission", {
     permission_code: code,
   });
-  return !error && data === true;
+  if (error) return false;
+  return data === true;
 }
 
-async function recentlyVerified(
-  supabase: SupabaseClient,
+async function recentVerification(
+  supabase: ReturnType<typeof createClient>,
 ) {
   const { data, error } = await supabase.rpc("bootstrap");
-  return (
-    !error &&
-    Boolean(data) &&
-    typeof data === "object" &&
-    (data as Record<string, unknown>).recently_verified === true
-  );
+  if (error || !data || typeof data !== "object") return false;
+  return (data as Record<string, unknown>).recently_verified === true;
 }
 
-async function actor(
-  supabase: SupabaseClient,
+async function actorContext(
+  supabase: ReturnType<typeof createClient>,
 ) {
   const {
     data: { user },
@@ -132,7 +130,6 @@ async function datasulRequest(args: {
   const baseUrl = secret("DATASUL_BASE_URL");
   const username = secret("DATASUL_USERNAME");
   const password = secret("DATASUL_PASSWORD");
-
   if (!baseUrl || !username || !password) {
     return {
       configured: false as const,
@@ -145,7 +142,7 @@ async function datasulRequest(args: {
   }
 
   const method = args.method.toUpperCase();
-  const url = buildUrl(baseUrl, args.path);
+  const url = joinUrl(baseUrl, args.path);
   for (const [key, value] of Object.entries(args.query || {})) {
     if (value !== null && value !== undefined) {
       url.searchParams.set(key, String(value));
@@ -160,29 +157,30 @@ async function datasulRequest(args: {
 
   const init: RequestInit = { method, headers };
   if (!["GET", "HEAD"].includes(method) && args.payload !== undefined) {
-    const body = JSON.stringify(args.payload);
-    if (body.length > 150000) throw new Error("PAYLOAD_TOO_LARGE");
+    const serialized = JSON.stringify(args.payload);
+    if (serialized.length > 150000) throw new Error("PAYLOAD_TOO_LARGE");
     headers.set("Content-Type", "application/json");
-    init.body = body;
+    init.body = serialized;
   }
 
   const started = Date.now();
-  const result = await fetch(url, init);
-  const raw = await result.text();
+  const res = await fetch(url, init);
+  const raw = await res.text();
+  const data = parsePayload(raw);
 
   return {
     configured: true as const,
-    ok: result.ok,
-    status: result.status,
+    ok: res.ok,
+    status: res.status,
     duration_ms: Date.now() - started,
-    data: parseResponse(raw),
+    data,
   };
 }
 
-function rowsFrom(payload: unknown) {
+function extractRows(payload: unknown) {
   if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== "object") return [];
-  const object = payload as Record<string, unknown>;
+  const obj = payload as Record<string, unknown>;
   for (const key of [
     "rows",
     "items",
@@ -191,68 +189,59 @@ function rowsFrom(payload: unknown) {
     "funcionarios",
     "value",
   ]) {
-    if (Array.isArray(object[key])) return object[key] as unknown[];
+    if (Array.isArray(obj[key])) return obj[key] as unknown[];
   }
   return [];
 }
 
 Deno.serve(
-  withSupabase({ auth: "user" }, async (request, context) => {
+  withSupabase({ auth: "user" }, async (req, ctx) => {
     const origin =
-      request.headers.get("origin") ||
+      req.headers.get("origin") ||
       "https://ti-raizes-do-futuro.vercel.app";
-
-    if (!allowedOrigins().has(origin)) {
+    if (!allowedOrigins().has(origin))
       return new Response(null, { status: 403 });
-    }
-    if (request.method === "OPTIONS") {
+    if (req.method === "OPTIONS")
       return new Response(null, { status: 204, headers: cors(origin) });
-    }
-    if (request.method !== "POST") {
+    if (req.method !== "POST")
       return response(origin, { error: "METHOD_NOT_ALLOWED" }, 405);
-    }
 
     const canRead =
-      (await hasPermission(context.supabase, "ti.datasul.read")) ||
-      (await hasPermission(context.supabase, "ti.datasul.sync"));
+      (await permission(ctx.supabase, "ti.datasul.read")) ||
+      (await permission(ctx.supabase, "ti.datasul.sync"));
     if (!canRead) return response(origin, { error: "FORBIDDEN" }, 403);
 
-    const rawBody = await request.text();
-    if (rawBody.length > 180000) {
+    const rawBody = await req.text();
+    if (rawBody.length > 180000)
       return response(origin, { error: "REQUEST_TOO_LARGE" }, 413);
-    }
 
-    let body: {
+    const body = JSON.parse(rawBody || "{}") as {
       action?: string;
       method?: string;
       path?: string;
       payload?: unknown;
       query?: Record<string, string | number | boolean | null>;
     };
-    try {
-      body = JSON.parse(rawBody || "{}");
-    } catch {
-      return response(origin, { error: "INVALID_JSON" }, 400);
-    }
+    const action = body.action || "status";
 
-    const { data: row, error: settingError } = await context.supabase
+    const { data: row, error: settingError } = await ctx.supabase
       .from("settings")
       .select("value")
       .eq("key", "ti_datasul")
       .single();
-    if (settingError) {
+    if (settingError)
       return response(origin, { error: "SETTINGS_UNAVAILABLE" }, 500);
-    }
 
     const config = (row?.value || {}) as Record<string, unknown>;
-    const companyId = config.company_id ? String(config.company_id) : null;
     const healthPath = String(
       config.health_path || "/api/btb/v1/companies",
     );
     const employeesPath = config.employees_path
       ? String(config.employees_path)
       : "";
-    const action = body.action || "status";
+    const companyId = config.company_id
+      ? String(config.company_id)
+      : null;
 
     if (action === "status") {
       return response(origin, {
@@ -264,15 +253,9 @@ Deno.serve(
         state: config,
         capabilities: {
           read: canRead,
-          write: await hasPermission(
-            context.supabase,
-            "ti.datasul.write",
-          ),
-          delete: await hasPermission(
-            context.supabase,
-            "ti.datasul.delete",
-          ),
-          recently_verified: await recentlyVerified(context.supabase),
+          write: await permission(ctx.supabase, "ti.datasul.write"),
+          delete: await permission(ctx.supabase, "ti.datasul.delete"),
+          recently_verified: await recentVerification(ctx.supabase),
         },
         required_secrets: [
           "DATASUL_BASE_URL",
@@ -303,14 +286,13 @@ Deno.serve(
             ? null
             : "HTTP " + result.status,
       };
-      await context.supabase
+      await ctx.supabase
         .from("settings")
         .update({ value: next, updated_at: new Date().toISOString() })
         .eq("key", "ti_datasul");
 
-      if (!result.configured) {
+      if (!result.configured)
         return response(origin, { ok: false, ...result }, 424);
-      }
       return response(
         origin,
         {
@@ -340,10 +322,9 @@ Deno.serve(
         path: employeesPath,
         companyId,
       });
-      if (!result.configured) {
+      if (!result.configured)
         return response(origin, { ok: false, ...result }, 424);
-      }
-      if (!result.ok) {
+      if (!result.ok)
         return response(
           origin,
           {
@@ -353,9 +334,8 @@ Deno.serve(
           },
           502,
         );
-      }
 
-      const rows = rowsFrom(result.data);
+      const rows = extractRows(result.data);
       const sample = rows.slice(0, 25);
       const keys = [
         ...new Set(
@@ -383,14 +363,14 @@ Deno.serve(
       }
 
       if (method !== "GET") {
-        const permission =
+        const required =
           method === "DELETE"
             ? "ti.datasul.delete"
             : "ti.datasul.write";
-        if (!(await hasPermission(context.supabase, permission))) {
+        if (!(await permission(ctx.supabase, required))) {
           return response(origin, { error: "FORBIDDEN" }, 403);
         }
-        if (!(await recentlyVerified(context.supabase))) {
+        if (!(await recentVerification(ctx.supabase))) {
           return response(
             origin,
             { error: "RECENT_VERIFICATION_REQUIRED" },
@@ -399,16 +379,18 @@ Deno.serve(
         }
       }
 
-      let path: string;
+      let path = "";
       try {
         path = safePath(String(body.path || ""));
       } catch {
         return response(origin, { error: "INVALID_PATH" }, 400);
       }
 
-      const currentActor = await actor(context.supabase);
+      const actor = await actorContext(ctx.supabase);
       const started = Date.now();
-      let result: Awaited<ReturnType<typeof datasulRequest>> | null = null;
+      let result:
+        | Awaited<ReturnType<typeof datasulRequest>>
+        | null = null;
       let errorMessage: string | null = null;
 
       try {
@@ -424,46 +406,45 @@ Deno.serve(
           error instanceof Error ? error.message : "REQUEST_FAILED";
       }
 
-      const url = secret("SUPABASE_URL");
-      const serviceRole = secret("SUPABASE_SERVICE_ROLE_KEY");
-      if (!url || !serviceRole) {
-        return response(origin, { error: "CONFIGURATION_REQUIRED" }, 503);
-      }
-      const admin = createClient(url, serviceRole, {
-        auth: { persistSession: false, autoRefreshToken: false },
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL") || "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+        { auth: { persistSession: false, autoRefreshToken: false } },
+      );
+
+      await admin.from("ti_datasul_operations").insert({
+        actor_user_id: actor.id,
+        actor_name: actor.name,
+        method,
+        path,
+        request_body:
+          method === "GET"
+            ? null
+            : (sanitizeForLog(body.payload) as Record<string, unknown> | null),
+        response_status:
+          result && result.configured ? result.status : null,
+        response_preview:
+          result && result.configured
+            ? (sanitizeForLog(result.data) as Record<string, unknown> | null)
+            : null,
+        success: Boolean(
+          result && result.configured && result.ok && !errorMessage,
+        ),
+        duration_ms:
+          result && result.configured
+            ? result.duration_ms
+            : Date.now() - started,
+        error_message: errorMessage,
       });
 
-      const { error: auditError } = await admin
-        .from("ti_datasul_operations")
-        .insert({
-          actor_user_id: currentActor.id,
-          actor_name: currentActor.name,
-          method,
-          path,
-          request_body: method === "GET" ? null : sanitize(body.payload),
-          response_status:
-            result && result.configured ? result.status : null,
-          response_preview:
-            result && result.configured ? sanitize(result.data) : null,
-          success: Boolean(
-            result && result.configured && result.ok && !errorMessage,
-          ),
-          duration_ms:
-            result && result.configured
-              ? result.duration_ms
-              : Date.now() - started,
-          error_message: errorMessage,
-        });
-
-      if (auditError) {
-        return response(origin, { error: "AUDIT_WRITE_FAILED" }, 500);
-      }
-      if (errorMessage) {
-        return response(origin, { ok: false, error: errorMessage }, 500);
-      }
-      if (!result?.configured) {
+      if (errorMessage)
+        return response(
+          origin,
+          { ok: false, error: errorMessage },
+          500,
+        );
+      if (!result?.configured)
         return response(origin, { ok: false, ...result }, 424);
-      }
 
       return response(
         origin,
