@@ -185,6 +185,14 @@ await test("Colaborador não chama endpoint administrativo", async () =>
       JSON.stringify({ full_name: "Invasão", registration: "BAD" }),
     ]),
   ));
+await test("Colaborador não consegue lançar ou editar notas", async () =>
+  blocked(
+    as(
+      "collaborator",
+      "select public.save_performance($1,$2,$3,$4,$5,$6)",
+      [employeeId, uid(999), JSON.stringify([]), "", false, null],
+    ),
+  ));
 await test("Gestor não promove a si mesmo", async () =>
   blocked(
     as("rafaella", "select public.manage_user($1,$2,$3,$4)", [
