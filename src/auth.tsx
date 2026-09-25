@@ -160,12 +160,21 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
     !user.mfa_verified
   )
     return <Verification onDone={refresh} />;
-  if (!user.ready)
+  if (!user.ready && user.maintenance.enabled)
     return (
       <AuthFrame>
         <ShieldCheck size={36} />
         <h1>{user.maintenance.title || "Sistema em manutenção"}</h1>
         <p>{user.maintenance.message || "Estamos realizando ajustes no sistema. O acesso será liberado novamente assim que a manutenção for concluída."}</p>
+        <button onClick={() => void client().auth.signOut()}>Sair</button>
+      </AuthFrame>
+    );
+  if (!user.ready)
+    return (
+      <AuthFrame>
+        <ShieldCheck size={36} />
+        <h1>Acesso ainda não concluído</h1>
+        <p>Seu cadastro está ativo, mas ainda existe uma etapa de acesso pendente. Entre novamente ou conclua o primeiro acesso.</p>
         <button onClick={() => void client().auth.signOut()}>Sair</button>
       </AuthFrame>
     );
