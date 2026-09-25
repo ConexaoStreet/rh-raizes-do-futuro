@@ -2,8 +2,7 @@ const token = (process.env.SUPABASE_ACCESS_TOKEN || "").trim();
 const projectRef = (process.env.SUPABASE_PROJECT_REF || "").trim();
 
 if (!token) {
-  console.log("::warning::SUPABASE_ACCESS_TOKEN is not configured. Hosted Auth hardening was skipped.");
-  process.exit(0);
+  throw new Error("SUPABASE_ACCESS_TOKEN is required for hosted Supabase Auth changes.");
 }
 
 if (!projectRef) {
