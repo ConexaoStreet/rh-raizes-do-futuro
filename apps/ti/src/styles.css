@@ -2756,7 +2756,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   top: 7px;
   min-width: 116px;
   padding: 8px 10px;
-  border: 1px solid rgba(178,210,190,.12);
   border-radius: 11px 11px 3px 11px;
   background: rgba(6,15,10,.91);
   color: #8fa69a;
@@ -2765,7 +2764,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   white-space: nowrap;
   opacity: 0;
   transform: translate(5px,4px);
-  transition: opacity .18s ease,transform .18s ease;
 }
 .root-mascot:not(.mood-idle) .root-mascot-note,
 .root-mascot.is-typing .root-mascot-note {
@@ -2872,7 +2870,6 @@ html[data-theme="light"] .root-mascot-ear {
 html[data-theme="light"] .root-mascot-note {
   color: #486152;
   background: rgba(249,252,250,.94);
-  border-color: rgba(54,92,68,.13);
 }
 @media(max-width:1150px){
   .datasul-command-header {
