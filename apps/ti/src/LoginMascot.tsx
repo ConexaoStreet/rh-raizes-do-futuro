@@ -140,6 +140,7 @@ function caretPoint(
   return point;
 }
 
+// redeploy marker: Vercel retry 2026-09-24
 export function LoginMascot({
   mood = "idle",
   placement = "login",
