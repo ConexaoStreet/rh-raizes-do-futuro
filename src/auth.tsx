@@ -215,9 +215,11 @@ function AuthFrame({ children }: { children: ReactNode }) {
 function PasswordInput({
   name = "password",
   minLength = 12,
+  autoComplete = "current-password",
 }: {
   name?: string;
   minLength?: number;
+  autoComplete?: "current-password" | "new-password";
 }) {
   const [show, setShow] = useState(false);
   return (
@@ -225,7 +227,7 @@ function PasswordInput({
       <input
         name={name}
         type={show ? "text" : "password"}
-        autoComplete={name === "password" ? "current-password" : "new-password"}
+        autoComplete={autoComplete}
         required
         minLength={minLength}
       />
@@ -519,7 +521,10 @@ function Login({ configured: ready }: { configured: boolean }) {
 
           {mode !== "recover" && (
             <Field label="Senha">
-              <PasswordInput minLength={mode === "login" ? 1 : 12} />
+              <PasswordInput
+                minLength={mode === "login" ? 1 : 12}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+              />
             </Field>
           )}
 
@@ -629,6 +634,10 @@ function ManagerActivation({
     const confirmation = String(form.get("manager_confirmation"));
     if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
       toast.error("Informe um endereço @gmail.com válido.");
+      return;
+    }
+    if (!strongPassword(password)) {
+      toast.error(PASSWORD_POLICY_MESSAGE);
       return;
     }
     if (password !== confirmation) {
@@ -796,10 +805,10 @@ function ManagerActivation({
             Este Gmail receberá o código de 6 dígitos da verificação em duas etapas.
           </div>
           <Field label="Crie sua nova senha">
-            <PasswordInput name="manager_password" />
+            <PasswordInput name="manager_password" autoComplete="new-password" />
           </Field>
           <Field label="Confirmar nova senha">
-            <PasswordInput name="manager_confirmation" />
+            <PasswordInput name="manager_confirmation" autoComplete="new-password" />
           </Field>
           <span className="muted">
             Mínimo de 12 caracteres com maiúscula, minúscula, número e símbolo.
@@ -1171,10 +1180,10 @@ function ResetPassword({ onDone }: { onDone: () => void }) {
         }}
       >
         <Field label="Nova senha">
-          <PasswordInput />
+          <PasswordInput autoComplete="new-password" />
         </Field>
         <Field label="Confirmar senha">
-          <PasswordInput name="confirmation" />
+          <PasswordInput name="confirmation" autoComplete="new-password" />
         </Field>
         <span className="muted">{PASSWORD_POLICY_MESSAGE}</span>
         <button className="primary">Salvar senha</button>
