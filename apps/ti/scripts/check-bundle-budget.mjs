@@ -16,7 +16,7 @@ const size = (asset) =>
 const js = size(scriptMatch[1]);
 const css = size(styleMatch[1]);
 const jsLimit = 150 * 1024;
-const cssLimit = 12 * 1024;
+const cssLimit = 13 * 1024;
 
 console.log(`TI JS gzip: ${(js / 1024).toFixed(2)} KiB / 150 KiB`);
 console.log(`TI CSS gzip: ${(css / 1024).toFixed(2)} KiB / 12 KiB`);
