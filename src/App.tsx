@@ -113,7 +113,7 @@ const navGroups = [
         icon: MessageSquare,
         permission: "",
       },
-      { path: "/notas", name: "Notas", icon: Star, permission: "" },
+      { path: "/notas", name: "Boletim", icon: Star, permission: "" },
       {
         path: "/gestao",
         name: "Avaliação da gestão",
