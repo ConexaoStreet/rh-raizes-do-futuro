@@ -25,6 +25,7 @@ import { errorMessage } from "./domain";
 import { capture, captureError, setTelemetryUser } from "./telemetry";
 import { shouldRefreshExpiredJwt } from "./auth-errors";
 import { ThemeToggle } from "./theme";
+import { PASSWORD_POLICY_MESSAGE, strongPassword } from "./password-policy";
 import type { Row } from "./database.types";
 export type Bootstrap = {
   profile: Row<"profiles">;
@@ -382,6 +383,10 @@ function Login({ configured: ready }: { configured: boolean }) {
           toast.error("Selecione seu cargo.");
           return;
         }
+        if (!strongPassword(password)) {
+          toast.error(PASSWORD_POLICY_MESSAGE);
+          return;
+        }
         if (password !== data.get("confirmation")) {
           toast.error("As senhas precisam ser iguais.");
           return;
@@ -552,7 +557,7 @@ function Login({ configured: ready }: { configured: boolean }) {
               <span className="muted">
                 Cargos com acesso elevado só são liberados quando já estiverem autorizados no cadastro-base.
               </span>
-              <span className="muted">Use pelo menos 12 caracteres na senha.</span>
+              <span className="muted">{PASSWORD_POLICY_MESSAGE}</span>
             </>
           )}
 
@@ -1145,13 +1150,18 @@ function ResetPassword({ onDone }: { onDone: () => void }) {
         onSubmit={async (e) => {
           e.preventDefault();
           const data = new FormData(e.currentTarget);
-          if (data.get("password") !== data.get("confirmation")) {
+          const password = String(data.get("password"));
+          if (!strongPassword(password)) {
+            toast.error(PASSWORD_POLICY_MESSAGE);
+            return;
+          }
+          if (password !== data.get("confirmation")) {
             toast.error("As senhas precisam ser iguais.");
             return;
           }
           await runAction(async () => {
             const { error } = await client().auth.updateUser({
-              password: String(data.get("password")),
+              password,
             });
             if (error) throw error;
             await client().auth.signOut({ scope: "global" });
@@ -1166,6 +1176,7 @@ function ResetPassword({ onDone }: { onDone: () => void }) {
         <Field label="Confirmar senha">
           <PasswordInput name="confirmation" />
         </Field>
+        <span className="muted">{PASSWORD_POLICY_MESSAGE}</span>
         <button className="primary">Salvar senha</button>
       </form>
     </AuthFrame>
