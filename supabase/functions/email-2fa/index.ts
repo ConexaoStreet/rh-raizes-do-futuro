@@ -5,6 +5,7 @@ const required=(name:string)=>{const value=Deno.env.get(name);if(!value)throw ne
 const headers=(origin:string)=>({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin','Cache-Control':'no-store','Content-Type':'application/json'})
 async function hashCode(userId:string,sessionId:string,code:string){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(required('OTP_HMAC_SECRET')),{name:'HMAC',hash:'SHA-256'},false,['sign']);const result=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(`${userId}:${sessionId}:${code}`));return Array.from(new Uint8Array(result)).map(n=>n.toString(16).padStart(2,'0')).join('')}
 function generateCode(){const buffer=new Uint32Array(1);let n:number;do{crypto.getRandomValues(buffer);n=buffer[0]}while(n>=4294000000);return String(n%1000000).padStart(6,'0')}
+function tokenClaims(token:string){try{const part=token.split('.')[1];if(!part)return null;const encoded=part.replaceAll('-','+').replaceAll('_','/');const padded=encoded.padEnd(encoded.length+((4-(encoded.length%4))%4),'=');return JSON.parse(atob(padded)) as {sub?:string,session_id?:string,amr?:{method:string}[]}}catch{return null}}
 Deno.serve(async request=>{
  const origin=request.headers.get('origin')||''
  const allowed=allowedOrigins()
@@ -18,9 +19,8 @@ Deno.serve(async request=>{
   const auth=createClient(required('SUPABASE_URL'),required('SUPABASE_ANON_KEY'),{auth:{persistSession:false,autoRefreshToken:false}})
   const {data:{user},error}=await auth.auth.getUser(token)
   if(error||!user||!user.email||!user.email_confirmed_at)return respond({error:'FORBIDDEN'},401)
-  const encoded=token.split('.')[1].replaceAll('-','+').replaceAll('_','/')
-  const claims=JSON.parse(atob(encoded)) as {sub:string,session_id?:string,amr?:{method:string}[]}
-  if(claims.sub!==user.id||!claims.session_id||!claims.amr?.some(item=>item.method==='password'))return respond({error:'PASSWORD_LOGIN_REQUIRED'},403)
+  const claims=tokenClaims(token)
+  if(!claims||claims.sub!==user.id||!claims.session_id||!claims.amr?.some(item=>item.method==='password'))return respond({error:'PASSWORD_LOGIN_REQUIRED'},403)
   if(Number(request.headers.get('content-length')||0)>2048)return respond({error:'INVALID_REQUEST'},400)
   const text=await request.text();if(text.length>2048)return respond({error:'INVALID_REQUEST'},400)
   const body=JSON.parse(text) as {action?:string,code?:string}
