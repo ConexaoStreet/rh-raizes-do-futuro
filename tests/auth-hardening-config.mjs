@@ -33,6 +33,7 @@ const scriptUrl = pathToFileURL(scriptPath).href;
 function probeSource(hibpStatus) {
   return `
 const calls = [];
+let coreBody = null;
 globalThis.fetch = async (url, options = {}) => {
   const expected = "https://api.supabase.com/v1/projects/test-project/config/auth";
   if (String(url) !== expected) throw new Error("Unexpected URL");
@@ -40,6 +41,7 @@ globalThis.fetch = async (url, options = {}) => {
 
   if (options.method === "PATCH" && calls.length === 1) {
     const body = JSON.parse(options.body);
+    coreBody = body;
     if (body.password_min_length !== 12) throw new Error("Weak minimum length");
     if (body.security_update_password_require_reauthentication !== true) throw new Error("Reauthentication missing");
     if (body.mailer_secure_email_change_enabled !== true) throw new Error("Secure email change missing");
@@ -64,7 +66,7 @@ globalThis.fetch = async (url, options = {}) => {
       status: 200,
       text: async () => JSON.stringify({
         password_min_length: 12,
-        password_required_characters: "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789:!@#$%^&*()_+-=[]{};'\\\\\\\":|<>?,./\\`~",
+        password_required_characters: coreBody.password_required_characters,
         security_update_password_require_reauthentication: true,
         mailer_secure_email_change_enabled: true,
         refresh_token_rotation_enabled: true,
