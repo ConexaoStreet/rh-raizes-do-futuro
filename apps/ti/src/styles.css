@@ -2754,7 +2754,6 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   z-index: 9;
   right: 116px;
   top: 7px;
-  min-width: 116px;
   padding: 8px 10px;
   border-radius: 11px 11px 3px 11px;
   background: rgba(6,15,10,.91);
