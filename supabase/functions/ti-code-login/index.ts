@@ -1,21 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 
-const DEFAULT_ALLOWED_ORIGINS = new Set([
+const ALLOWED_ORIGINS = new Set([
   "https://ti-raizes-do-futuro.vercel.app",
   "http://127.0.0.1:4174",
   "http://localhost:4174",
 ]);
 
-function allowedOrigins() {
-  const configured = (Deno.env.get("ALLOWED_ORIGINS") || "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  return new Set([...DEFAULT_ALLOWED_ORIGINS, ...configured]);
-}
-
 function cors(origin: string) {
-  const safe = allowedOrigins().has(origin)
+  const safe = ALLOWED_ORIGINS.has(origin)
     ? origin
     : "https://ti-raizes-do-futuro.vercel.app";
   return {
@@ -75,9 +67,8 @@ Deno.serve(async (request) => {
   const origin =
     request.headers.get("origin") ||
     "https://ti-raizes-do-futuro.vercel.app";
-  const allowed = allowedOrigins();
 
-  if (!allowed.has(origin)) return new Response(null, { status: 403 });
+  if (!ALLOWED_ORIGINS.has(origin)) return new Response(null, { status: 403 });
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers: cors(origin) });
   if (request.method !== "POST")
