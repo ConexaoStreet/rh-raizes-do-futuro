@@ -1,0 +1,28 @@
+name: Supabase Auth Email Templates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/templates/**"
+      - "supabase/config.toml"
+      - "scripts/apply-supabase-auth-templates.mjs"
+      - ".github/workflows/supabase-auth-templates.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Sync hosted Supabase Auth templates
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: fiuealmgufpmtgmxxpna
+        run: node scripts/apply-supabase-auth-templates.mjs
