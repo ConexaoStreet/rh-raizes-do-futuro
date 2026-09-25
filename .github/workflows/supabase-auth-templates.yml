@@ -1,13 +1,6 @@
 name: Supabase Auth Email Templates
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "supabase/templates/**"
-      - "supabase/config.toml"
-      - "scripts/apply-supabase-auth-templates.mjs"
-      - ".github/workflows/supabase-auth-templates.yml"
   workflow_dispatch:
 
 permissions:
