@@ -54,8 +54,8 @@ globalThis.fetch = async (url, options = {}) => {
     const body = JSON.parse(options.body);
     if (body.password_hibp_enabled !== true) throw new Error("HIBP flag missing");
     return {
-      ok: hibpStatus === 200,
-      status: hibpStatus,
+      ok: ${hibpStatus} === 200,
+      status: ${hibpStatus},
       text: async () => "{}",
     };
   }
@@ -70,7 +70,7 @@ globalThis.fetch = async (url, options = {}) => {
         security_update_password_require_reauthentication: true,
         mailer_secure_email_change_enabled: true,
         refresh_token_rotation_enabled: true,
-        password_hibp_enabled: hibpStatus === 200,
+        password_hibp_enabled: ${hibpStatus} === 200,
       }),
     };
   }
