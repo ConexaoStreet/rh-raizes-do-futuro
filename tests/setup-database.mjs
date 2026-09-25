@@ -17,7 +17,9 @@ export async function createDatabase() {
     .filter((f) => f.endsWith(".sql"))
     .sort()) {
     const source = (await fs.readFile(`supabase/migrations/${file}`, "utf8"))
-      .replace(/create extension if not exists pg_net\s*;/gi, "");
+      .replace(/create extension if not exists pg_net\s*;/gi, "")
+      .replace(/drop extension(?: if exists)? pg_net\s*;/gi, "")
+      .replace(/create extension pg_net(?: with)? schema extensions\s*;/gi, "");
     await db
       .exec(source)
       .catch((error) => {
