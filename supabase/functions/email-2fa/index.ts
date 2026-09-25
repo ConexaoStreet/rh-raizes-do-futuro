@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0'
-const DEFAULT_ALLOWED_ORIGINS=new Set(['https://ti-raizes-do-futuro.vercel.app','http://127.0.0.1:4174','http://localhost:4174'])
+const DEFAULT_ALLOWED_ORIGINS=new Set(['https://ti-raizes-do-futuro.vercel.app','https://rh-raizes-do-futuro.vercel.app','http://127.0.0.1:4174','http://localhost:4174','http://127.0.0.1:4173','http://localhost:4173'])
 const allowedOrigins=()=>new Set([...DEFAULT_ALLOWED_ORIGINS,...(Deno.env.get('ALLOWED_ORIGINS')||'').split(',').map(x=>x.trim()).filter(Boolean)])
 const required=(name:string)=>{const value=Deno.env.get(name);if(!value)throw new Error('CONFIGURATION_REQUIRED');return value}
 const headers=(origin:string)=>({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin','Cache-Control':'no-store','Content-Type':'application/json'})
