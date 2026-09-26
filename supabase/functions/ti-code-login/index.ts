@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
+import { observe, observeError } from "../_shared/observability.ts";
 
 const ALLOWED_ORIGINS = new Set([
   "https://ti-raizes-do-futuro.vercel.app",
@@ -64,20 +65,40 @@ function sessionIdFromToken(token: string) {
 }
 
 Deno.serve(async (request) => {
+  const startedAt = Date.now();
   const origin =
     request.headers.get("origin") ||
     "https://ti-raizes-do-futuro.vercel.app";
 
-  if (!ALLOWED_ORIGINS.has(origin)) return new Response(null, { status: 403 });
+  if (!ALLOWED_ORIGINS.has(origin)) {
+    observe("ti_code_login.request", {
+      outcome: "denied_origin",
+      status: 403,
+      latency_ms: Date.now() - startedAt,
+    });
+    return new Response(null, { status: 403 });
+  }
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers: cors(origin) });
-  if (request.method !== "POST")
+  if (request.method !== "POST") {
+    observe("ti_code_login.request", {
+      outcome: "method_not_allowed",
+      status: 405,
+      latency_ms: Date.now() - startedAt,
+    });
     return response(origin, { error: "METHOD_NOT_ALLOWED" }, 405);
+  }
 
   try {
     const raw = await request.text();
-    if (raw.length > 4096)
+    if (raw.length > 4096) {
+      observe("ti_code_login.request", {
+        outcome: "payload_too_large",
+        status: 400,
+        latency_ms: Date.now() - startedAt,
+      });
       return response(origin, { error: "INVALID_REQUEST" }, 400);
+    }
 
     const body = JSON.parse(raw || "{}") as {
       action?: "login" | "confirm";
@@ -121,8 +142,19 @@ Deno.serve(async (request) => {
 
       if (claimError) {
         const message = claimError.message || "";
-        if (message.includes("RATE_LIMITED"))
+        if (message.includes("RATE_LIMITED")) {
+          observe("ti_code_login.login", {
+            outcome: "rate_limited",
+            status: 429,
+            latency_ms: Date.now() - startedAt,
+          });
           return response(origin, { error: "RATE_LIMITED" }, 429);
+        }
+        observe("ti_code_login.login", {
+          outcome: "invalid_code",
+          status: 401,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, { error: "INVALID_CODE" }, 401);
       }
 
@@ -130,8 +162,14 @@ Deno.serve(async (request) => {
         code_id?: string;
         user_id?: string;
       };
-      if (!result?.code_id || !result?.user_id)
+      if (!result?.code_id || !result?.user_id) {
+        observe("ti_code_login.login", {
+          outcome: "invalid_claim",
+          status: 401,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, { error: "INVALID_CODE" }, 401);
+      }
 
       const [{ data: authUser, error: userError }, { data: profile }] =
         await Promise.all([
@@ -148,6 +186,11 @@ Deno.serve(async (request) => {
         !authUser.user?.email ||
         profile?.status !== "active"
       ) {
+        observe("ti_code_login.login", {
+          outcome: "access_unavailable",
+          status: 403,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, { error: "ACCESS_UNAVAILABLE" }, 403);
       }
 
@@ -158,9 +201,19 @@ Deno.serve(async (request) => {
         });
 
       if (linkError || !link.properties?.hashed_token) {
+        observeError("ti_code_login.login_error", linkError, {
+          outcome: "session_unavailable",
+          status: 503,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, { error: "SESSION_UNAVAILABLE" }, 503);
       }
 
+      observe("ti_code_login.login", {
+        outcome: "challenge_issued",
+        status: 200,
+        latency_ms: Date.now() - startedAt,
+      });
       return response(origin, {
         ok: true,
         token_hash: link.properties.hashed_token,
@@ -173,19 +226,36 @@ Deno.serve(async (request) => {
       const token = (request.headers.get("authorization") || "")
         .replace(/^Bearer\s+/i, "")
         .trim();
-      if (!token || !body.code_id || !body.claim_token)
+      if (!token || !body.code_id || !body.claim_token) {
+        observe("ti_code_login.confirm", {
+          outcome: "missing_credentials",
+          status: 401,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, { error: "FORBIDDEN" }, 401);
+      }
 
       const { data: verified, error: userError } =
         await admin.auth.getUser(token);
-      if (userError || !verified.user)
+      if (userError || !verified.user) {
+        observeError("ti_code_login.confirm_error", userError, {
+          outcome: "invalid_user_token",
+          status: 401,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, { error: "FORBIDDEN" }, 401);
+      }
 
       const claims = sessionIdFromToken(token);
       if (
         claims.sub !== verified.user.id ||
         !claims.session_id
       ) {
+        observe("ti_code_login.confirm", {
+          outcome: "invalid_session",
+          status: 401,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, { error: "INVALID_SESSION" }, 401);
       }
 
@@ -199,15 +269,34 @@ Deno.serve(async (request) => {
         },
       );
 
-      if (error || data !== true)
+      if (error || data !== true) {
+        observeError("ti_code_login.confirm_error", error, {
+          outcome: "confirm_failed",
+          status: 403,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, { error: "CONFIRM_FAILED" }, 403);
+      }
 
+      observe("ti_code_login.confirm", {
+        outcome: "ok",
+        status: 200,
+        latency_ms: Date.now() - startedAt,
+      });
       return response(origin, { ok: true });
     }
 
+    observe("ti_code_login.request", {
+      outcome: "invalid_action",
+      status: 400,
+      latency_ms: Date.now() - startedAt,
+    });
     return response(origin, { error: "INVALID_ACTION" }, 400);
   } catch (error) {
-    console.error("ti_code_login_error", error);
+    observeError("ti_code_login.error", error, {
+      status: 503,
+      latency_ms: Date.now() - startedAt,
+    });
     return response(origin, { error: "UNAVAILABLE" }, 503);
   }
 });
