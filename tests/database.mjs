@@ -162,6 +162,15 @@ await test("Todas as tabelas públicas e privadas usam RLS", async () =>
     ),
     0,
   ));
+await test("Diretor e instrutor mantêm permissão de lançamento de notas", async () => {
+  const rows = await root(
+    "select r.code from public.roles r join public.role_permissions rp on rp.role_id=r.id join public.permissions p on p.id=rp.permission_id where p.code='performance.grade' and r.code in ('DIRECTOR','INSTRUCTOR','MANAGER','SUPER_ADMIN') order by r.code",
+  );
+  assert.deepEqual(
+    rows.rows.map((row) => row.code),
+    ["DIRECTOR", "INSTRUCTOR", "MANAGER", "SUPER_ADMIN"],
+  );
+});
 await test("Tabelas sensíveis não concedem privilégios ao papel anon", async () => {
   for (const table of [
     "public.push_subscriptions",
