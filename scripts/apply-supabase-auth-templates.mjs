@@ -4,7 +4,8 @@ const token = (process.env.SUPABASE_ACCESS_TOKEN || "").trim();
 const projectRef = (process.env.SUPABASE_PROJECT_REF || "").trim();
 
 if (!token) {
-  throw new Error("SUPABASE_ACCESS_TOKEN is required for hosted Supabase Auth changes.");
+  console.log("::warning::SUPABASE_ACCESS_TOKEN is not configured. Hosted Auth template sync was skipped.");
+  process.exit(0);
 }
 
 if (!projectRef) {
