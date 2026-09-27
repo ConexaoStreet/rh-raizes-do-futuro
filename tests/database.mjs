@@ -191,6 +191,35 @@ await test("Tabelas sensíveis não concedem privilégios ao papel anon", async 
     }
   }
 });
+await test("Datasul expõe somente leitura autorizada ao papel authenticated", async () => {
+  assert.equal(
+    await value(
+      await root(
+        "select has_table_privilege('authenticated','public.ti_datasul_operations','SELECT')",
+      ),
+    ),
+    true,
+  );
+  for (const privilege of [
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "TRUNCATE",
+    "REFERENCES",
+    "TRIGGER",
+  ]) {
+    assert.equal(
+      await value(
+        await root(
+          "select has_table_privilege('authenticated','public.ti_datasul_operations',$1)",
+          [privilege],
+        ),
+      ),
+      false,
+      `ti_datasul_operations ainda concede ${privilege} ao authenticated`,
+    );
+  }
+});
 await test("Colaborador só lê seu próprio cadastro", async () => {
   const rows = await as("collaborator", "select id from public.employees");
   assert.deepEqual(
@@ -673,6 +702,27 @@ await test("Colaborador não emite nem valida código diretamente", async () =>
       "hmac-test",
     ]),
   ));
+await test("Leitura de chamada própria não recursa entre policies RLS", async () => {
+  const sessionsVisible = await as(
+    "collaborator",
+    "select id from public.attendance_sessions where id=$1",
+    [attendanceId],
+  );
+  assert.deepEqual(
+    sessionsVisible.rows.map((row) => row.id),
+    [attendanceId],
+  );
+
+  const membersVisible = await as(
+    "collaborator",
+    "select employee_id from public.attendance_members where session_id=$1 order by employee_id",
+    [attendanceId],
+  );
+  assert.deepEqual(
+    membersVisible.rows.map((row) => row.employee_id),
+    [employeeId],
+  );
+});
 await fs.mkdir("docs/verification", { recursive: true });
 await fs.writeFile(
   "docs/verification/database-tests.json",

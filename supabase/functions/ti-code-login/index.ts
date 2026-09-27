@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { observe, observeError } from "../_shared/observability.ts";
+import { isBrazilRequest } from "../_shared/request-security.ts";
 
 const ALLOWED_ORIGINS = new Set([
   "https://ti-raizes-do-futuro.vercel.app",
@@ -77,6 +78,14 @@ Deno.serve(async (request) => {
       latency_ms: Date.now() - startedAt,
     });
     return new Response(null, { status: 403 });
+  }
+  if (!isBrazilRequest(request)) {
+    observe("ti_code_login.request", {
+      outcome: "denied_country",
+      status: 403,
+      latency_ms: Date.now() - startedAt,
+    });
+    return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
   }
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers: cors(origin) });

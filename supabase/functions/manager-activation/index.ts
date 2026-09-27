@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
+import { isBrazilRequest, requestFingerprint } from "../_shared/request-security.ts";
 
 const required = (name: string) => {
   const value = Deno.env.get(name);
@@ -54,6 +55,8 @@ function allowedOrigins() {
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin") || "";
   if (!allowedOrigins().has(origin)) return new Response(null, { status: 403 });
+  if (!isBrazilRequest(request))
+    return respond(origin, { error: "REGION_NOT_ALLOWED" }, 403);
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers: cors(origin) });
   if (request.method !== "POST")
@@ -86,11 +89,30 @@ Deno.serve(async (request) => {
     if (body.terms !== true)
       return respond(origin, { error: "TERMS_REQUIRED" }, 400);
 
+    const serviceRole = required("SUPABASE_SERVICE_ROLE_KEY");
     const admin = createClient(
       required("SUPABASE_URL"),
-      required("SUPABASE_SERVICE_ROLE_KEY"),
+      serviceRole,
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
+
+    const fingerprint = await requestFingerprint(
+      request,
+      serviceRole,
+      "manager-activation",
+    );
+    const { data: rateAllowed, error: rateError } = await admin.rpc(
+      "consume_edge_rate_limit",
+      {
+        rate_scope: "manager-activation",
+        fingerprint_hash: fingerprint,
+        max_attempts: 6,
+        window_seconds: 900,
+      },
+    );
+    if (rateError) throw rateError;
+    if (rateAllowed !== true)
+      return respond(origin, { error: "RATE_LIMITED" }, 429);
 
     const activationHash = await sha256(activationCode);
     const { data: invite, error: inviteError } = await admin
