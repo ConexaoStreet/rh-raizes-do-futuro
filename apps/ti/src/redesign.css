@@ -255,3 +255,76 @@
     grid-column: 2 / -1;
   }
 }
+
+
+/* TI login redesign */
+.login-stage {
+  display: grid;
+  gap: 0;
+}
+
+.login-mascot-dock {
+  position: relative;
+  min-height: 108px;
+  display: grid;
+  place-items: end center;
+  pointer-events: none;
+}
+
+.login-mascot-dock .root-mascot-login {
+  position: relative;
+  top: auto;
+  right: auto;
+  transform: scale(.86);
+  transform-origin: 50% 100%;
+}
+
+.login-mode-switch button {
+  min-height: 44px;
+  justify-content: flex-start;
+  gap: 8px;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.login-mode-switch button:not(.active) {
+  color: color-mix(in srgb, var(--ti-text) 66%, var(--ti-muted));
+  background: color-mix(in srgb, var(--ti-surface-elevated) 42%, transparent);
+  border-color: color-mix(in srgb, var(--ti-border) 72%, transparent);
+}
+
+.login-mode-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ti-healthy) 9%, transparent);
+}
+
+.login-mode-panel {
+  display: grid;
+  gap: 13px;
+}
+
+.login-mode-panel label > span {
+  text-align: left;
+}
+
+.login-theme-control .theme-toggle {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+}
+
+@media (max-width: 620px) {
+  .login-mascot-dock {
+    min-height: 92px;
+  }
+
+  .login-mascot-dock .root-mascot-login {
+    top: auto;
+    right: auto;
+    transform: scale(.76);
+  }
+}
