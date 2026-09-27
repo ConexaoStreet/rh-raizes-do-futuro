@@ -1869,6 +1869,24 @@ function Panel({
   );
 }
 
+function StateRow({
+  name,
+  value,
+  tone,
+}: {
+  name: string;
+  value: string;
+  tone: string;
+}) {
+  return (
+    <div className="state-row">
+      <span>{name}</span>
+      <strong>{value}</strong>
+      <span className={"status-dot " + tone} />
+    </div>
+  );
+}
+
 function AuditList({
   rows,
   full = false,
