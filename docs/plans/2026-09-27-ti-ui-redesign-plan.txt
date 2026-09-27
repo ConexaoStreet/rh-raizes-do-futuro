@@ -1,0 +1,257 @@
+# Central T.I. UI Redesign Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (- [ ]) syntax for tracking.
+
+**Goal:** Redesenhar a Central T.I. como um console técnico interno mais preciso, denso e operacional sem alterar contratos de Supabase, funções administrativas ou regras de segurança.
+
+**Architecture:** O redesign mantém a aplicação React/Vite atual e introduz uma camada visual específica da T.I., separada do RH. O App.tsx monolítico será dividido apenas onde isso melhora limites claros de UI, preservando estados, chamadas e permissões. Cada extração mantém as interfaces atuais e é verificada antes de avançar.
+
+**Tech Stack:** React 19, TypeScript 5.9, Supabase JS, Lucide React, Vite/Vercel, Vitest/Playwright.
+
+**Spec:** docs/specs/2026-09-27-ui-redesign-rh-ti.txt
+
+## Global Constraints
+
+- A T.I. deve permanecer visualmente distinta do RH.
+- Não alterar Supabase, Auth, RLS, permissões, Edge Functions ou contratos de API sem necessidade explícita.
+- Não remover módulos.
+- Não migrar para Webflow/Wix/Base44.
+- Preservar e-mail/senha e código semanal no login.
+- Mobile pequeno 320–479px; mobile 480–767px; tablet 768–1099px; desktop 1100–1599px; desktop largo 1600px+.
+- Inputs mobile >=16px; safe-area iOS; touch targets >=44px.
+- Motion 140–220ms e prefers-reduced-motion.
+- Estados critical/warn/ok não dependem somente de cor.
+- Toda etapa passa CI/build/bundle/E2E antes de merge.
+
+## Review Focus
+
+- Estados partial/error/needs_secret/needs_connection precisam continuar distinguíveis e legíveis.
+- Ações destrutivas de usuários/storage/configuração não podem perder confirmação/contexto.
+- Payload/request técnico do Datasul deve continuar legível sem quebrar em mobile.
+- Overview não pode mascarar módulos que falharam durante reload parcial.
+- Login por código semanal e e-mail/senha devem continuar semanticamente separados e funcionais.
+
+---
+
+### Task 1: Fundação visual e tokens da Central T.I.
+
+**Files:**
+- Create: apps/ti/src/redesign.css
+- Modify: apps/ti/src/main.tsx
+- Create: apps/ti/src/ui-contracts.test.ts
+- Modify: e2e/theme.e2e.ts
+
+**Interfaces:**
+- Consumes: current apps/ti/src/styles.css variables and components.
+- Produces: console tokens for surfaces, borders, status, mono text, focus, density and motion.
+
+- [ ] **Step 1: Write failing contracts**
+  - Assert main.tsx imports redesign.css after styles.css.
+  - Assert tokens exist for bg/surface/elevated/border/text/muted/healthy/warn/error/accent/mono/motion.
+  - Assert no RH-specific token names/classes are introduced.
+
+- [ ] **Step 2: Run tests**
+  Run: npm run test -- --run apps/ti/src/ui-contracts.test.ts
+  Expected: FAIL before redesign.css exists.
+
+- [ ] **Step 3: Implement token layer**
+  - Preserve current dark-first palette but increase hierarchy between canvas, sidebar, panels and elevated technical surfaces.
+  - Add semantic status styles and mono utility for IDs/paths/payloads.
+  - Add focus-visible and reduced-motion defaults.
+
+- [ ] **Step 4: Add viewport baseline E2E**
+  - 390x844, 768x1024, 1440x900, 1920x1080 no unintended overflow on login.
+
+- [ ] **Step 5: Verify and commit**
+  Run: npm run lint && npm run test -- --passWithNoTests && npm run build && npm run check:bundle && npm run test:e2e
+  Expected: PASS.
+  Commit: git commit -am "feat: establish TI redesign foundation"
+
+### Task 2: Extrair shell e navegação técnica
+
+**Files:**
+- Create: apps/ti/src/navigation.ts
+- Create: apps/ti/src/Shell.tsx
+- Modify: apps/ti/src/App.tsx
+- Modify: apps/ti/src/redesign.css
+- Test: apps/ti/src/ui-contracts.test.ts
+- Test: e2e/theme.e2e.ts
+
+**Interfaces:**
+- Consumes: View union, user/can, reload, theme and current view state.
+- Produces: technical shell with sidebar/topbar while preserving all view identifiers.
+
+- [ ] **Step 1: Write navigation contract**
+  - Assert every existing View value remains represented: overview, datasul, users, rh, storage, notifications, database, integrations, site, security, support, logs.
+  - Assert active view semantics remain one-at-a-time.
+
+- [ ] **Step 2: Run test**
+  Run: npm run test -- --run apps/ti/src/ui-contracts.test.ts
+  Expected: FAIL until navigation extraction exists.
+
+- [ ] **Step 3: Extract navigation config and shell**
+  - Move labels/icons/grouping to navigation.ts.
+  - Shell.tsx receives current view, setView, user context, theme and reload callbacks through explicit props.
+  - Keep all data fetching and mutations in App.tsx initially.
+
+- [ ] **Step 4: Redesign shell**
+  - Compact sidebar with environment badge and grouped technical domains.
+  - Sticky topbar with current module, refresh/search/context.
+  - Mobile drawer/compact nav with safe-area.
+
+- [ ] **Step 5: Verify and commit**
+  Run: npm run verify && npm run test:e2e
+  Expected: PASS.
+  Commit: git commit -am "feat: redesign TI application shell"
+
+### Task 3: Criar primitives de status e overview técnico
+
+**Files:**
+- Create: apps/ti/src/components/StatusTile.tsx
+- Create: apps/ti/src/components/HealthRow.tsx
+- Create: apps/ti/src/components/IncidentNotice.tsx
+- Modify: apps/ti/src/App.tsx
+- Modify: apps/ti/src/redesign.css
+- Create: apps/ti/src/overview-ui.test.ts
+
+**Interfaces:**
+- Consumes: Snapshot, Inventory, moduleErrors, labelStatus(), toneFor().
+- Produces: StatusTile, HealthRow, IncidentNotice reusable by overview and integration modules.
+
+- [ ] **Step 1: Write component contracts**
+  - StatusTile accepts label, value, status/tone, detail and optional icon.
+  - HealthRow accepts name, status, secondary text and optional action.
+  - IncidentNotice renders partial-load/module error information without hiding healthy modules.
+
+- [ ] **Step 2: Run tests**
+  Run: npm run test -- --run apps/ti/src/overview-ui.test.ts
+  Expected: FAIL before components exist.
+
+- [ ] **Step 3: Implement overview hierarchy**
+  - Health summary first.
+  - Operational status tiles second.
+  - Incidents/moduleErrors clearly separated.
+  - Actions grouped by risk/context.
+  - Preserve all existing values and data sources.
+
+- [ ] **Step 4: Verify and commit**
+  Run: npm run verify && npm run test:e2e
+  Expected: PASS.
+  Commit: git commit -am "feat: redesign TI operational overview"
+
+### Task 4: Redesenhar módulos técnicos sem alterar operações
+
+**Files:**
+- Create: apps/ti/src/components/TechnicalTable.tsx
+- Create: apps/ti/src/components/TechnicalField.tsx
+- Create: apps/ti/src/components/CodeSurface.tsx
+- Create: apps/ti/src/components/IntegrationCard.tsx
+- Modify: apps/ti/src/App.tsx
+- Modify: apps/ti/src/redesign.css
+- Create: apps/ti/src/modules-ui.test.ts
+
+**Interfaces:**
+- Consumes: existing state, handlers, RPC/function calls and settings objects in App.tsx.
+- Produces: reusable UI only; no data contract changes.
+
+- [ ] **Step 1: Write preservation tests**
+  - Assert settingKeys unchanged.
+  - Assert invokeFunction names/actions referenced by current code remain unchanged.
+  - Assert destructive action labels/confirm flows remain represented.
+  - Assert Datasul paths/request method/body state names remain unchanged.
+
+- [ ] **Step 2: Run tests**
+  Run: npm run test -- --run apps/ti/src/modules-ui.test.ts
+  Expected: FAIL until technical primitives/hooks exist.
+
+- [ ] **Step 3: Apply primitives by domain**
+  - Datasul: configuration, health, request builder, operations and result surface.
+  - Users/RH: dense tables, role/privilege cues, selection/edit panels.
+  - Storage/database: capacity/status cards + dense technical tables.
+  - Integrations/site: IntegrationCard separating health from configuration.
+  - Security/support/logs: severity-driven table/timeline and compact filters.
+
+- [ ] **Step 4: Preserve error behavior**
+  - moduleErrors still surface per module.
+  - run() busy/error/notice semantics remain unchanged.
+
+- [ ] **Step 5: Verify and commit**
+  Run: npm run verify && npm run test:e2e
+  Expected: PASS.
+  Commit: git commit -am "feat: redesign TI technical modules"
+
+### Task 5: Redesenhar login da Central T.I.
+
+**Files:**
+- Modify: apps/ti/src/auth.tsx
+- Modify: apps/ti/src/LoginMascot.tsx only if layout integration requires it
+- Modify: apps/ti/src/redesign.css
+- Create: apps/ti/src/login-ui.test.ts
+- Test: e2e/theme.e2e.ts
+
+**Interfaces:**
+- Consumes: e-mail/senha login, weekly code login, password recovery, theme and mascot behaviors.
+- Produces: redesigned technical login with the same auth methods.
+
+- [ ] **Step 1: Write auth UI preservation tests**
+  - Assert e-mail/senha tab and código semanal tab remain.
+  - Assert fields and submit handlers keep current names/flows.
+  - Assert forgot-password route/action remains.
+  - Assert weekly code path remains independent of password flow.
+
+- [ ] **Step 2: Run tests**
+  Run: npm run test -- --run apps/ti/src/login-ui.test.ts
+  Expected: FAIL for new semantic icon/layout contracts only.
+
+- [ ] **Step 3: Implement redesign**
+  - Semantic icons per access method.
+  - Left-aligned labels.
+  - Stronger inactive-tab contrast and 160–200ms state transition.
+  - Theme control with clearer hit area.
+  - Mascot visually anchored rather than accidentally overlapping.
+  - Keep T.I. security/trust indicators where they reinforce the technical context.
+
+- [ ] **Step 4: Add E2E**
+  - Switch between access methods without submitting.
+  - Validate mobile no-overflow.
+  - Validate dark/light theme.
+  - Validate primary CTA and password recovery visibility.
+
+- [ ] **Step 5: Verify and commit**
+  Run: npm run verify && npm run test:e2e
+  Expected: PASS.
+  Commit: git commit -am "feat: redesign TI login experience"
+
+### Task 6: Polimento, acessibilidade e validação final da Central T.I.
+
+**Files:**
+- Modify: apps/ti/src/redesign.css
+- Modify: e2e/theme.e2e.ts
+- Modify: TI components only if verification exposes issues.
+
+**Interfaces:**
+- Consumes: Tasks 1–5.
+- Produces: branch pronta para preview/review.
+
+- [ ] **Step 1: Accessibility checks**
+  - Focus visible.
+  - Tabs/buttons/menus keyboard reachable.
+  - Severity includes icon/text, not color only.
+  - Touch targets >=44px on mobile.
+
+- [ ] **Step 2: Viewport matrix**
+  - 320x568, 390x844, 768x1024, 1100x800, 1440x900, 1920x1080.
+  - Technical tables may scroll inside their own containers, but document-level overflow is prohibited.
+
+- [ ] **Step 3: Run full quality gate**
+  Run: npm run lint && npm run check:privacy && npm run test -- --passWithNoTests && npm run test:database && npm run build && npm run check:bundle && npm run test:e2e
+  Expected: PASS.
+
+- [ ] **Step 4: Real browser preview validation**
+  - Vercel preview.
+  - Smoke test login, overview shell and public-safe states.
+  - Confirm no console/page errors.
+
+- [ ] **Step 5: Commit final polish**
+  git add apps/ti e2e
+  git commit -m "feat: finish TI visual redesign"
