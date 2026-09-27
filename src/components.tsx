@@ -30,13 +30,15 @@ export function Heading({
   title,
   eyebrow,
   children,
+  className = "",
 }: {
   title: string;
   eyebrow?: string;
   children?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="page-heading">
+    <div className={`page-heading ${className}`.trim()}>
       <div>
         {eyebrow && <div className="eyebrow">{eyebrow}</div>}
         <h1>{title}</h1>
@@ -51,29 +53,37 @@ export function Badge({ value }: { value: unknown }) {
 export function Empty({
   text = "Nenhum registro encontrado.",
   children,
+  className = "",
 }: {
   text?: string;
   children?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="empty">
+    <div className={`empty ${className}`.trim()}>
       <Inbox size={30} />
       <p>{text}</p>
       {children}
     </div>
   );
 }
-export function Loading() {
+export function Loading({ className = "" }: { className?: string } = {}) {
   return (
-    <div className="loading" role="status">
+    <div className={`loading ${className}`.trim()} role="status">
       <LoaderCircle className="spin" size={25} />
       <span>Carregando...</span>
     </div>
   );
 }
-export function ErrorState({ retry }: { retry: () => void }) {
+export function ErrorState({
+  retry,
+  className = "",
+}: {
+  retry: () => void;
+  className?: string;
+}) {
   return (
-    <div className="empty" role="alert">
+    <div className={`empty ${className}`.trim()} role="alert">
       <AlertCircle />
       <p>Não foi possível carregar os registros.</p>
       <button onClick={retry}>Tentar novamente</button>
@@ -186,14 +196,18 @@ export function Stat({
   value,
   detail,
   icon,
+  variant = "default",
+  className = "",
 }: {
   title: string;
   value: ReactNode;
   detail?: ReactNode;
   icon?: ReactNode;
+  variant?: "default" | "primary" | "attention";
+  className?: string;
 }) {
   return (
-    <div className="stat">
+    <div className={`stat stat-${variant} ${className}`.trim()}>
       <div className="stat-label">
         {title}
         {icon}
