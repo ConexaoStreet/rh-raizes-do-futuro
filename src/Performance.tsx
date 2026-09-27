@@ -161,7 +161,7 @@ export default function Performance() {
 
   return (
     <>
-      <Heading title="Boletim e notas" eyebrow="DESENVOLVIMENTO">
+      <Heading title="Boletim e notas" eyebrow="DESENVOLVIMENTO" className="operational-heading">
         {can("performance.manage") && (
           <Link className="button" to="/configuracoes/ciclos">
             <Settings2 size={17} />
