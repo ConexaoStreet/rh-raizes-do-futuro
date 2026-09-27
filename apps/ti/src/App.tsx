@@ -1826,6 +1826,24 @@ function Badge({
   return <span className={"status-badge " + tone}>{children}</span>;
 }
 
+function Stat({
+  title,
+  value,
+  detail = "",
+}: {
+  title: string;
+  value: ReactNode;
+  detail?: string;
+}) {
+  return (
+    <article className="stat-card">
+      <span>{title}</span>
+      <strong>{value}</strong>
+      {detail && <small>{detail}</small>}
+    </article>
+  );
+}
+
 function Panel({
   title,
   kicker,
