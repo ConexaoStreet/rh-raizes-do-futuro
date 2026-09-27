@@ -4128,6 +4128,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
 .login-brand {
   position: relative;
   isolation: isolate;
+  overflow-x: clip;
   min-height: 100dvh;
   padding: clamp(30px, 4vw, 56px);
   display: flex;
@@ -4249,6 +4250,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
 
 .login-panel {
   min-height: 100dvh;
+  overflow-x: clip;
   display: grid;
   place-items: center;
   padding:
