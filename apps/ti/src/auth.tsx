@@ -404,8 +404,10 @@ function Login({
 
       <section className="login-panel">
         <div className="login-stage">
-          <LoginMascot mood={mascotMood} placement="login" scopeSelector=".login-stage" />
-        <div className="login-card">
+          <div className="login-mascot-dock">
+            <LoginMascot mood={mascotMood} placement="login" scopeSelector=".login-stage" />
+          </div>
+          <div className="login-card">
           <div className="security-badge"><ShieldCheck size={22} /></div>
           <span className="eyebrow">ACESSO RESTRITO</span>
           <h2>Entrar na Central de T.I</h2>
@@ -413,9 +415,12 @@ function Login({
 
           <div className="login-mode-switch" role="tablist" aria-label="Forma de acesso">
             <button
+              id="ti-login-password-tab"
               type="button"
               role="tab"
               aria-selected={loginMode === "password"}
+              aria-controls="ti-login-password-panel"
+              tabIndex={loginMode === "password" ? 0 : -1}
               className={loginMode === "password" ? "active" : ""}
               onClick={() => {
                 setLoginMode("password");
@@ -423,12 +428,16 @@ function Login({
                 setStatus("");
               }}
             >
-              E-mail e senha
+              <span className="login-mode-icon" aria-hidden="true"><Mail size={16} /></span>
+              <span>E-mail e senha</span>
             </button>
             <button
+              id="ti-login-code-tab"
               type="button"
               role="tab"
               aria-selected={loginMode === "code"}
+              aria-controls="ti-login-code-panel"
+              tabIndex={loginMode === "code" ? 0 : -1}
               className={loginMode === "code" ? "active" : ""}
               onClick={() => {
                 setLoginMode("code");
@@ -436,13 +445,19 @@ function Login({
                 setStatus("");
               }}
             >
-              Código semanal
+              <span className="login-mode-icon" aria-hidden="true"><KeyRound size={16} /></span>
+              <span>Código semanal</span>
             </button>
           </div>
 
           <form onSubmit={submit}>
             {loginMode === "password" ? (
-              <>
+              <div
+                id="ti-login-password-panel"
+                role="tabpanel"
+                aria-labelledby="ti-login-password-tab"
+                className="login-mode-panel"
+              >
                 <label>
                   <span>E-mail</span>
                   <input
@@ -487,8 +502,14 @@ function Login({
                 >
                   Esqueci minha senha
                 </button>
-              </>
+              </div>
             ) : (
+              <div
+                id="ti-login-code-panel"
+                role="tabpanel"
+                aria-labelledby="ti-login-code-tab"
+                className="login-mode-panel"
+              >
               <label>
                 <span>Código semanal</span>
                 <input
@@ -507,6 +528,7 @@ function Login({
                   Uso único. A confirmação cria uma sessão técnica verificada e auditada.
                 </small>
               </label>
+              </div>
             )}
 
             {error && <div className="form-error" role="alert">{error}</div>}
