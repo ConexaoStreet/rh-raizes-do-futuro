@@ -10,10 +10,11 @@
     "test": "vitest run",
     "test:database": "node tests/database.mjs",
     "test:e2e": "playwright test",
-    "verify": "npm run lint && npm run check:privacy && npm run test && npm run test:database && npm run build && npm run check:bundle",
+    "verify": "npm run lint && npm run check:privacy && npm run check:secrets && npm run test && npm run test:database && npm run build && npm run check:bundle",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
     "check:protection": "node scripts/protect-build.mjs",
-    "check:privacy": "node scripts/check-pii.mjs"
+    "check:privacy": "node scripts/check-pii.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",
@@ -58,4 +59,4 @@
       "image-size": "2.0.4"
     }
   }
-}
+}\n
