@@ -70,6 +70,42 @@ test("login surfaces do not overflow on mobile", async ({ page }) => {
     .toBe(true);
 });
 
+test("RH desktop login keeps brand and form in the same row", async ({ page }) => {
+  await page.setViewportSize({ width: 1664, height: 936 });
+  await page.goto("/");
+
+  const layout = await page.evaluate(() => {
+    const brand = document.querySelector<HTMLElement>(".login-brand");
+    const panel = document.querySelector<HTMLElement>(".login-panel");
+    const theme = document.querySelector<HTMLElement>(".login-theme-control");
+    if (!brand || !panel || !theme) throw new Error("LOGIN_LAYOUT_MISSING");
+
+    const brandRect = brand.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    return {
+      brandTop: brandRect.top,
+      panelTop: panelRect.top,
+      brandRight: brandRect.right,
+      panelLeft: panelRect.left,
+      brandBottom: brandRect.bottom,
+      panelBottom: panelRect.bottom,
+      viewportHeight: window.innerHeight,
+      themePosition: getComputedStyle(theme).position,
+    };
+  });
+
+  expect(Math.abs(layout.brandTop - layout.panelTop)).toBeLessThan(2);
+  expect(Math.abs(layout.brandRight - layout.panelLeft)).toBeLessThan(2);
+  expect(layout.brandBottom).toBeGreaterThanOrEqual(layout.viewportHeight - 2);
+  expect(layout.panelBottom).toBeGreaterThanOrEqual(layout.viewportHeight - 2);
+  expect(layout.themePosition).toBe("fixed");
+
+  await expect(page.getByText("Acesso protegido")).toHaveCount(0);
+  await expect(page.getByText("Ações auditadas")).toHaveCount(0);
+  await expect(page.getByText("Dados por permissão")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Entrar", exact: true })).toBeVisible();
+});
+
 test("RH login stays readable at extreme zoom-equivalent desktop width", async ({ page }) => {
   await page.setViewportSize({ width: 6500, height: 3600 });
   await page.goto("/");
