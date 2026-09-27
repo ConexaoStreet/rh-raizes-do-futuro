@@ -40,6 +40,7 @@ function placeholder(value) {
     clean === "changeme" ||
     clean === "example" ||
     clean === "placeholder" ||
+    /^(?:test|mock|fake|dummy|invalid)(?:[-_:]|$)/i.test(clean) ||
     clean.startsWith("$") ||
     clean.includes("${{ secrets.") ||
     clean.includes("process.env.") ||
