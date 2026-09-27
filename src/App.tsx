@@ -9,32 +9,16 @@ import {
   useLocation,
 } from "react-router-dom";
 import {
-  Activity,
-  BarChart3,
   Bell,
   BellRing,
-  CalendarDays,
-  ClipboardCheck,
-  Clock3,
-  FileBarChart2,
-  FileText,
-  LayoutDashboard,
   LogOut,
   Download,
   Menu,
-  MessageSquare,
   Search,
-  Settings,
   Shield,
-  ShieldCheck,
-  SlidersHorizontal,
-  Star,
-  Users,
   X,
   UserCircle,
   ChevronsUpDown,
-  Presentation,
-  LifeBuoy,
 } from "lucide-react";
 import { AuthBoundary, useAuth } from "./auth";
 import { client, rpc, runAction, useAsync, useDebounce } from "./api";
@@ -42,6 +26,7 @@ import { Brand, Loading, Modal } from "./components";
 import { captureNavigation } from "./telemetry";
 import { ThemeToggle } from "./theme";
 import { enablePushNotifications, pushSupported } from "./push";
+import { rhNavGroups } from "./layout/RhNavigation";
 const Dashboard = lazy(() => import("./Dashboard"));
 const Attendance = lazy(() => import("./Attendance"));
 const People = lazy(() => import("./People"));
@@ -60,133 +45,6 @@ type InstallPromptEvent = Event & {
   }>;
 };
 
-const navGroups = [
-  {
-    label: "ACOMPANHAMENTO",
-    items: [
-      {
-        path: "/",
-        name: "Visão geral",
-        icon: LayoutDashboard,
-        permission: "dashboard.view",
-      },
-      {
-        path: "/hoje",
-        name: "Hoje",
-        icon: Activity,
-        permission: "dashboard.view",
-      },
-      {
-        path: "/colaboradores",
-        name: "Colaboradores",
-        icon: Users,
-        permission: "employee.view",
-      },
-      {
-        path: "/chamada",
-        name: "Chamada do dia",
-        icon: ClipboardCheck,
-        permission: "attendance.manage",
-      },
-      {
-        path: "/presenca",
-        name: "Histórico de chamadas",
-        icon: CalendarDays,
-        permission: "",
-      },
-      { path: "/faltas", name: "Faltas", icon: FileText, permission: "" },
-      { path: "/atrasos", name: "Atrasos", icon: Clock3, permission: "" },
-      {
-        path: "/justificativas",
-        name: "Justificativas",
-        icon: ShieldCheck,
-        permission: "",
-      },
-    ],
-  },
-  {
-    label: "DESENVOLVIMENTO",
-    items: [
-      {
-        path: "/feedbacks",
-        name: "Feedbacks",
-        icon: MessageSquare,
-        permission: "",
-      },
-      { path: "/notas", name: "Boletim", icon: Star, permission: "" },
-      {
-        path: "/gestao",
-        name: "Avaliação da gestão",
-        icon: BarChart3,
-        permission: "",
-      },
-      {
-        path: "/calendario",
-        name: "Calendário de cursos",
-        icon: CalendarDays,
-        permission: "",
-      },
-    ],
-  },
-  {
-    label: "SUPORTE",
-    items: [
-      {
-        path: "/suporte-ti",
-        name: "Chamado T.I.",
-        icon: LifeBuoy,
-        permission: "",
-      },
-    ],
-  },
-  {
-    label: "GESTÃO",
-    items: [
-      {
-        path: "/relatorios",
-        name: "Relatórios",
-        icon: FileBarChart2,
-        permission: "report.view",
-      },
-      {
-        path: "/apresentacoes",
-        name: "Apresentações",
-        icon: Presentation,
-        permission: "report.export",
-      },
-      {
-        path: "/usuarios",
-        name: "Usuários",
-        icon: Users,
-        permission: "user.view",
-      },
-      {
-        path: "/cargos",
-        name: "Cargos e permissões",
-        icon: Shield,
-        permission: "role.manage",
-      },
-      {
-        path: "/auditoria",
-        name: "Logs e auditoria",
-        icon: Activity,
-        permission: "audit.view",
-      },
-      {
-        path: "/configuracoes",
-        name: "Configurações",
-        icon: Settings,
-        permission: "settings.manage",
-      },
-      {
-        path: "/admin",
-        name: "Administração total",
-        icon: SlidersHorizontal,
-        permission: "system.manage",
-      },
-    ],
-  },
-];
 export default function App() {
   return (
     <AuthBoundary>
@@ -264,18 +122,19 @@ function Shell() {
         </div>
         <div className="workspace-label">
           <span className="workspace-icon">RH</span>
-          <div>
-            Raízes do Futuro<small>Turma 16807 · Anhanguera / ESPRO</small>
+          <div className="workspace-copy">
+            <strong>Gestão de RH</strong>
+            <small>Raízes do Futuro · Turma 16807</small>
           </div>
         </div>
-        <nav>
+        <nav aria-label="Navegação principal do RH">
           {!can("dashboard.view") && (
             <NavLink to="/" end onClick={() => setMobile(false)}>
               <UserCircle size={18} />
               Meu perfil
             </NavLink>
           )}
-          {navGroups.map((group) => (
+          {rhNavGroups.map((group) => (
             <div className="nav-group" key={group.label}>
               {group.items.some(
                 (item) => !item.permission || can(item.permission),
@@ -321,9 +180,10 @@ function Shell() {
             >
               <Menu />
             </button>
-            <span className="desktop-only">
-              Raízes do Futuro <span className="slash">/</span> RH
-            </span>
+            <div className="topbar-context desktop-only">
+              <span>Raízes do Futuro</span>
+              <strong>Gestão de RH</strong>
+            </div>
           </div>
           <div className="topbar-actions">
             <ThemeToggle compact />
