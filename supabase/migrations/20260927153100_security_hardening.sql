@@ -1,3 +1,40 @@
+create or replace function private.has_role(role_code text)
+returns boolean
+language sql
+stable
+security definer
+set search_path=''
+as $function$
+  select exists(
+    select 1
+    from public.user_roles ur
+    join public.roles r on r.id=ur.role_id
+    where ur.user_id=auth.uid()
+      and r.code=role_code
+      and r.active
+      and not r.archived
+  )
+$function$;
+
+create or replace function private.current_employee_class()
+returns uuid
+language sql
+stable
+security definer
+set search_path=''
+as $function$
+  select e.class_id
+  from public.employees e
+  where e.profile_id=auth.uid()
+    and e.status='active'
+  limit 1
+$function$;
+
+revoke all on function private.has_role(text) from public, anon;
+revoke all on function private.current_employee_class() from public, anon;
+grant execute on function private.has_role(text) to authenticated;
+grant execute on function private.current_employee_class() to authenticated;
+
 create or replace function private.attendance_session_owned_by_current_user(
   session_identifier uuid
 )
