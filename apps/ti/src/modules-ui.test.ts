@@ -29,8 +29,6 @@ describe("TI technical module redesign", () => {
       '"ti_site"',
       '"maintenance"',
       'invokeFunction("ti-admin-bridge"',
-      'invokeFunction("datasul-bridge"',
-      'invokeFunction("platform-bridge"',
       'action: "inventory"',
       'action: "request"',
       'action: "status"',
@@ -42,6 +40,8 @@ describe("TI technical module redesign", () => {
     ]) {
       expect(app).toContain(contract);
     }
+    expect(app).toMatch(/invokeFunction\(\s*"datasul-bridge"/s);
+    expect(app).toMatch(/invokeFunction\(\s*"platform-bridge"/s);
   });
 
   it("preserves destructive confirmations and technical state", () => {
