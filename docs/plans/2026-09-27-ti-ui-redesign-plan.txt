@@ -22,6 +22,9 @@
 - Motion 140–220ms e prefers-reduced-motion.
 - Estados critical/warn/ok não dependem somente de cor.
 - Toda etapa passa CI/build/bundle/E2E antes de merge.
+- Preservar backup/pre-ui-redesign-2026-09-27 como ponto de retorno.
+- Webflow e Canva serão usados como laboratório visual/referência antes da implementação; não entram como dependência de runtime.
+- Figma pode complementar o trabalho quando a cota MCP voltar, sem bloquear a execução.
 
 ## Review Focus
 
@@ -44,6 +47,11 @@
 **Interfaces:**
 - Consumes: current apps/ti/src/styles.css variables and components.
 - Produces: console tokens for surfaces, borders, status, mono text, focus, density and motion.
+
+- [ ] **Step 0: Criar referência visual independente da Central T.I.**
+  - Usar Webflow para testar composição de console, sidebar, overview e módulos técnicos sem migrar a aplicação.
+  - Usar Canva para direção visual/ativos pontuais sem suavizar a identidade técnica da T.I.
+  - Registrar no PR as decisões visuais aprovadas que serão traduzidas para React/CSS.
 
 - [ ] **Step 1: Write failing contracts**
   - Assert main.tsx imports redesign.css after styles.css.
