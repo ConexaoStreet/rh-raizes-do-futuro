@@ -131,9 +131,9 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
             aria-hidden="true"
           />
           <div className="raizes-hero-copy">
-            <span className="eyebrow">PAINEL DE GESTÃO · TURMA 16807</span>
-            <h2>Um panorama claro da turma.</h2>
-            <p>Presença, desenvolvimento e pendências importantes reunidos para facilitar as decisões do dia.</p>
+            <span className="eyebrow">TURMA 16807 · VISÃO DO RH</span>
+            <h2>O que precisa da sua atenção hoje.</h2>
+            <p>Presença, atrasos, notas e pendências reunidos para você agir sem procurar informação em várias telas.</p>
           </div>
         </section>
       )}
@@ -144,13 +144,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
       ) : (
         stats && (
           <>
-            <div className="stats-grid">
-              <Stat
-                title="Colaboradores ativos"
-                value={number(stats.active_employees)}
-                detail={`${number(stats.employees)} cadastrados`}
-                icon={<Users size={18} />}
-              />
+            <div className="stats-grid executive-metrics">
               <Stat
                 variant="primary"
                 title="Presença"
@@ -161,6 +155,12 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 }
                 detail={`${stats.present} presenças no período`}
                 icon={<Check size={18} />}
+              />
+              <Stat
+                title="Colaboradores ativos"
+                value={number(stats.active_employees)}
+                detail={`${number(stats.employees)} cadastrados`}
+                icon={<Users size={18} />}
               />
               <Stat
                 variant={stats.late > 0 ? "attention" : "default"}
@@ -187,7 +187,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 <span>Os registros antigos representam ocorrências lançadas na planilha, não uma chamada completa. Ausência na planilha não significa presença confirmada.</span>
               </div>
             </div>
-            <section className="attendance-banner">
+            <section className="attendance-banner dashboard-priority-band">
               <div className="banner-icon">
                 <ClipboardCheck size={25} />
               </div>
@@ -201,7 +201,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
               </Link>
             </section>
             <div className="dashboard-grid">
-              <section className="panel chart-panel">
+              <section className="panel chart-panel dashboard-insight-panel">
                 <div className="panel-heading">
                   <h2>Presença no período</h2>
                   <div className="legend">
@@ -277,7 +277,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                   </div>
                 </div>
               </section>
-              <section className="panel pending-panel">
+              <section className="panel pending-panel dashboard-action-panel">
                 <div className="panel-heading">
                   <h2>Pendências</h2>
                   <span className="count-pill">
@@ -333,7 +333,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 </div>
               </section>
             </div>
-            <div className="dashboard-bottom">
+            <div className="dashboard-bottom editorial-support-grid">
               <section className="panel">
                 <div className="panel-heading">
                   <h2>Próximos eventos</h2>
