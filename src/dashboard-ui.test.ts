@@ -28,11 +28,11 @@ describe("RH dashboard redesign", () => {
   });
 
   it("keeps the intended visual hierarchy", () => {
-    const stats = dashboard.indexOf('className="stats-grid"');
+    const stats = dashboard.indexOf('className="stats-grid executive-metrics"');
     const notice = dashboard.indexOf('className="notice maintenance-notice"');
-    const attendance = dashboard.indexOf('className="attendance-banner"');
+    const attendance = dashboard.indexOf('className="attendance-banner dashboard-priority-band"');
     const mainGrid = dashboard.indexOf('className="dashboard-grid"');
-    const bottom = dashboard.indexOf('className="dashboard-bottom"');
+    const bottom = dashboard.indexOf('className="dashboard-bottom editorial-support-grid"');
 
     expect(stats).toBeGreaterThan(-1);
     expect(notice).toBeGreaterThan(stats);
