@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import webpush from "npm:web-push@3.6.7";
 import { observe, observeError } from "../_shared/observability.ts";
+import { isBrazilRequest, timingSafeEqual } from "../_shared/request-security.ts";
 
 type NotificationRow = {
   id: string;
@@ -67,6 +68,13 @@ Deno.serve(async (request) => {
       notification?: NotificationRow;
     };
 
+    if (
+      body.action === "sync" &&
+      (origin !== appOrigin || !isBrazilRequest(request))
+    ) {
+      return respond(origin, { error: "REGION_NOT_ALLOWED" }, 403);
+    }
+
     async function sendToUser(userId: string, notification: NotificationRow) {
       const { data: subscriptions, error } = await admin
         .from("push_subscriptions")
@@ -122,7 +130,7 @@ Deno.serve(async (request) => {
 
     if (body.action === "webhook") {
       const secret = request.headers.get("x-push-webhook-secret");
-      if (!secret || secret !== config.webhook_secret)
+      if (!secret || !timingSafeEqual(secret, config.webhook_secret))
         return respond(origin, { error: "FORBIDDEN" }, 403);
 
       const notification = body.notification;
