@@ -4,6 +4,7 @@ import { HashRouter } from "react-router-dom";
 import { Toaster } from "sonner";
 import App from "./App";
 import "./styles.css";
+import "./styles/rh-redesign.css";
 import { capture, captureError, observeWebVitals } from "./telemetry";
 import { initializeTheme } from "./theme";
 import ErrorBoundary from "./ErrorBoundary";
