@@ -3,16 +3,9 @@ import {
   useEffect,
   useMemo,
   useState,
-  type ChangeEvent,
-  type FormEvent,
-  type ReactNode,
-} from "react";
-import {
-  Activity,
   AlertTriangle,
   ArrowUpRight,
   BellRing,
-  Boxes,
   CheckCircle2,
   Database,
   FileClock,
@@ -21,8 +14,6 @@ import {
   Globe2,
   HardDrive,
   KeyRound,
-  LayoutDashboard,
-  LogOut,
   Mail,
   RefreshCw,
   Save,
@@ -38,9 +29,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { client, rpc, updateSetting } from "./api";
-import { Brand, useAuth } from "./auth";
-import { ThemeToggle } from "./theme";
+import { useAuth } from "./auth";
 import { LoginMascot } from "./LoginMascot";
+import { TiShell } from "./Shell";
+import type { TiView } from "./navigation";
 
 type JsonObject = Record<string, unknown>;
 type View =
@@ -291,7 +283,7 @@ function toneFor(value: unknown) {
 
 export default function App() {
   const { user, can } = useAuth();
-  const [view, setView] = useState<View>("overview");
+  const [view, setView] = useState<TiView>("overview");
   const [settings, setSettings] = useState<Record<string, JsonObject>>({});
   const [snapshot, setSnapshot] = useState<Snapshot>({});
   const [inventory, setInventory] = useState<Inventory>({});
@@ -925,93 +917,25 @@ export default function App() {
     import.meta.env.VITE_RH_SITE_URL ||
     "https://rh-raizes-do-futuro.vercel.app";
 
-  const nav: { view: View; label: string; icon: ReactNode; permission?: string }[] = [
-    { view: "overview", label: "Visão geral", icon: <LayoutDashboard /> },
-    { view: "datasul", label: "Datasul", icon: <Database />, permission: "ti.datasul.read" },
-    { view: "users", label: "Usuários e acessos", icon: <UserCog />, permission: "ti.users.manage" },
-    { view: "rh", label: "Dados do RH", icon: <Users />, permission: "employee.manage" },
-    { view: "storage", label: "Arquivos e Storage", icon: <HardDrive />, permission: "ti.storage.manage" },
-    { view: "notifications", label: "Notificações", icon: <BellRing />, permission: "ti.notifications.manage" },
-    { view: "database", label: "Banco de dados", icon: <Boxes />, permission: "ti.database.view" },
-    { view: "integrations", label: "GitHub e Vercel", icon: <GitBranch /> },
-    { view: "site", label: "Site RH", icon: <Globe2 />, permission: "ti.manage" },
-    { view: "security", label: "Segurança", icon: <ShieldCheck />, permission: "ti.security.view" },
-    { view: "support", label: "Chamados T.I.", icon: <Wrench />, permission: "ti.manage" },
-    { view: "logs", label: "Logs", icon: <Activity /> },
-  ];
-
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <Brand />
-        <div className="environment">
-          <span className="pulse" />
-          Produção
-        </div>
-        <nav>
-          {nav
-            .filter((item) => !item.permission || can(item.permission))
-            .map((item) => (
-              <NavButton
-                key={item.view}
-                active={view === item.view}
-                icon={item.icon}
-                onClick={() => {
-                  setView(item.view);
-                  setSearch("");
-                  setError("");
-                  setNotice("");
-                  if (item.view === "database" && !database)
-                    void run("database", loadDatabase);
-                }}
-              >
-                {item.label}
-              </NavButton>
-            ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <a
-            className="external-link"
-            href={rhSite}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <ArrowUpRight size={16} />
-            Abrir RH
-          </a>
-          <button className="logout" onClick={() => void client().auth.signOut()}>
-            <LogOut size={16} />
-            Sair
-          </button>
-        </div>
-      </aside>
-
-      <main id="ti-main-content">
-        <header className="topbar">
-          <div>
-            <span className="eyebrow">CENTRAL TÉCNICA</span>
-            <h1>{titleFor(view)}</h1>
-          </div>
-          <div className="operator">
-            <button
-              className="icon-button"
-              aria-label="Atualizar dados"
-              onClick={() => void run("reload", reload)}
-              disabled={busy !== ""}
-            >
-              <RefreshCw size={17} />
-            </button>
-            <ThemeToggle compact />
-            <div>
-              <strong>{user.profile.full_name}</strong>
-              <span>{user.roles.join(" · ")}</span>
-            </div>
-            <div className="operator-avatar">
-              {user.profile.full_name.slice(0, 1).toUpperCase()}
-            </div>
-          </div>
-        </header>
-
+    <TiShell
+      view={view}
+      fullName={user.profile.full_name}
+      roles={user.roles}
+      busy={busy !== ""}
+      rhSite={rhSite}
+      can={can}
+      onRefresh={() => void run("reload", reload)}
+      onLogout={() => void client().auth.signOut()}
+      onNavigate={(nextView) => {
+        setView(nextView);
+        setSearch("");
+        setError("");
+        setNotice("");
+        if (nextView === "database" && !database)
+          void run("database", loadDatabase);
+      }}
+    >
         <div className="content">
           {error && <Notice tone="error">{error}</Notice>}
           {notice && <Notice tone="ok">{notice}</Notice>}
@@ -1794,44 +1718,7 @@ export default function App() {
             </>
           )}
         </div>
-      </main>
-    </div>
-  );
-}
-
-function titleFor(view: View) {
-  return {
-    overview: "Visão geral",
-    datasul: "Datasul RH",
-    users: "Usuários e acessos",
-    rh: "Dados do RH",
-    storage: "Arquivos e Storage",
-    notifications: "Notificações",
-    database: "Banco de dados",
-    integrations: "GitHub e Vercel",
-    site: "Controle do site",
-    security: "Segurança",
-    support: "Chamados de T.I.",
-    logs: "Logs e auditoria",
-  }[view];
-}
-
-function NavButton({
-  active,
-  icon,
-  children,
-  onClick,
-}: {
-  active: boolean;
-  icon: ReactNode;
-  children: ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button className={active ? "nav-button active" : "nav-button"} onClick={onClick}>
-      {icon}
-      <span>{children}</span>
-    </button>
+    </TiShell>
   );
 }
 
