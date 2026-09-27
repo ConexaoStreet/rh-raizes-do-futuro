@@ -1,6 +1,3 @@
--- Security hardening: break attendance RLS recursion and reconcile Datasul audit table.
--- Keeps RLS enabled and narrows grants; no authorization bypass is exposed to clients.
-
 create or replace function private.attendance_session_owned_by_current_user(
   session_identifier uuid
 )
