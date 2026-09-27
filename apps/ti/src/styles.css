@@ -201,16 +201,10 @@ button:hover:not(:disabled),
   gap: 15px;
 }
 
-.ti-nav-group {
-  display: grid;
-  gap: 5px;
-}
-
 .ti-nav-group-label {
   padding: 0 10px;
   color: #61776b;
   font-size: .55rem;
-  font-weight: 850;
 }
 
 .ti-nav-group-items {
@@ -225,7 +219,6 @@ button:hover:not(:disabled),
   color: #93a79d;
   background: transparent;
   border-color: transparent;
-  border-radius: 9px;
   padding: 9px 10px;
 }
 
@@ -236,7 +229,6 @@ button:hover:not(:disabled),
 
 .nav-button.active {
   color: #f0f7f2;
-  border-color: rgba(146, 199, 166, .14);
   background: rgba(146, 199, 166, .08);
   box-shadow: inset 2px 0 0 #9dceb0;
 }
@@ -244,7 +236,7 @@ button:hover:not(:disabled),
 .sidebar-bottom {
   margin-top: auto;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .external-link,
