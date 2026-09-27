@@ -24,12 +24,13 @@ export function CodeSurface({
 
   return (
     <section
-      className={compact ? "ti-code-surface is-compact" : "ti-code-surface"}
+      className="ti-code-surface"
       aria-label={label}
+      data-compact={compact || undefined}
     >
-      <div className="ti-code-surface-head">
+      <div className="state-row">
         <span>{label}</span>
-        <small>LEITURA TÉCNICA</small>
+        <strong>LEITURA TÉCNICA</strong>
       </div>
       <pre>
         <code>{content}</code>
