@@ -20,16 +20,17 @@ export function IntegrationCard({
 }: IntegrationCardProps) {
   return (
     <article className="panel ti-integration-card">
-      <header>
-        <div>
-          <span className="ti-integration-card-kicker">INTEGRAÇÃO</span>
-          <strong>{name}</strong>
-          {detail && <small>{detail}</small>}
-        </div>
-        <span className={"badge " + tone}>{status}</span>
-      </header>
-      {children && <div className="ti-integration-card-body">{children}</div>}
-      {action && <div className="ti-integration-card-action">{action}</div>}
+      <div className="state-row">
+        <span>{name}</span>
+        <span className={"status-badge " + tone}>{status}</span>
+      </div>
+      {detail && (
+        <p className="panel-copy">
+          <code>{detail}</code>
+        </p>
+      )}
+      {children}
+      {action && <div className="actions">{action}</div>}
     </article>
   );
 }
