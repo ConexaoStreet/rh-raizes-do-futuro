@@ -1,0 +1,35 @@
+name: CSS Usage Audit
+
+on:
+  push:
+    branches:
+      - feat/rh-shell-redesign
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report CSS selectors with no source reference
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+            const full = path.join(dir, entry.name);
+            if (entry.isDirectory()) return walk(full);
+            return /\.(tsx?|jsx?)$/.test(entry.name) ? [full] : [];
+          });
+
+          const sourceFiles = walk('src').filter((p) => !p.endsWith('.test.ts') && !p.endsWith('.test.tsx'));
+          const source = sourceFiles.map((p) => fs.readFileSync(p, 'utf8')).join('\n');
+          const css = fs.readFileSync('src/styles.css', 'utf8');
+          const selectors = [...new Set([...css.matchAll(/\.([A-Za-z_-][A-Za-z0-9_-]*)/g)].map((m) => m[1]))].sort();
+          const unused = selectors.filter((name) => !source.includes(name));
+          console.log('SOURCE_FILES=' + sourceFiles.length);
+          console.log('CSS_CLASS_SELECTORS=' + selectors.length);
+          console.log('UNUSED_COUNT=' + unused.length);
+          console.log('UNUSED=' + JSON.stringify(unused));
+          NODE
