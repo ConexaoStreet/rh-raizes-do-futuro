@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 
+const MONO_STYLE = {
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+};
+
 type TechnicalFieldProps = {
   label: string;
   children: ReactNode;
@@ -16,12 +20,9 @@ export function TechnicalField({
   hint = "",
 }: TechnicalFieldProps) {
   return (
-    <label
-      className={wide ? "field wide" : "field"}
-      data-technical-mono={mono || undefined}
-    >
+    <label className={wide ? "field wide" : "field"}>
       <span>{label}</span>
-      {children}
+      {mono ? <div style={MONO_STYLE}>{children}</div> : children}
       {hint && <small className="panel-copy">{hint}</small>}
     </label>
   );
