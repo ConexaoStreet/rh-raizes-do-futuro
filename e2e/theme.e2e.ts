@@ -134,10 +134,12 @@ test("RH login stays readable at extreme zoom-equivalent desktop width", async (
 test("RH login remains stable across breakpoint matrix", async ({ page }) => {
   for (const viewport of [
     { width: 320, height: 568 },
+    { width: 390, height: 844 },
     { width: 768, height: 1024 },
     { width: 1100, height: 800 },
     { width: 1440, height: 900 },
     { width: 1920, height: 1080 },
+    { width: 6500, height: 3600 },
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/");
@@ -150,6 +152,18 @@ test("RH login remains stable across breakpoint matrix", async ({ page }) => {
       )
       .toBe(true);
   }
+});
+
+test("RH respects reduced motion preference", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const durations = await page.evaluate(() => {
+    const card = document.querySelector<HTMLElement>(".login-card");
+    const brand = document.querySelector<HTMLElement>(".login-brand-copy");
+    if (!card || !brand) throw new Error("LOGIN_LAYOUT_MISSING");
+    return [getComputedStyle(card).animationDuration, getComputedStyle(brand).animationDuration];
+  });
+  expect(durations.every((value) => Number.parseFloat(value) <= 0.001)).toBe(true);
 });
 
 test("internal apps stay non-indexable", async ({ page, request }) => {
