@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { withSupabase } from "npm:@supabase/server";
+import { isBrazilRequest } from "../_shared/request-security.ts";
 
 const PROD_ORIGINS = new Set([
   "https://ti-raizes-do-futuro.vercel.app",
