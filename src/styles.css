@@ -4241,26 +4241,6 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   line-height: 1.75;
 }
 
-.login-trust-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 28px;
-}
-
-.login-trust-row span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 11px;
-  border: 1px solid rgba(255,255,255,.075);
-  border-radius: 999px;
-  background: rgba(4,14,10,.24);
-  color: #c3d2ca;
-  font-size: .69em;
-  font-weight: 700;
-}
-
 .login-brand-foot {
   color: #84998d;
   font-size: .68em;
@@ -4312,18 +4292,6 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   overflow: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(154,201,171,.28) transparent;
-}
-
-.security-badge {
-  width: 3em;
-  height: 3em;
-  display: grid;
-  place-items: center;
-  margin-bottom: 18px;
-  border: 1px solid rgba(164,214,183,.12);
-  border-radius: 15px;
-  color: #b9dec6;
-  background: linear-gradient(145deg,rgba(164,214,183,.12),rgba(164,214,183,.035));
 }
 
 .login-card > .eyebrow {
@@ -4484,23 +4452,6 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   color: #7f9488;
 }
 
-.login-card-foot {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 20px;
-  padding-top: 17px;
-  border-top: 1px solid rgba(255,255,255,.055);
-  color: #758b80;
-  font-size: .65em;
-  line-height: 1.5;
-}
-
-.login-card-foot svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
-}
-
 html[data-theme="light"] .login-panel {
   background:
     radial-gradient(520px 420px at 100% 0%, rgba(66,119,91,.07), transparent 68%),
@@ -4521,8 +4472,7 @@ html[data-theme="light"] .login-card h2 {
 html[data-theme="light"] .login-card > p,
 html[data-theme="light"] .login-card .field > label,
 html[data-theme="light"] .login-card .muted,
-html[data-theme="light"] .login-card small,
-html[data-theme="light"] .login-card-foot {
+html[data-theme="light"] .login-card small {
   color: #6f8076;
 }
 
@@ -4547,12 +4497,6 @@ html[data-theme="light"] .login-mode-switch button.active {
   color: #244b39;
   background: #fff;
   border-color: #dce6df;
-}
-
-html[data-theme="light"] .security-badge {
-  color: #39745b;
-  border-color: #dce9e0;
-  background: #edf5ef;
 }
 
 html[data-theme="light"] .login-card .notice {
