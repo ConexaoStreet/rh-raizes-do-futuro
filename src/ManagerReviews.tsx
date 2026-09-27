@@ -65,7 +65,7 @@ export default function ManagerReviews() {
   }, []);
   return (
     <>
-      <Heading title="Avaliação da gestão" eyebrow="ESCUTA DA EQUIPE">
+      <Heading title="Avaliação da gestão" eyebrow="ESCUTA DA EQUIPE" className="operational-heading">
         {can("review.manage") && (
           <>
             <Link className="button" to="/configuracoes/criterios-gestao">
