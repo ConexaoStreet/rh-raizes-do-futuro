@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("TI login remains stable across breakpoint matrix", async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem("raizes-ti-intro-seen", "1"));
   for (const viewport of [
     { width: 390, height: 844 },
     { width: 768, height: 1024 },
