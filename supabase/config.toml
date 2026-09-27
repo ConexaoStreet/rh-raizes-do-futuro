@@ -22,10 +22,10 @@ secure_password_change = true
 verify_jwt = true
 
 [functions.datasul-bridge]
-verify_jwt = false
+verify_jwt = true
 
 [functions.platform-bridge]
-verify_jwt = false
+verify_jwt = true
 
 [functions.manager-activation]
 verify_jwt = false
@@ -40,11 +40,11 @@ verify_jwt = false
 
 
 [functions.profile-photo-verify]
-verify_jwt = false
+verify_jwt = true
 
 
 [functions.ti-admin-bridge]
-verify_jwt = false
+verify_jwt = true
 
 
 [functions.ti-code-login]
