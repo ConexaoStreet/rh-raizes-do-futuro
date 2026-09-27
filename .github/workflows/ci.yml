@@ -29,6 +29,7 @@ jobs:
       - run: npm run check:privacy
       - run: node tests/auth-template-sync.mjs
       - run: node tests/auth-hardening-config.mjs
+      - run: node tests/observability-source.mjs
       - run: npm run test -- --passWithNoTests
       - run: npm run test:database
       - run: npm run build

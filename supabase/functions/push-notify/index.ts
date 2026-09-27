@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import webpush from "npm:web-push@3.6.7";
+import { observe, observeError } from "../_shared/observability.ts";
 
 type NotificationRow = {
   id: string;
@@ -25,6 +26,7 @@ const respond = (origin: string, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: cors(origin) });
 
 Deno.serve(async (request) => {
+  const startedAt = Date.now();
   const origin = request.headers.get("origin") || appOrigin;
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers: cors(origin) });
@@ -110,7 +112,9 @@ Deno.serve(async (request) => {
               .eq("id", subscription.id);
             continue;
           }
-          console.error("push_send_failed", statusCode);
+          observeError("push_notify.delivery_error", error, {
+            status: statusCode || 500,
+          });
         }
       }
       return sent;
@@ -126,6 +130,12 @@ Deno.serve(async (request) => {
         return respond(origin, { error: "INVALID_NOTIFICATION" }, 400);
 
       const sent = await sendToUser(notification.user_id, notification);
+      observe("push_notify.webhook", {
+        outcome: "ok",
+        status: 200,
+        deliveries: sent,
+        latency_ms: Date.now() - startedAt,
+      });
       return respond(origin, { ok: true, sent });
     }
 
@@ -163,6 +173,13 @@ Deno.serve(async (request) => {
         sent += await sendToUser(authData.user.id, notification as NotificationRow);
       }
 
+      observe("push_notify.sync", {
+        outcome: "ok",
+        status: 200,
+        notification_count: notifications?.length || 0,
+        deliveries: sent,
+        latency_ms: Date.now() - startedAt,
+      });
       return respond(origin, {
         ok: true,
         notifications: notifications?.length || 0,
@@ -170,9 +187,17 @@ Deno.serve(async (request) => {
       });
     }
 
+    observe("push_notify.request", {
+      outcome: "invalid_action",
+      status: 400,
+      latency_ms: Date.now() - startedAt,
+    });
     return respond(origin, { error: "INVALID_ACTION" }, 400);
   } catch (error) {
-    console.error("push_notify_error", error);
+    observeError("push_notify.error", error, {
+      status: 503,
+      latency_ms: Date.now() - startedAt,
+    });
     return respond(origin, { error: "UNAVAILABLE" }, 503);
   }
 });

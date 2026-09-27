@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
+import { observe, observeError } from "../_shared/observability.ts";
 
 const PROD_ORIGIN = "https://rh-raizes-do-futuro.vercel.app";
 
@@ -60,20 +61,36 @@ function normalizeName(value: string) {
 }
 
 Deno.serve(async (request) => {
+  const startedAt = Date.now();
   const origin = request.headers.get("origin") || PROD_ORIGIN;
   if (!allowedOrigins().has(origin)) {
+    observe("registration_bootstrap.request", {
+      outcome: "denied_origin",
+      status: 403,
+      latency_ms: Date.now() - startedAt,
+    });
     return new Response(null, { status: 403 });
   }
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: cors(origin) });
   }
   if (request.method !== "POST") {
+    observe("registration_bootstrap.request", {
+      outcome: "method_not_allowed",
+      status: 405,
+      latency_ms: Date.now() - startedAt,
+    });
     return response(origin, { error: "METHOD_NOT_ALLOWED" }, 405);
   }
 
   try {
     const raw = await request.text();
     if (raw.length > 4096) {
+      observe("registration_bootstrap.request", {
+        outcome: "payload_too_large",
+        status: 400,
+        latency_ms: Date.now() - startedAt,
+      });
       return response(origin, { error: "INVALID_REQUEST" }, 400);
     }
     const body = JSON.parse(raw || "{}") as {
@@ -115,6 +132,13 @@ Deno.serve(async (request) => {
         throw classResult.error || departmentResult.error;
       }
 
+      observe("registration_bootstrap.options", {
+        outcome: "ok",
+        status: 200,
+        department_count: departmentResult.data?.length || 0,
+        class_available: Boolean(classResult.data),
+        latency_ms: Date.now() - startedAt,
+      });
       return response(origin, {
         class: classResult.data,
         departments: departmentResult.data || [],
@@ -130,6 +154,11 @@ Deno.serve(async (request) => {
     if (body.action === "match") {
       const submitted = normalizeName(String(body.full_name || ""));
       if (submitted.length < 4) {
+        observe("registration_bootstrap.match", {
+          outcome: "incomplete_name",
+          status: 200,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, {
           matched: false,
           reason: "INCOMPLETE_NAME",
@@ -152,25 +181,49 @@ Deno.serve(async (request) => {
       );
 
       if (matches.length === 1) {
+        observe("registration_bootstrap.match", {
+          outcome: "matched",
+          status: 200,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, {
           matched: true,
           canonical_name: matches[0].full_name,
         });
       }
       if (matches.length > 1) {
+        observe("registration_bootstrap.match", {
+          outcome: "ambiguous_name",
+          status: 200,
+          latency_ms: Date.now() - startedAt,
+        });
         return response(origin, {
           matched: false,
           reason: "AMBIGUOUS_NAME",
         });
       }
+      observe("registration_bootstrap.match", {
+        outcome: "not_found",
+        status: 200,
+        latency_ms: Date.now() - startedAt,
+      });
       return response(origin, {
         matched: false,
         reason: "NOT_FOUND",
       });
     }
 
+    observe("registration_bootstrap.request", {
+      outcome: "invalid_action",
+      status: 400,
+      latency_ms: Date.now() - startedAt,
+    });
     return response(origin, { error: "INVALID_ACTION" }, 400);
-  } catch {
+  } catch (error) {
+    observeError("registration_bootstrap.error", error, {
+      status: 503,
+      latency_ms: Date.now() - startedAt,
+    });
     return response(origin, { error: "UNAVAILABLE" }, 503);
   }
 });
