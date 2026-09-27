@@ -1577,7 +1577,7 @@ export default function App() {
 
               {view === "integrations" && (
                 <>
-                  <div className="ti-integration-grid">
+                  <div className="two-columns ti-integration-grid">
                     <IntegrationCard
                       name="GitHub"
                       status={labelStatus(github.status)}
