@@ -429,25 +429,6 @@ input[type="radio"] {
   margin-top: 6px;
   font-family: "DM Sans", Arial, sans-serif;
 }
-.brand-mark {
-  position: relative;
-  display: block;
-  color: var(--dark);
-  background: var(--lime);
-  width: 37px;
-  height: 39px;
-  border-radius: 10px;
-  font-size: 30px;
-  line-height: 38px;
-  padding-left: 7px;
-  font-weight: 800;
-}
-.brand-mark span {
-  font-size: 17px;
-  position: absolute;
-  right: 3px;
-  top: -8px;
-}
 .avatar {
   width: 36px;
   height: 36px;
@@ -1971,14 +1952,7 @@ td small {
 .auth-brand .brand {
   font-size: 1.05rem;
 }
-.auth-brand .brand-mark {
-  width: 44px;
-  height: 45px;
-  line-height: 44px;
-  font-size: 35px;
-  padding-left: 9px;
-}
-.auth-wordmark {
+.auth-brand .auth-wordmark {
   font-family: "Manrope", Arial, sans-serif;
   font-size: clamp(3rem, 5.8vw, 6rem);
   letter-spacing: -0.075em;
@@ -2069,12 +2043,6 @@ td small {
 }
 .auth-card input {
   min-height: 48px !important;
-}
-.auth-switch {
-  text-align: center;
-  font-size: 0.875rem;
-  color: #849778;
-  margin-top: 25px;
 }
 .auth-footer {
   position: absolute;
@@ -2280,13 +2248,6 @@ td small {
   }
   .brand {
     font-size: 0.77rem;
-  }
-  .brand-mark {
-    width: 32px;
-    min-width: 32px;
-    height: 36px;
-    font-size: 27px;
-    line-height: 35px;
   }
   .dashboard-grid,
   .dashboard-bottom {
@@ -2921,14 +2882,7 @@ td small {
   .auth-brand .brand {
     font-size: 0.9rem;
   }
-  .auth-brand .brand-mark {
-    height: 37px;
-    width: 36px;
-    font-size: 29px;
-    line-height: 36px;
-    padding-left: 7px;
-  }
-  .auth-wordmark {
+  .auth-brand .auth-wordmark {
     font-size: 2.4rem;
     line-height: 1.08;
     padding: 28px 0 4px;
@@ -2963,10 +2917,6 @@ td small {
   }
   .auth-footer {
     bottom: 22px;
-  }
-  .auth-switch {
-    font-size: 0.8rem;
-    margin-top: 19px;
   }
   .auth-card input {
     font-size: 1rem;
@@ -3013,28 +2963,6 @@ td small {
   border: 1px solid rgba(212, 232, 166, 0.22);
   border-radius: 50%;
   box-shadow: 0 0 0 34px rgba(212, 232, 166, 0.05), 0 0 0 72px rgba(212, 232, 166, 0.035);
-}
-.raizes-hero-mark {
-  width: 96px;
-  height: 96px;
-  flex: 0 0 96px;
-  border-radius: 26px 26px 26px 8px;
-  background: var(--lime);
-  color: #173026;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: "Manrope", Arial, sans-serif;
-  font-weight: 800;
-  font-size: 3rem;
-  letter-spacing: -0.12em;
-  box-shadow: 0 18px 55px rgba(0,0,0,.16);
-}
-.raizes-hero-mark b {
-  font-size: 1.45rem;
-  align-self: flex-start;
-  margin-top: 23px;
-  margin-left: 3px;
 }
 .raizes-hero-copy {
   position: relative;
@@ -3098,17 +3026,6 @@ td small {
     gap: 17px;
     align-items: flex-start;
   }
-  .raizes-hero-mark {
-    width: 64px;
-    height: 64px;
-    flex-basis: 64px;
-    border-radius: 18px 18px 18px 6px;
-    font-size: 2rem;
-  }
-  .raizes-hero-mark b {
-    font-size: .95rem;
-    margin-top: 15px;
-  }
   .raizes-hero h2 {
     font-size: 1.25rem;
   }
@@ -3169,7 +3086,6 @@ td small {
   }
 }
 
-
 .theme-toggle {
   width: 42px;
   min-width: 42px;
@@ -3221,7 +3137,6 @@ html[data-theme="dark"] .topbar {
   backdrop-filter: blur(16px);
 }
 html[data-theme="dark"] .topbar-left,
-html[data-theme="dark"] .slash,
 html[data-theme="dark"] .stat-label,
 html[data-theme="dark"] .stat-detail,
 html[data-theme="dark"] .eyebrow,
@@ -3232,7 +3147,7 @@ html[data-theme="dark"] .muted,
 html[data-theme="dark"] small {
   color: var(--muted);
 }
-html[data-theme="dark"] button:not(.primary):not(.danger-button),
+html[data-theme="dark"] button:not(.primary),
 html[data-theme="dark"] .button:not(.primary),
 html[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
 html[data-theme="dark"] select,
@@ -3251,7 +3166,7 @@ html[data-theme="dark"] .panel {
   color: var(--ink);
   border-color: var(--line);
 }
-html[data-theme="dark"] button:hover:not(:disabled):not(.primary):not(.danger-button),
+html[data-theme="dark"] button:hover:not(:disabled):not(.primary),
 html[data-theme="dark"] .button:hover:not(.primary),
 html[data-theme="dark"] .account-menu a:hover,
 html[data-theme="dark"] .list-item:hover,
@@ -3303,9 +3218,8 @@ html[data-theme="dark"] .avatar {
 html[data-theme="dark"] .auth-page {
   background: #09120f;
 }
-html[data-theme="dark"] .auth-form,
 html[data-theme="dark"] .auth-card,
-html[data-theme="dark"] .auth-panel {
+{
   color: var(--ink);
 }
 html[data-theme="dark"] .notice {
@@ -3445,21 +3359,6 @@ html[data-theme="dark"] .status-selected.absent {
   color: var(--muted);
 }
 
-
-.manager-entry-button {
-  width: 100%;
-  margin-top: 14px;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid var(--line);
-  background: var(--soft);
-  color: var(--ink);
-  font-weight: 750;
-}
-.manager-entry-button:hover:not(:disabled) {
-  border-color: var(--green);
-  transform: translateY(-1px);
-}
 .manager-activation-hero {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -3607,7 +3506,6 @@ html[data-theme="dark"] .status-selected.absent {
   from { transform: translateX(-115%); }
   to { transform: translateX(250%); }
 }
-html[data-theme="dark"] .manager-entry-button,
 html[data-theme="dark"] .manager-security-note,
 html[data-theme="dark"] .manager-activation-steps span {
   background: #14231c;
@@ -3633,7 +3531,6 @@ html[data-theme="dark"] .manager-activation-steps span.active {
     padding: 8px 4px;
   }
 }
-
 
 .support-page {
   display: grid;
@@ -3889,7 +3786,6 @@ html[data-theme="dark"] .support-hero-icon {
   }
 }
 
-
 .espro-photo-card {
   display: grid;
   grid-template-columns: 180px 1fr;
@@ -3950,7 +3846,6 @@ html[data-theme="dark"] .support-hero-icon {
     min-height: 280px;
   }
 }
-
 
 .gradebook-toolbar {
   display: flex;
@@ -4173,7 +4068,6 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
     justify-content: center;
   }
 }
-
 
 .login-page {
   position: relative;
@@ -4639,10 +4533,6 @@ html[data-theme="light"] .login-card .notice {
     font-size: clamp(2.7rem,15vw,4.4rem);
   }
 
-  .login-trust-row {
-    margin-top: 20px;
-  }
-
   .login-brand-foot {
     display: none;
   }
@@ -4680,11 +4570,6 @@ html[data-theme="light"] .login-card .notice {
   .login-brand-copy p {
     font-size: .86rem;
     line-height: 1.6;
-  }
-
-  .login-trust-row span {
-    padding: 7px 9px;
-    font-size: .62rem;
   }
 
   .login-panel {
