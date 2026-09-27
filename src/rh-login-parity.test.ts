@@ -11,10 +11,15 @@ describe("RH login parity with Central T.I.", () => {
     expect(auth).toContain('className="login-brand"');
     expect(auth).toContain('className="login-panel"');
     expect(auth).toContain('className="login-stage"');
-    expect(auth).toContain('className="login-card');
+    expect(auth).toContain("login-card");
     expect(auth).toContain("Ativar cadastro");
     expect(auth).toContain("Esqueci minha senha");
-    expect(auth).toContain("Entrar com segurança");
+    expect(auth).not.toContain("Entrar com segurança");
+    expect(auth).not.toContain("Acesso protegido");
+    expect(auth).not.toContain("Ações auditadas");
+    expect(auth).not.toContain("Dados por permissão");
+    expect(styles).toContain('grid-template-areas: "brand panel"');
+    expect(styles).toContain(".login-theme-control");
   });
 
   it("ports the interactive mascot behavior", () => {
