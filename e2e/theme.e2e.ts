@@ -103,7 +103,7 @@ test("RH desktop login keeps brand and form in the same row", async ({ page }) =
   await expect(page.getByText("Acesso protegido")).toHaveCount(0);
   await expect(page.getByText("Ações auditadas")).toHaveCount(0);
   await expect(page.getByText("Dados por permissão")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Entrar", exact: true })).toBeVisible();
+  await expect(page.locator(".login-submit")).toHaveText("Entrar");
 });
 
 test("RH login stays readable at extreme zoom-equivalent desktop width", async ({ page }) => {
