@@ -23,6 +23,8 @@
 - Motion padrão 140–220ms e respeito a prefers-reduced-motion.
 - Contraste WCAG AA em texto funcional.
 - Toda etapa entra por branch/PR com lint, unit, database, build, bundle e E2E.
+- Webflow e Canva serão usados como laboratório visual/referência antes da implementação; não entram como dependência de runtime.
+- Figma pode complementar o trabalho quando a cota MCP voltar, sem bloquear a execução.
 
 ## Review Focus
 
@@ -46,6 +48,11 @@
 **Interfaces:**
 - Consumes: classes e componentes existentes de src/styles.css e src/components.tsx.
 - Produces: variantes compatíveis de Button/Panel/Stat/Empty/Loading/Error/Heading e tokens CSS de RH usados pelas tarefas seguintes.
+
+- [ ] **Step 0: Criar referência visual independente do RH**
+  - Usar Webflow para testar composição de shell/dashboard/login sem migrar a aplicação.
+  - Usar Canva para direção visual, hierarquia, paleta e assets quando útil.
+  - Registrar no PR as decisões visuais aprovadas que serão traduzidas para React/CSS.
 
 - [ ] **Step 1: Write failing UI contract tests**
   - Assert src/main.tsx imports ./styles/rh-redesign.css after ./styles.css.
