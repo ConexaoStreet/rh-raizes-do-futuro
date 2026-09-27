@@ -32,6 +32,6 @@ describe("RH login parity with Central T.I.", () => {
     expect(styles).toContain("@media (max-width: 760px)");
     expect(styles).toContain("font-size: 16px");
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(styles).toContain(".root-mascot-login");
+    expect(mascot).toContain(".root-mascot-login");
   });
 });
