@@ -1795,7 +1795,7 @@ html[data-theme="light"] .form-success {
   .app-shell { grid-template-columns: 224px minmax(0,1fr); }
   .sidebar { width: 224px; }
   .login-page { grid-template-columns: 1fr; overflow: visible; }
-  .login-brand { min-height: 42vh; padding-bottom: 34px; }
+  .login-brand { min-height: 42vh; padding-bottom: 34px; overflow-x: clip; }
   .login-brand-copy { padding: 9vh 0 3vh; }
   .login-brand-copy h1 { font-size: clamp(3rem,10vw,5.2rem); }
   .login-panel { min-height: 58vh; padding-block: 42px; }
