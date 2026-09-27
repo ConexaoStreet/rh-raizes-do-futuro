@@ -4115,7 +4115,6 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
 }
 
 
-/* RH LOGIN · CENTRAL T.I. VISUAL PARITY */
 .login-page {
   position: relative;
   min-height: 100dvh;
@@ -4662,7 +4661,6 @@ html[data-theme="light"] .login-card .notice {
   }
 }
 
-/* RH LOGIN MASCOT · ported from Central T.I. */
 .root-mascot {
   --mascot-gaze-x: 0px;
   --mascot-gaze-y: 0px;
