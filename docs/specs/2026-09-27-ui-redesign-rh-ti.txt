@@ -1,4 +1,4 @@
-RAÍZES DO FUTURO — ESPECIFICAÇÃO DE REDESIGN UI
+RAÍZES DO FUTURO - ESPECIFICAÇÃO DE REDESIGN UI
 Data: 2026-09-27
 Escopo: RH + Central T.I.
 Objetivo: redesign forte preservando marca e funcionalidades, com identidades visuais independentes para cada produto.
@@ -13,7 +13,7 @@ Objetivo: redesign forte preservando marca e funcionalidades, com identidades vi
 - Preservar a branch de backup backup/pre-ui-redesign-2026-09-27 como ponto de retorno.
 - Mudanças visuais devem entrar por branches/PRs com CI, build, bundle e E2E antes de merge.
 
-2. DIREÇÃO VISUAL — RH
+2. DIREÇÃO VISUAL - RH
 Personalidade:
 - Humana, editorial, sofisticada, acolhedora e corporativa.
 - Menos aparência de “painel genérico”.
@@ -78,7 +78,7 @@ Componentes-base RH:
 - Toast/notice.
 - Page heading e section heading.
 
-3. DIREÇÃO VISUAL — CENTRAL T.I.
+3. DIREÇÃO VISUAL - CENTRAL T.I.
 Personalidade:
 - Técnica, operacional, escura, densa e precisa.
 - Aparência de console interno, não de portal de RH.
@@ -195,12 +195,12 @@ Regras:
 - Mensagens de erro próximas ao campo/ação.
 
 7. IMPLEMENTAÇÃO
-Fase A — fundação
+Fase A - fundação
 - Consolidar tokens visuais RH e T.I. em arquivos separados.
 - Criar/ajustar componentes-base sem alterar contratos existentes.
 - Preservar APIs e lógica.
 
-Fase B — RH
+Fase B - RH
 - Login/ativação.
 - Shell/sidebar/topbar.
 - Dashboard.
@@ -209,7 +209,7 @@ Fase B — RH
 - Relatórios/administração.
 - Mobile final.
 
-Fase C — Central T.I.
+Fase C - Central T.I.
 - Login.
 - Shell/sidebar/topbar.
 - Overview.
@@ -220,7 +220,7 @@ Fase C — Central T.I.
 - Segurança/suporte/logs.
 - Mobile final.
 
-Fase D — polimento
+Fase D - polimento
 - Motion.
 - Empty/loading/error.
 - Acessibilidade.
