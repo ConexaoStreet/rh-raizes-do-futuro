@@ -25,6 +25,7 @@ import { errorMessage } from "./domain";
 import { capture, captureError, setTelemetryUser } from "./telemetry";
 import { shouldRefreshExpiredJwt } from "./auth-errors";
 import { ThemeToggle } from "./theme";
+import { LoginMascot, type MascotMood } from "./LoginMascot";
 import { PASSWORD_POLICY_MESSAGE, strongPassword } from "./password-policy";
 import type { Row } from "./database.types";
 export type Bootstrap = {
@@ -314,12 +315,21 @@ function Login({ configured: ready }: { configured: boolean }) {
   const [sent, setSent] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [signupName, setSignupName] = useState("");
+  const [mascotMood, setMascotMood] = useState<MascotMood>("idle");
   const options = useRegistrationOptions();
   const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
+
+  function changeMode(next: "login" | "signup" | "recover") {
+    setSent(false);
+    setVerificationEmail("");
+    setMascotMood("idle");
+    setMode(next);
+  }
 
   async function resendVerification() {
     if (!verificationEmail) return;
     setBusy(true);
+    setMascotMood("email");
     try {
       const redirect = new URL(import.meta.env.BASE_URL, location.origin).href;
       const { error } = await client().auth.resend({
@@ -328,8 +338,10 @@ function Login({ configured: ready }: { configured: boolean }) {
         options: { emailRedirectTo: redirect },
       });
       if (error) throw error;
+      setMascotMood("success");
       toast.success("E-mail de verificação reenviado.");
     } catch (error) {
+      setMascotMood("error");
       toast.error(errorMessage(error));
     } finally {
       setBusy(false);
@@ -340,6 +352,7 @@ function Login({ configured: ready }: { configured: boolean }) {
     event.preventDefault();
     if (!ready) return;
     setBusy(true);
+    setMascotMood("work");
     const data = new FormData(event.currentTarget);
     try {
       const email = String(data.get("email")).trim().toLowerCase();
@@ -352,12 +365,14 @@ function Login({ configured: ready }: { configured: boolean }) {
           if (/email not confirmed/i.test(error.message)) {
             setVerificationEmail(email);
             setSent(true);
+            setMascotMood("email");
             return;
           }
           throw error;
         }
         await rpc("authenticate_event", { action_name: "login" });
         capture("login_success");
+        setMascotMood("success");
       }
 
       if (mode === "signup") {
@@ -367,30 +382,37 @@ function Login({ configured: ready }: { configured: boolean }) {
 
         if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
           toast.error("Use um endereço @gmail.com válido.");
+          setMascotMood("error");
           return;
         }
         if (!nameMatch.result?.matched) {
           toast.error("Digite o nome completo exatamente como está no cadastro pré-existente.");
+          setMascotMood("error");
           return;
         }
         if (phone.length < 8) {
           toast.error("Informe um número de telefone válido.");
+          setMascotMood("error");
           return;
         }
         if (!departmentId) {
           toast.error("Selecione seu departamento.");
+          setMascotMood("error");
           return;
         }
         if (!options?.roles.some((role) => role.code === roleCode)) {
           toast.error("Selecione seu cargo.");
+          setMascotMood("error");
           return;
         }
         if (!strongPassword(password)) {
           toast.error(PASSWORD_POLICY_MESSAGE);
+          setMascotMood("error");
           return;
         }
         if (password !== data.get("confirmation")) {
           toast.error("As senhas precisam ser iguais.");
+          setMascotMood("error");
           return;
         }
 
@@ -411,6 +433,7 @@ function Login({ configured: ready }: { configured: boolean }) {
         capture("signup_submitted");
         setVerificationEmail(email);
         setSent(true);
+        setMascotMood("success");
       }
 
       if (mode === "recover") {
@@ -420,9 +443,11 @@ function Login({ configured: ready }: { configured: boolean }) {
         if (error) throw error;
         capture("password_recovery_requested");
         setSent(true);
+        setMascotMood("success");
       }
     } catch (error) {
       captureError(`auth_${mode}`, error);
+      setMascotMood("error");
       toast.error(errorMessage(error));
     } finally {
       setBusy(false);
@@ -435,182 +460,266 @@ function Login({ configured: ready }: { configured: boolean }) {
         configured={ready}
         onBack={() => {
           setSent(false);
+          setMascotMood("idle");
           setMode("login");
         }}
       />
     );
   }
 
+  const eyebrow =
+    mode === "signup"
+      ? "PRIMEIRO ACESSO"
+      : mode === "recover"
+        ? "RECUPERAÇÃO SEGURA"
+        : "ACESSO AO RH";
+  const heading =
+    mode === "signup"
+      ? "Ativar meu cadastro"
+      : mode === "recover"
+        ? "Recuperar acesso"
+        : "Entrar no RH";
+  const description =
+    mode === "signup"
+      ? "Confirme seu cadastro pré-existente para liberar seu acesso."
+      : mode === "recover"
+        ? "Informe seu e-mail para receber um link seguro de redefinição."
+        : "Use seu e-mail e senha para acessar o ambiente de gestão de RH.";
+
   return (
-    <AuthFrame>
-      <div className="eyebrow">
-        {mode === "signup" ? "PRIMEIRO ACESSO" : "SEU ESPAÇO NO RH"}
+    <div className="login-page">
+      <div className="login-theme-control">
+        <ThemeToggle compact />
       </div>
-      <h1>
-        {mode === "signup"
-          ? "Ativar meu cadastro"
-          : mode === "recover"
-            ? "Recuperar acesso"
-            : "Entrar"}
-      </h1>
-      {!ready && (
-        <div className="notice">
-          Acesso indisponível. Aguarde a liberação do sistema.
-        </div>
-      )}
-      {sent ? (
-        <div className="form-stack">
-          <div className="notice">
-            {mode === "recover"
-              ? "Confira seu e-mail para redefinir a senha."
-              : "Confira seu Gmail e abra o link de verificação. Depois entre com seu e-mail e senha."}
+
+      <section className="login-brand">
+        <Brand />
+        <div className="login-brand-copy">
+          <span>RAÍZES DO FUTURO · GESTÃO DE PESSOAS</span>
+          <h1>Gestão de RH.</h1>
+          <p>
+            Presença, desenvolvimento, feedbacks, avaliações e acompanhamento
+            da turma em um ambiente único, seguro e responsivo.
+          </p>
+          <div className="login-trust-row">
+            <span><ShieldCheck size={15} /> Acesso protegido</span>
+            <span><ShieldCheck size={15} /> Ações auditadas</span>
+            <span><ShieldCheck size={15} /> Dados por permissão</span>
           </div>
-          {verificationEmail && mode !== "recover" && (
-            <button type="button" disabled={busy} onClick={() => void resendVerification()}>
-              Reenviar verificação
-            </button>
-          )}
         </div>
-      ) : (
-        <form onSubmit={submit} className="form-stack">
-          {mode === "signup" && (
-            <>
-              <Field label="Nome completo">
-                <input
-                  name="full_name"
-                  autoComplete="name"
-                  value={signupName}
-                  onChange={(event) => setSignupName(event.target.value)}
-                  required
-                  minLength={4}
-                />
-              </Field>
-              {nameMatch.checking ? (
-                <span className="muted">Procurando seu cadastro...</span>
-              ) : nameMatch.result?.matched ? (
+        <div className="login-brand-foot">RH · ANHANGUERA / ESPRO</div>
+      </section>
+
+      <section className="login-panel">
+        <div className="login-stage">
+          <LoginMascot
+            mood={mascotMood}
+            placement="login"
+            scopeSelector=".login-stage"
+          />
+
+          <div className={`login-card ${mode === "signup" ? "login-card-wide" : ""}`}>
+            <div className="security-badge"><ShieldCheck size={22} /></div>
+            <span className="eyebrow">{eyebrow}</span>
+            <h2>{heading}</h2>
+            <p>{description}</p>
+
+            {mode !== "recover" && (
+              <div className="login-mode-switch" role="group" aria-label="Forma de acesso">
+                <button
+                  type="button"
+                  aria-pressed={mode === "login"}
+                  className={mode === "login" ? "active" : ""}
+                  onClick={() => changeMode("login")}
+                >
+                  Entrar
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={mode === "signup"}
+                  className={mode === "signup" ? "active" : ""}
+                  onClick={() => changeMode("signup")}
+                >
+                  Ativar cadastro
+                </button>
+              </div>
+            )}
+
+            {!ready && (
+              <div className="notice">
+                Acesso indisponível. Aguarde a liberação do sistema.
+              </div>
+            )}
+
+            {sent ? (
+              <div className="form-stack login-result">
                 <div className="notice">
-                  Cadastro localizado: <strong>{nameMatch.result.canonical_name}</strong>
+                  {mode === "recover"
+                    ? "Confira seu e-mail para redefinir a senha."
+                    : "Confira seu Gmail e abra o link de verificação. Depois entre com seu e-mail e senha."}
                 </div>
-              ) : signupName.trim().length >= 4 ? (
-                <span className="muted">
-                  Ainda não localizamos esse nome na base pré-cadastrada.
-                </span>
-              ) : (
-                <span className="muted">
-                  Digite seu nome completo para o sistema localizar seu cadastro.
-                </span>
-              )}
-            </>
-          )}
+                {verificationEmail && mode !== "recover" && (
+                  <button type="button" disabled={busy} onClick={() => void resendVerification()}>
+                    Reenviar verificação
+                  </button>
+                )}
+                <button type="button" className="text-button" onClick={() => changeMode("login")}>
+                  Voltar ao login
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={submit} className="form-stack rh-login-form">
+                {mode === "signup" && (
+                  <>
+                    <Field label="Nome completo">
+                      <input
+                        name="full_name"
+                        autoComplete="name"
+                        value={signupName}
+                        onChange={(event) => setSignupName(event.target.value)}
+                        required
+                        minLength={4}
+                      />
+                    </Field>
+                    {nameMatch.checking ? (
+                      <span className="muted">Procurando seu cadastro...</span>
+                    ) : nameMatch.result?.matched ? (
+                      <div className="notice">
+                        Cadastro localizado: <strong>{nameMatch.result.canonical_name}</strong>
+                      </div>
+                    ) : signupName.trim().length >= 4 ? (
+                      <span className="muted">
+                        Ainda não localizamos esse nome na base pré-cadastrada.
+                      </span>
+                    ) : (
+                      <span className="muted">
+                        Digite seu nome completo para o sistema localizar seu cadastro.
+                      </span>
+                    )}
+                  </>
+                )}
 
-          <Field label={mode === "signup" ? "Gmail" : "E-mail"}>
-            <input
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              inputMode="email"
-            />
-          </Field>
+                <Field label={mode === "signup" ? "Gmail" : "E-mail"}>
+                  <input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder={mode === "signup" ? "seunome@gmail.com" : "seu@email.com"}
+                    required
+                    inputMode="email"
+                  />
+                </Field>
 
-          {mode === "signup" && (
-            <Field label="Telefone">
-              <input name="phone" type="tel" autoComplete="tel" required minLength={8} />
-            </Field>
-          )}
+                {mode === "signup" && (
+                  <Field label="Telefone">
+                    <input
+                      name="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      required
+                      minLength={8}
+                    />
+                  </Field>
+                )}
 
-          {mode !== "recover" && (
-            <Field label="Senha">
-              <PasswordInput
-                minLength={mode === "login" ? 1 : 12}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-              />
-            </Field>
-          )}
+                {mode !== "recover" && (
+                  <Field label="Senha">
+                    <PasswordInput
+                      minLength={mode === "login" ? 1 : 12}
+                      autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    />
+                  </Field>
+                )}
 
-          {mode === "signup" && (
-            <>
-              <Field label="Confirmar senha">
-                <PasswordInput name="confirmation" />
-              </Field>
-              <Field label="Turma">
-                <input
-                  value={options?.class?.name || "Turma padrão"}
-                  readOnly
-                  aria-readonly="true"
-                />
-              </Field>
-              <Field label="Departamento">
-                <select name="department_id" required defaultValue="">
-                  <option value="">Selecionar departamento</option>
-                  {options?.departments.map((department) => (
-                    <option key={department.id} value={department.id}>
-                      {department.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Cargo">
-                <select name="role_code" required defaultValue="COLLABORATOR">
-                  {options?.roles.map((role) => (
-                    <option key={role.code} value={role.code}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <span className="muted">
-                Cargos com acesso elevado só são liberados quando já estiverem autorizados no cadastro-base.
+                {mode === "signup" && (
+                  <>
+                    <Field label="Confirmar senha">
+                      <PasswordInput name="confirmation" autoComplete="new-password" />
+                    </Field>
+                    <Field label="Turma">
+                      <input
+                        value={options?.class?.name || "Turma padrão"}
+                        readOnly
+                        aria-readonly="true"
+                      />
+                    </Field>
+                    <Field label="Departamento">
+                      <select name="department_id" required defaultValue="">
+                        <option value="">Selecionar departamento</option>
+                        {options?.departments.map((department) => (
+                          <option key={department.id} value={department.id}>
+                            {department.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Cargo">
+                      <select name="role_code" required defaultValue="COLLABORATOR">
+                        {options?.roles.map((role) => (
+                          <option key={role.code} value={role.code}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <span className="muted">
+                      Cargos com acesso elevado só são liberados quando já estiverem autorizados no cadastro-base.
+                    </span>
+                    <span className="muted">{PASSWORD_POLICY_MESSAGE}</span>
+                  </>
+                )}
+
+                {mode === "login" && (
+                  <button
+                    type="button"
+                    className="text-button forgot-password"
+                    onClick={() => changeMode("recover")}
+                  >
+                    Esqueci minha senha
+                  </button>
+                )}
+
+                <button
+                  className="primary large login-submit"
+                  disabled={
+                    busy ||
+                    !ready ||
+                    (mode === "signup" && (!options || !nameMatch.result?.matched))
+                  }
+                >
+                  {mode === "login" ? <KeyRound size={18} /> : <ArrowRight size={18} />}
+                  {busy
+                    ? "Aguarde..."
+                    : mode === "signup"
+                      ? "Verificar Gmail e continuar"
+                      : mode === "recover"
+                        ? "Enviar link"
+                        : "Entrar com segurança"}
+                </button>
+
+                {mode === "recover" && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => changeMode("login")}
+                  >
+                    Voltar ao login
+                  </button>
+                )}
+              </form>
+            )}
+
+            <div className="login-card-foot">
+              <ShieldCheck size={14} />
+              <span>
+                Sessão, permissões e dados são verificados novamente antes de liberar o acesso.
               </span>
-              <span className="muted">{PASSWORD_POLICY_MESSAGE}</span>
-            </>
-          )}
-
-          {mode === "login" && (
-            <button
-              type="button"
-              className="text-button forgot"
-              onClick={() => setMode("recover")}
-            >
-              Esqueci minha senha
-            </button>
-          )}
-
-          <button
-            className="primary large"
-            disabled={
-              busy ||
-              !ready ||
-              (mode === "signup" && (!options || !nameMatch.result?.matched))
-            }
-          >
-            {busy
-              ? "Aguarde..."
-              : mode === "signup"
-                ? "Verificar Gmail e continuar"
-                : mode === "recover"
-                  ? "Enviar link"
-                  : "Entrar"}
-            <ArrowRight size={19} />
-          </button>
-        </form>
-      )}
-
-      <div className="auth-switch">
-        {mode === "login" ? "Primeiro acesso? " : ""}
-        <button
-          className="text-button"
-          onClick={() => {
-            setSent(false);
-            setVerificationEmail("");
-            setMode(mode === "login" ? "signup" : "login");
-          }}
-        >
-          {mode === "login" ? "Ativar cadastro" : "Voltar ao login"}
-        </button>
-      </div>
-
-    </AuthFrame>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 function ManagerActivation({
