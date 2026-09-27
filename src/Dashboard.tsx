@@ -144,19 +144,6 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
       ) : (
         stats && (
           <>
-            <section className="attendance-banner">
-              <div className="banner-icon">
-                <ClipboardCheck size={25} />
-              </div>
-              <div>
-                <h2>Chamada da turma</h2>
-                <p>Terças-feiras · 08:00 às 14:00</p>
-              </div>
-              <Link to="/chamada" className="button primary">
-                Abrir chamada
-                <ArrowUpRight size={17} />
-              </Link>
-            </section>
             <div className="stats-grid">
               <Stat
                 title="Colaboradores ativos"
