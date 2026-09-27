@@ -21,24 +21,6 @@
   box-shadow: var(--ti-focus-ring);
 }
 
-.ti-mono {
-  font-family: var(--ti-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.ti-status {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  color: var(--ti-muted);
-  font-size: .66rem;
-  font-weight: 750;
-}
-
-.ti-status[data-tone="ok"] { color: var(--ti-healthy); }
-.ti-status[data-tone="warn"] { color: var(--ti-warn); }
-.ti-status[data-tone="error"] { color: var(--ti-error); }
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
