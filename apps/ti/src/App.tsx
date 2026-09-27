@@ -40,6 +40,10 @@ import { TiShell } from "./Shell";
 import { StatusTile } from "./components/StatusTile";
 import { HealthRow } from "./components/HealthRow";
 import { IncidentNotice } from "./components/IncidentNotice";
+import { TechnicalTable } from "./components/TechnicalTable";
+import { TechnicalField } from "./components/TechnicalField";
+import { CodeSurface } from "./components/CodeSurface";
+import { IntegrationCard } from "./components/IntegrationCard";
 import type { TiView } from "./navigation";
 
 type JsonObject = Record<string, unknown>;
@@ -1202,19 +1206,19 @@ export default function App() {
 
                     <Panel title="Console de API" kicker="OPERAÇÃO TOTAL" icon={<KeyRound />}>
                       <div className="request-grid">
-                        <Field label="Método">
+                        <TechnicalField label="Método" mono>
                           <select value={requestMethod} onChange={(event) => setRequestMethod(event.target.value)}>
                             {["GET", "POST", "PUT", "PATCH", "DELETE"].map((method) => <option key={method}>{method}</option>)}
                           </select>
-                        </Field>
-                        <Field label="Endpoint" wide>
+                        </TechnicalField>
+                        <TechnicalField label="Endpoint" wide mono>
                           <input value={requestPath} onChange={(event) => setRequestPath(event.target.value)} placeholder="/api/..." />
-                        </Field>
+                        </TechnicalField>
                       </div>
                       {requestMethod !== "GET" && (
-                        <Field label="JSON">
+                        <TechnicalField label="JSON" mono hint="Corpo enviado ao Datasul; credenciais continuam somente no servidor.">
                           <textarea rows={10} value={requestBody} onChange={(event) => setRequestBody(event.target.value)} spellCheck={false} />
-                        </Field>
+                        </TechnicalField>
                       )}
                       <button
                         className={requestMethod === "DELETE" ? "danger-button" : "primary-button"}
@@ -1232,12 +1236,12 @@ export default function App() {
                   </div>
                   {datasulResult !== null && (
                     <Panel title="Resposta do Datasul" kicker="RESULTADO" icon={<Activity />}>
-                      <pre>{JSON.stringify(datasulResult, null, 2)}</pre>
+                      <CodeSurface label="Resposta JSON do Datasul" value={datasulResult} />
                     </Panel>
                   )}
                   <div className="datasul-history-shell">
                   <Panel title="Histórico Datasul" kicker="AUDITORIA DE API" icon={<FileClock />}>
-                    <div className="table-wrap">
+                    <TechnicalTable label="Histórico de operações Datasul">
                       <table>
                         <thead><tr><th>Data</th><th>Operador</th><th>Método</th><th>Endpoint</th><th>HTTP</th><th>Duração</th><th>Status</th></tr></thead>
                         <tbody>
@@ -1254,7 +1258,7 @@ export default function App() {
                           ))}
                         </tbody>
                       </table>
-                    </div>
+                    </TechnicalTable>
                   </Panel>
                   </div>
                 </div>
@@ -1264,7 +1268,7 @@ export default function App() {
                 <>
                   <Toolbar search={search} setSearch={setSearch} placeholder="Buscar usuário, e-mail ou status" />
                   <Panel title="Usuários e acessos" kicker="AUTH + CARGOS" icon={<UserCog />}>
-                    <div className="table-wrap">
+                    <TechnicalTable label="Tabela de usuários e acessos">
                       <table>
                         <thead><tr><th>Usuário</th><th>Status</th><th>Cargo</th><th>Foto Espro</th><th>Último acesso</th><th>Ações</th></tr></thead>
                         <tbody>
@@ -1299,7 +1303,7 @@ export default function App() {
                           })}
                         </tbody>
                       </table>
-                    </div>
+                    </TechnicalTable>
                   </Panel>
                   {editingProfile && (
                     <Panel
@@ -1386,7 +1390,7 @@ export default function App() {
                 <>
                   <Toolbar search={search} setSearch={setSearch} placeholder="Buscar colaborador, matrícula ou cargo" />
                   <Panel title="Base de colaboradores" kicker="RH OPERACIONAL" icon={<Users />}>
-                    <div className="table-wrap">
+                    <TechnicalTable label="Tabela da base de colaboradores">
                       <table>
                         <thead><tr><th>Nome</th><th>Matrícula</th><th>Grupo</th><th>Cargo</th><th>Status</th><th>Ação</th></tr></thead>
                         <tbody>
@@ -1402,7 +1406,7 @@ export default function App() {
                           ))}
                         </tbody>
                       </table>
-                    </div>
+                    </TechnicalTable>
                   </Panel>
                   {selectedEmployee && (
                     <Panel title={"Editar " + selectedEmployee.full_name} kicker="CADASTRO" icon={<Settings2 />}>
@@ -1475,9 +1479,9 @@ export default function App() {
                   {storageBucket && (
                     <Panel title={storageBucket} kicker="STORAGE" icon={<HardDrive />}>
                       <div className="actions">
-                        <Field label="Prefixo">
+                        <TechnicalField label="Prefixo" mono>
                           <input value={storagePrefix} onChange={(event) => setStoragePrefix(event.target.value)} placeholder="pasta/subpasta" />
-                        </Field>
+                        </TechnicalField>
                         <button onClick={() => void run("storage-list", () => loadStorage(storageBucket, storagePrefix))}><RefreshCw size={16} />Listar</button>
                       </div>
                       <div className="file-list">
@@ -1539,7 +1543,7 @@ export default function App() {
                         <Stat title="Extensões" value={database.extensions.length} />
                       </div>
                       <Panel title="Tabelas" kicker="POSTGRES" icon={<Database />}>
-                        <div className="table-wrap">
+                        <TechnicalTable label="Tabelas do PostgreSQL">
                           <table>
                             <thead><tr><th>Tabela</th><th>Linhas estimadas</th><th>Mortas</th><th>Tamanho</th><th>Análise</th></tr></thead>
                             <tbody>
@@ -1554,7 +1558,7 @@ export default function App() {
                               ))}
                             </tbody>
                           </table>
-                        </div>
+                        </TechnicalTable>
                       </Panel>
                       <Panel title="RLS" kicker="SEGURANÇA DE LINHAS" icon={<ShieldCheck />}>
                         <div className="rls-grid">
@@ -1572,27 +1576,51 @@ export default function App() {
               )}
 
               {view === "integrations" && (
-                <div className="two-columns">
-                  <Panel title="GitHub + Vercel" kicker="DEPLOYS E CI" icon={<GitBranch />}>
-                    <p className="panel-copy">
-                      Consulta Actions e deploys usando tokens mantidos apenas
-                      nos Secrets do Supabase.
-                    </p>
-                    <button className="primary-button" onClick={() => void run("platform", invokePlatform)}><RefreshCw size={16} />Verificar plataforma</button>
-                    {platformResult !== null && <pre>{JSON.stringify(platformResult, null, 2)}</pre>}
-                  </Panel>
-                  <Panel title="Configuração" kicker="STATUS" icon={<Server />}>
-                    <StateRow name="GitHub" value={labelStatus(github.status)} tone={toneFor(github.status)} />
-                    <StateRow name="Repositório" value={text(github.repository, "-")} tone="ok" />
-                    <StateRow name="Vercel" value={labelStatus(vercel.status)} tone={toneFor(vercel.status)} />
-                    <StateRow name="Projeto" value={text(vercel.project, "-")} tone="ok" />
-                  </Panel>
-                </div>
+                <>
+                  <div className="ti-integration-grid">
+                    <IntegrationCard
+                      name="GitHub"
+                      status={labelStatus(github.status)}
+                      detail={text(github.repository, "Repositório não informado")}
+                      tone={toneFor(github.status)}
+                      action={
+                        <button className="primary-button" onClick={() => void run("platform", invokePlatform)}>
+                          <RefreshCw size={16} /> Verificar plataforma
+                        </button>
+                      }
+                    >
+                      <p className="panel-copy">
+                        CI, ações e estado do repositório consultados por credenciais mantidas somente no servidor.
+                      </p>
+                    </IntegrationCard>
+                    <IntegrationCard
+                      name="Vercel"
+                      status={labelStatus(vercel.status)}
+                      detail={text(vercel.project, "Projeto não informado")}
+                      tone={toneFor(vercel.status)}
+                    >
+                      <p className="panel-copy">
+                        Saúde do deploy separada da configuração para facilitar diagnóstico operacional.
+                      </p>
+                    </IntegrationCard>
+                  </div>
+                  {platformResult !== null && (
+                    <CodeSurface
+                      label="Diagnóstico de GitHub e Vercel"
+                      value={platformResult}
+                    />
+                  )}
+                </>
               )}
 
               {view === "site" && (
                 <div className="two-columns">
-                  <Panel title="Manutenção global" kicker="SITE RH" icon={<Wrench />}>
+                  <IntegrationCard
+                    name="Site RH"
+                    status={flag(maintenance.enabled) ? "Manutenção ativa" : "Operação normal"}
+                    detail="Controle global de disponibilidade"
+                    tone={flag(maintenance.enabled) ? "warn" : "ok"}
+                  >
                     <div className="maintenance-state">
                       <span className={flag(maintenance.enabled) ? "status-dot warn" : "status-dot ok"} />
                       <div>
@@ -1604,10 +1632,11 @@ export default function App() {
                       <Wrench size={16} />
                       {flag(maintenance.enabled) ? "Desativar manutenção" : "Ativar manutenção"}
                     </button>
-                  </Panel>
+                  
+                  </IntegrationCard>
                   <Panel title="Mensagem de manutenção" kicker="COMUNICAÇÃO" icon={<Mail />}>
-                    <Field label="Título"><input value={maintenanceTitle} onChange={(event) => setMaintenanceTitle(event.target.value)} /></Field>
-                    <Field label="Mensagem"><textarea rows={5} value={maintenanceMessage} onChange={(event) => setMaintenanceMessage(event.target.value)} /></Field>
+                    <TechnicalField label="Título"><input value={maintenanceTitle} onChange={(event) => setMaintenanceTitle(event.target.value)} /></TechnicalField>
+                    <TechnicalField label="Mensagem" wide><textarea rows={5} value={maintenanceMessage} onChange={(event) => setMaintenanceMessage(event.target.value)} /></TechnicalField>
                     <button className="primary-button" onClick={() => void run("maintenance-text", saveMaintenance, "Mensagem salva.")}><Save size={16} />Salvar</button>
                   </Panel>
                 </div>
@@ -1717,7 +1746,7 @@ export default function App() {
                               </div>
                               <details>
                                 <summary>Contexto técnico</summary>
-                                <pre>{JSON.stringify(ticket.technical_context || {}, null, 2)}</pre>
+                                <CodeSurface label="Contexto técnico do chamado" value={ticket.technical_context || {}} compact />
                               </details>
                             </article>
                           );
@@ -1734,7 +1763,7 @@ export default function App() {
                     <AuditList rows={audit} full />
                   </Panel>
                   <Panel title="Operações Datasul" kicker="API" icon={<Database />}>
-                    <div className="table-wrap">
+                    <TechnicalTable label="Log de operações Datasul">
                       <table>
                         <thead><tr><th>Data</th><th>Operador</th><th>Método</th><th>Endpoint</th><th>HTTP</th><th>Status</th></tr></thead>
                         <tbody>
@@ -1750,7 +1779,7 @@ export default function App() {
                           ))}
                         </tbody>
                       </table>
-                    </div>
+                    </TechnicalTable>
                   </Panel>
                 </>
               )}
