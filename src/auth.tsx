@@ -525,11 +525,10 @@ function Login({ configured: ready }: { configured: boolean }) {
             <p>{description}</p>
 
             {mode !== "recover" && (
-              <div className="login-mode-switch" role="tablist" aria-label="Forma de acesso">
+              <div className="login-mode-switch" role="group" aria-label="Forma de acesso">
                 <button
                   type="button"
-                  role="tab"
-                  aria-selected={mode === "login"}
+                  aria-pressed={mode === "login"}
                   className={mode === "login" ? "active" : ""}
                   onClick={() => changeMode("login")}
                 >
@@ -537,8 +536,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                 </button>
                 <button
                   type="button"
-                  role="tab"
-                  aria-selected={mode === "signup"}
+                  aria-pressed={mode === "signup"}
                   className={mode === "signup" ? "active" : ""}
                   onClick={() => changeMode("signup")}
                 >
