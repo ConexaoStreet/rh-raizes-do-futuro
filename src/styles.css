@@ -3029,7 +3029,7 @@ td small {
 .maintenance-notice span {
   display: block;
   color: #876637;
-  font-size: .8rem;
+  font-size: .8em;
   line-height: 1.55;
 }
 @media (max-width: 700px) {
@@ -3942,7 +3942,7 @@ html[data-theme="dark"] .support-hero-icon {
   border-radius: 10px;
   color: var(--green);
   background: var(--soft);
-  font-size: .78rem;
+  font-size: .78em;
   font-weight: 750;
 }
 .gradebook-summary {
@@ -4127,6 +4127,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
 
 .login-brand {
   position: relative;
+  font-size: max(16px, .9vw);
   isolation: isolate;
   overflow-x: clip;
   min-height: 100dvh;
@@ -4200,7 +4201,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   background: rgba(158,210,177,.08);
   border: 1px solid rgba(158,210,177,.1);
   color: #a8c7b6;
-  font-size: .67rem;
+  font-size: .67em;
   font-weight: 800;
   letter-spacing: .15em;
 }
@@ -4209,7 +4210,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   max-width: 820px;
   margin: 18px 0;
   color: #f5faf6;
-  font-size: clamp(3.2rem,7.5vw,7.4rem);
+  font-size: max(3.2rem, 4vw);
   line-height: .86;
   letter-spacing: -.07em;
   font-weight: 790;
@@ -4219,7 +4220,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   max-width: 640px;
   margin: 0;
   color: #b5c7bd;
-  font-size: clamp(.92rem,1.2vw,1.05rem);
+  font-size: max(.92rem, .9vw);
   line-height: 1.75;
 }
 
@@ -4239,13 +4240,13 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   border-radius: 999px;
   background: rgba(4,14,10,.24);
   color: #c3d2ca;
-  font-size: .69rem;
+  font-size: .69em;
   font-weight: 700;
 }
 
 .login-brand-foot {
   color: #84998d;
-  font-size: .68rem;
+  font-size: .68em;
 }
 
 .login-panel {
@@ -4265,7 +4266,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
 
 .login-stage {
   position: relative;
-  width: min(100%, 560px);
+  width: min(84%, 34vw);
 }
 
 .login-card {
@@ -4284,6 +4285,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   animation: rhLoginCardReveal .6s .08s cubic-bezier(.16,1,.3,1) both;
+  font-size: max(16px, .9vw);
 }
 
 .login-card-wide {
@@ -4314,7 +4316,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
 .login-card h2 {
   margin: 7px 0 8px;
   color: #f1f7f3;
-  font-size: 1.72rem;
+  font-size: 1.72em;
   line-height: 1.2;
   letter-spacing: -.035em;
   font-weight: 760;
@@ -4345,7 +4347,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   border-radius: 10px;
   background: transparent;
   color: #82988c;
-  font-size: .74rem;
+  font-size: .74em;
   font-weight: 800;
 }
 
@@ -4372,7 +4374,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
 
 .login-card .field > label {
   color: #91a69b;
-  font-size: .68rem;
+  font-size: .68em;
   font-weight: 700;
 }
 
@@ -4467,7 +4469,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   padding-top: 17px;
   border-top: 1px solid rgba(255,255,255,.055);
   color: #758b80;
-  font-size: .65rem;
+  font-size: .65em;
   line-height: 1.5;
 }
 
@@ -4550,6 +4552,10 @@ html[data-theme="light"] .login-card .notice {
   .login-page {
     grid-template-columns: 1fr;
     overflow: visible;
+  }
+
+  .login-stage {
+    width: min(100%, 560px);
   }
 
   .login-brand {
