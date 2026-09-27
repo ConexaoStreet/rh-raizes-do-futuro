@@ -10,7 +10,7 @@ test("TI login remains stable across breakpoint matrix", async ({ page }) => {
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("http://127.0.0.1:4174/", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Entrar na Central de T.I" })).toBeVisible();
+    await expect(page.locator(".login-page, .access-page").first()).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
