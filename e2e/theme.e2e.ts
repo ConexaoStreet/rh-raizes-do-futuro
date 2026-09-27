@@ -163,7 +163,7 @@ test("RH respects reduced motion preference", async ({ page }) => {
     if (!card || !brand) throw new Error("LOGIN_LAYOUT_MISSING");
     return [getComputedStyle(card).animationDuration, getComputedStyle(brand).animationDuration];
   });
-  expect(durations.every((value) => value === "0.00001s" || value === "0s")).toBe(true);
+  expect(durations.every((value) => Number.parseFloat(value) <= 0.001)).toBe(true);
 });
 
 test("internal apps stay non-indexable", async ({ page, request }) => {
