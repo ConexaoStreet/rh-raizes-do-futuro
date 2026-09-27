@@ -165,6 +165,8 @@ Deno.serve(
       "https://ti-raizes-do-futuro.vercel.app";
     if (!allowedOrigins().has(origin))
       return new Response(null, { status: 403 });
+    if (!isBrazilRequest(req))
+      return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
     if (req.method === "OPTIONS")
       return new Response(null, { status: 204, headers: cors(origin) });
     if (req.method !== "POST")
