@@ -501,11 +501,6 @@ function Login({ configured: ready }: { configured: boolean }) {
             Presença, desenvolvimento, feedbacks, avaliações e acompanhamento
             da turma em um ambiente único, seguro e responsivo.
           </p>
-          <div className="login-trust-row">
-            <span><ShieldCheck size={15} /> Acesso protegido</span>
-            <span><ShieldCheck size={15} /> Ações auditadas</span>
-            <span><ShieldCheck size={15} /> Dados por permissão</span>
-          </div>
         </div>
         <div className="login-brand-foot">RH · ANHANGUERA / ESPRO</div>
       </section>
@@ -519,7 +514,6 @@ function Login({ configured: ready }: { configured: boolean }) {
           />
 
           <div className={`login-card ${mode === "signup" ? "login-card-wide" : ""}`}>
-            <div className="security-badge"><ShieldCheck size={22} /></div>
             <span className="eyebrow">{eyebrow}</span>
             <h2>{heading}</h2>
             <p>{description}</p>
@@ -695,7 +689,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                       ? "Verificar Gmail e continuar"
                       : mode === "recover"
                         ? "Enviar link"
-                        : "Entrar com segurança"}
+                        : "Entrar"}
                 </button>
 
                 {mode === "recover" && (
@@ -710,12 +704,6 @@ function Login({ configured: ready }: { configured: boolean }) {
               </form>
             )}
 
-            <div className="login-card-foot">
-              <ShieldCheck size={14} />
-              <span>
-                Sessão, permissões e dados são verificados novamente antes de liberar o acesso.
-              </span>
-            </div>
           </div>
         </div>
       </section>
