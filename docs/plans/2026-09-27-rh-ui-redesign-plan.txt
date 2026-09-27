@@ -1,0 +1,291 @@
+# RH UI Redesign Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (- [ ]) syntax for tracking.
+
+**Goal:** Redesenhar o RH como um produto de gestão de pessoas sofisticado, humano e editorial sem alterar regras de negócio, permissões, Supabase ou contratos de API.
+
+**Architecture:** A implementação será incremental e reversível. O CSS atual permanece como base enquanto uma camada nova de redesign é aplicada por arquivo dedicado; componentes-base recebem variações compatíveis e o shell é reorganizado sem alterar rotas. Mudanças de página entram por módulos, cada uma com testes e E2E próprios.
+
+**Tech Stack:** React 19, TypeScript 5.9, React Router 7, Supabase JS 2.116, Lucide React, Recharts, Radix Dialog, Vitest, Playwright, Vite/Vercel.
+
+**Spec:** docs/specs/2026-09-27-ui-redesign-rh-ti.txt
+
+## Global Constraints
+
+- RH e Central T.I. não devem parecer o mesmo produto.
+- Não alterar regras de negócio, Supabase, Auth, RLS, permissões ou contratos de API sem necessidade explícita.
+- Não remover módulos existentes.
+- Não recriar banco, autenticação ou infraestrutura.
+- Não publicar segredos.
+- Preservar backup/pre-ui-redesign-2026-09-27.
+- Mobile pequeno 320–479px; mobile 480–767px; tablet 768–1099px; desktop 1100–1599px; desktop largo 1600px+.
+- Inputs mobile >= 16px, safe-area iOS, touch targets >= 44px.
+- Motion padrão 140–220ms e respeito a prefers-reduced-motion.
+- Contraste WCAG AA em texto funcional.
+- Toda etapa entra por branch/PR com lint, unit, database, build, bundle e E2E.
+- Webflow e Canva serão usados como laboratório visual/referência antes da implementação; não entram como dependência de runtime.
+- Figma pode complementar o trabalho quando a cota MCP voltar, sem bloquear a execução.
+
+## Review Focus
+
+- Viewports extremos/zoom reduzido não podem voltar a produzir layout microscópico ou overflow.
+- Perfis sem dashboard.view devem continuar vendo Meu perfil e não receber navegação indevida.
+- Cadastro/ativação em etapas deve preservar exatamente os campos e validações existentes.
+- Tabelas/listas grandes devem continuar utilizáveis em mobile sem ocultar ações essenciais.
+- Tema claro/escuro deve manter contraste e persistência existentes.
+
+---
+
+### Task 1: Fundação visual e contratos de UI do RH
+
+**Files:**
+- Create: src/styles/rh-redesign.css
+- Modify: src/main.tsx
+- Modify: src/components.tsx
+- Create: src/rh-ui-contracts.test.ts
+- Test: e2e/theme.e2e.ts
+
+**Interfaces:**
+- Consumes: classes e componentes existentes de src/styles.css e src/components.tsx.
+- Produces: variantes compatíveis de Button/Panel/Stat/Empty/Loading/Error/Heading e tokens CSS de RH usados pelas tarefas seguintes.
+
+- [ ] **Step 0: Criar referência visual independente do RH**
+  - Usar Webflow para testar composição de shell/dashboard/login sem migrar a aplicação.
+  - Usar Canva para direção visual, hierarquia, paleta e assets quando útil.
+  - Registrar no PR as decisões visuais aprovadas que serão traduzidas para React/CSS.
+
+- [ ] **Step 1: Write failing UI contract tests**
+  - Assert src/main.tsx imports ./styles/rh-redesign.css after ./styles.css.
+  - Assert src/styles/rh-redesign.css defines RH tokens de surface, text, border, primary, accent, semantic status, radius e motion.
+  - Assert components.tsx keeps existing exports and adds optional className/variant hooks without changing current call sites.
+
+- [ ] **Step 2: Run tests to verify failure**
+  Run: npm run test -- --run src/rh-ui-contracts.test.ts
+  Expected: FAIL because redesign layer/tokens do not exist.
+
+- [ ] **Step 3: Implement the redesign foundation**
+  - Create src/styles/rh-redesign.css as an override layer, not a replacement for src/styles.css.
+  - Add tokens for editorial surface hierarchy, card radii, shadows, focus ring, motion and semantic states.
+  - Extend existing shared components only with backwards-compatible optional props.
+  - Import the redesign CSS from src/main.tsx after the current global stylesheet.
+
+- [ ] **Step 4: Add baseline viewport E2E**
+  - Add assertions for no horizontal overflow at 390x844, 768x1024, 1440x900 and 1920x1080.
+  - Add prefers-reduced-motion assertion for major login/shell motion.
+
+- [ ] **Step 5: Run verification**
+  Run: npm run lint && npm run test -- --passWithNoTests && npm run build && npm run check:bundle && npm run test:e2e
+  Expected: PASS.
+
+- [ ] **Step 6: Commit**
+  git add src/main.tsx src/components.tsx src/styles/rh-redesign.css src/rh-ui-contracts.test.ts e2e/theme.e2e.ts
+  git commit -m "feat: establish RH redesign foundation"
+
+### Task 2: Redesenhar shell, sidebar e topbar do RH
+
+**Files:**
+- Create: src/layout/RhNavigation.ts
+- Create: src/layout/RhShell.tsx
+- Modify: src/App.tsx
+- Modify: src/styles/rh-redesign.css
+- Test: src/rh-ui-contracts.test.ts
+- Test: e2e/theme.e2e.ts
+
+**Interfaces:**
+- Consumes: useAuth(), ThemeToggle, Brand, rotas e permissões existentes.
+- Produces: RhShell com a mesma árvore de rotas, navegação agrupada e comportamento mobile drawer.
+
+- [ ] **Step 1: Write failing shell tests**
+  - Assert todas as rotas atuais continuam presentes.
+  - Assert nav groups ACOMPANHAMENTO, DESENVOLVIMENTO, SUPORTE e GESTÃO continuam condicionados pelas permissões atuais.
+  - Assert usuário sem dashboard.view continua recebendo Meu perfil.
+  - Add E2E for mobile drawer open/close and desktop sidebar/topbar visibility.
+
+- [ ] **Step 2: Run targeted tests**
+  Run: npm run test -- --run src/rh-ui-contracts.test.ts
+  Expected: FAIL until RhShell/RhNavigation exist.
+
+- [ ] **Step 3: Extract navigation config**
+  - Move navGroups to src/layout/RhNavigation.ts with existing labels, paths, icons and permission strings unchanged.
+
+- [ ] **Step 4: Extract shell**
+  - Move sidebar/topbar/account/search shell from src/App.tsx into src/layout/RhShell.tsx.
+  - Keep AuthBoundary, Guard semantics and route elements unchanged.
+  - Preserve PWA install, push notifications, global search and account actions.
+
+- [ ] **Step 5: Apply redesign styles**
+  - Sidebar more editorial and compact.
+  - Topbar lighter, clearer search, notifications and account affordances.
+  - Active nav state with accent line/background, not heavy block.
+  - Drawer mobile with safe-area and >=44px targets.
+
+- [ ] **Step 6: Verify**
+  Run: npm run verify && npm run test:e2e
+  Expected: PASS with no route or permission regressions.
+
+- [ ] **Step 7: Commit**
+  git add src/App.tsx src/layout/RhNavigation.ts src/layout/RhShell.tsx src/styles/rh-redesign.css src/rh-ui-contracts.test.ts e2e/theme.e2e.ts
+  git commit -m "feat: redesign RH application shell"
+
+### Task 3: Reestruturar o dashboard do RH
+
+**Files:**
+- Modify: src/Dashboard.tsx
+- Modify: src/components.tsx
+- Modify: src/styles/rh-redesign.css
+- Create: src/dashboard-ui.test.ts
+- Test: e2e/theme.e2e.ts
+
+**Interfaces:**
+- Consumes: dashboard_snapshot, events, justifications, feedbacks e permissões atuais.
+- Produces: hierarquia executiva do dashboard sem alterar queries ou payloads.
+
+- [ ] **Step 1: Write dashboard structure tests**
+  - Assert KPIs principais continuam: colaboradores ativos, presença, pontualidade, média das notas.
+  - Assert chamada, pendências, próximos eventos e comparação continuam disponíveis.
+  - Assert nenhuma query Supabase/RPC do Dashboard muda de nome.
+
+- [ ] **Step 2: Run test and confirm failure for new layout contract**
+  Run: npm run test -- --run src/dashboard-ui.test.ts
+  Expected: FAIL until new semantic layout/classes exist.
+
+- [ ] **Step 3: Implement hierarchy**
+  - Convert hero + maintenance + attendance into a clearer executive header/operational priority flow.
+  - Use metric card variants: primary, neutral, attention.
+  - Keep Recharts data/series unchanged but refine panel hierarchy, legend and summary.
+  - Merge quick actions into a compact contextual action surface.
+  - Reduce repeated card borders and improve whitespace.
+
+- [ ] **Step 4: Add loading/empty/error skeleton styling**
+  - Reuse existing Loading/Empty/ErrorState with visual variants instead of new data behavior.
+
+- [ ] **Step 5: Add dashboard viewport E2E**
+  - Desktop 1440x900 and mobile 390x844 no overflow.
+  - Key headings/actions remain visible.
+
+- [ ] **Step 6: Verify and commit**
+  Run: npm run verify && npm run test:e2e
+  Expected: PASS.
+  Commit: git commit -am "feat: redesign RH dashboard hierarchy"
+
+### Task 4: Redesenhar superfícies operacionais do RH
+
+**Files:**
+- Modify: src/People.tsx
+- Modify: src/Attendance.tsx
+- Modify: src/Performance.tsx
+- Modify: src/ManagerReviews.tsx
+- Modify: src/Reports.tsx
+- Modify: src/Administration.tsx
+- Modify: src/styles/rh-redesign.css
+- Create: src/rh-operational-ui.test.ts
+- Test: e2e/theme.e2e.ts
+
+**Interfaces:**
+- Consumes: EntityPage, EntityForm, tabelas, filtros, modais e permissões existentes.
+- Produces: layouts consistentes de filtros, tabs, tabelas, perfis, formulários e administração sem alterar entidades ou RPCs.
+
+- [ ] **Step 1: Write regression contracts**
+  - Assert all modes/route-dependent sections remain exported/available.
+  - Assert action labels and permission gates used by tests remain present.
+  - Assert EntityPage/EntityForm APIs are unchanged.
+
+- [ ] **Step 2: Run tests**
+  Run: npm run test -- --run src/rh-operational-ui.test.ts
+  Expected: FAIL until new layout hooks/classes exist.
+
+- [ ] **Step 3: Redesign People/Attendance**
+  - Standardize filter bars, segmented tabs, table headers, row density and mobile fallback.
+  - Improve employee profile summary with identity header + grouped metrics.
+  - Attendance actions remain optimized for quick use and status scanning.
+
+- [ ] **Step 4: Redesign development/reporting/admin pages**
+  - Performance/ManagerReviews use clearer section hierarchy and human-centered cards.
+  - Reports uses editorial report tiles and cleaner export actions.
+  - Administration gets a denser technical variant while retaining RH branding.
+
+- [ ] **Step 5: Add E2E smoke assertions for representative routes**
+  - Use existing authenticated-test strategy if available; otherwise source-contract tests plus public route invariants without real writes.
+  - Verify tables/filters do not overflow at 390px.
+
+- [ ] **Step 6: Verify and commit**
+  Run: npm run verify && npm run test:e2e
+  Expected: PASS.
+  Commit: git commit -am "feat: redesign RH operational surfaces"
+
+### Task 5: Transformar ativação/cadastro em fluxo em etapas
+
+**Files:**
+- Modify: src/auth.tsx
+- Create: src/auth-onboarding-ui.test.ts
+- Modify: src/styles/rh-redesign.css
+- Test: e2e/theme.e2e.ts
+
+**Interfaces:**
+- Consumes: signUp, registration options, pre-registration matching, password policy e campos atuais.
+- Produces: onboarding visual em três etapas, sem alterar payload enviado ao Supabase.
+
+- [ ] **Step 1: Write onboarding behavior tests**
+  - Step 1 Identity: Nome completo, Gmail, Telefone.
+  - Step 2 Credentials: Senha, Confirmar senha.
+  - Step 3 Vínculo organizacional: Turma, Departamento, Cargo.
+  - Assert final payload still includes full_name, phone, requested_department_id, requested_role_code and same email/password behavior.
+  - Assert Gmail/password validations remain unchanged.
+
+- [ ] **Step 2: Run targeted tests**
+  Run: npm run test -- --run src/auth-onboarding-ui.test.ts
+  Expected: FAIL before stepper exists.
+
+- [ ] **Step 3: Implement three-step UI**
+  - Keep login/recovery untouched functionally.
+  - Add local step state only for signup mode.
+  - Prevent advancing when current-step native/business validations fail.
+  - Final submit uses the exact existing signUp call and metadata.
+
+- [ ] **Step 4: Redesign login balance**
+  - Keep split composition but prioritize form.
+  - Reduce mascot competition with CTA.
+  - Mobile compacts editorial area and keeps safe-area.
+
+- [ ] **Step 5: Update E2E**
+  - Replace one-page signup field expectations with step-by-step assertions.
+  - Keep valid Gmail native validation test.
+  - Add 390px/768px no-overflow tests.
+
+- [ ] **Step 6: Verify and commit**
+  Run: npm run verify && npm run test:e2e
+  Expected: PASS.
+  Commit: git commit -am "feat: redesign RH onboarding flow"
+
+### Task 6: Polimento, acessibilidade e validação final do RH
+
+**Files:**
+- Modify: src/styles/rh-redesign.css
+- Modify: e2e/theme.e2e.ts
+- Modify: relevant RH components only if verification exposes issues.
+
+**Interfaces:**
+- Consumes: redesigned RH surfaces from Tasks 1–5.
+- Produces: branch pronta para review/preview.
+
+- [ ] **Step 1: Add accessibility regression checks**
+  - Keyboard focus visible.
+  - Dialog/menu/tabs retain ARIA semantics.
+  - Touch targets >=44px on mobile controls.
+  - Status is not conveyed by color alone.
+
+- [ ] **Step 2: Add viewport matrix**
+  - 320x568, 390x844, 768x1024, 1100x800, 1440x900, 1920x1080, 6500x3600.
+  - Assert document.scrollWidth <= window.innerWidth where horizontal scrolling is not intentional.
+
+- [ ] **Step 3: Run full quality gate**
+  Run: npm run lint && npm run check:privacy && npm run test -- --passWithNoTests && npm run test:database && npm run build && npm run check:bundle && npm run test:e2e
+  Expected: PASS.
+
+- [ ] **Step 4: Validate preview in real browser**
+  - Use Vercel preview + browser automation for desktop/mobile login and representative public states.
+  - Confirm no console/page errors and no visual overflow.
+
+- [ ] **Step 5: Commit final polish**
+  git add src e2e
+  git commit -m "feat: finish RH visual redesign"
