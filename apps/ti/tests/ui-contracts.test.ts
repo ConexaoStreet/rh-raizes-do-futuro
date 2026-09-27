@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const main = readFileSync("apps/ti/src/main.tsx", "utf8");
 const redesign = readFileSync("apps/ti/src/redesign.css", "utf8");
+const legacy = readFileSync("apps/ti/src/styles.css", "utf8");
 
 describe("TI redesign foundation", () => {
   it("loads the TI redesign layer after the legacy stylesheet", () => {
@@ -35,9 +36,12 @@ describe("TI redesign foundation", () => {
     expect(redesign).not.toContain("--rh-");
   });
 
-  it("keeps focus, status text hooks and reduced motion available", () => {
+  it("keeps focus, semantic status styles, mono text and reduced motion available", () => {
     expect(redesign).toContain(":focus-visible");
-    expect(redesign).toContain(".ti-status");
+    expect(legacy).toContain(".status-badge.ok");
+    expect(legacy).toContain(".status-badge.warn");
+    expect(legacy).toContain(".status-badge.error");
+    expect(legacy).toContain(".mono-value");
     expect(redesign).toContain("@media (prefers-reduced-motion: reduce)");
   });
 });
