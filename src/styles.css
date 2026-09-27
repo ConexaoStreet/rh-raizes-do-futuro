@@ -3415,6 +3415,30 @@ html[data-theme="dark"] .panel {
   color: var(--ink);
   border-color: var(--line);
 }
+html[data-theme="dark"] .executive-metrics .stat-primary {
+  background: linear-gradient(145deg, #173d2e, #28644f);
+  border-color: #326d56;
+}
+html[data-theme="dark"] .executive-metrics .stat-primary .stat-label,
+html[data-theme="dark"] .executive-metrics .stat-primary .stat-detail {
+  color: #c9ddd1;
+}
+html[data-theme="dark"] .executive-metrics .stat-primary > strong {
+  color: #fff;
+}
+html[data-theme="dark"] .executive-metrics .stat-attention {
+  background: linear-gradient(145deg, #2a2418, #241f16);
+  border-color: #5d4c2e;
+}
+html[data-theme="dark"] .dashboard-action-panel {
+  background: linear-gradient(165deg, #143126, #0b2118);
+  border-color: #28533f;
+  color: #edf5f0;
+}
+html[data-theme="dark"] .editorial-support-grid .period-comparison {
+  background: linear-gradient(145deg, #111f1a, #13251f);
+  border-color: var(--line);
+}
 html[data-theme="dark"] button:hover:not(:disabled):not(.primary),
 html[data-theme="dark"] .button:hover:not(.primary),
 html[data-theme="dark"] .account-menu a:hover,
