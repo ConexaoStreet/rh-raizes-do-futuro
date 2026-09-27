@@ -131,6 +131,27 @@ test("RH login stays readable at extreme zoom-equivalent desktop width", async (
 });
 
 
+test("RH login remains stable across breakpoint matrix", async ({ page }) => {
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 768, height: 1024 },
+    { width: 1100, height: 800 },
+    { width: 1440, height: 900 },
+    { width: 1920, height: 1080 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Entrar" })).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true);
+  }
+});
+
 test("internal apps stay non-indexable", async ({ page, request }) => {
   await page.goto("/");
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
