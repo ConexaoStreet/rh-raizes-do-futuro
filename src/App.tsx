@@ -165,10 +165,6 @@ function Shell() {
             </div>
           ))}
         </nav>
-        <div className="sidebar-footer">
-          <span className="subtle-mark">R/F</span>
-          <span>Raízes do Futuro</span>
-        </div>
       </aside>
       <div className="main-column">
         <header className="topbar">
