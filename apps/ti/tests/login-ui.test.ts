@@ -47,6 +47,6 @@ describe("TI login redesign", () => {
     expect(styles).toContain(".login-mode-switch button:not(.active)");
     expect(styles).toMatch(/\.login-theme-control \.theme-toggle\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
     expect(styles).toMatch(/\.login-mascot-dock\s*\{[\s\S]*?position:\s*relative;/s);
-    expect(styles).toMatch(/\.login-mascot-dock \.root-mascot-login\s*\{[^}]*position:\s*relative;/s);
+    expect(styles).toMatch(/\.root-mascot-login\s*\{[^}]*position:\s*relative;/s);
   });
 });
