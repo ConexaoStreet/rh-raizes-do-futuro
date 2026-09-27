@@ -1,0 +1,79 @@
+:root {
+  --ti-canvas: #07100d;
+  --ti-surface: #0d1915;
+  --ti-surface-elevated: #12211b;
+  --ti-border: rgba(188, 216, 201, 0.14);
+  --ti-text: #eef5f0;
+  --ti-muted: #8fa49a;
+  --ti-healthy: #91c6a4;
+  --ti-warn: #e1b36e;
+  --ti-error: #ef9188;
+  --ti-accent: #d9cf94;
+  --ti-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --ti-radius-sm: 8px;
+  --ti-radius-md: 12px;
+  --ti-radius-lg: 18px;
+  --ti-focus-ring: 0 0 0 3px rgba(145, 198, 164, 0.16);
+  --ti-motion-fast: 140ms;
+  --ti-motion-base: 190ms;
+}
+
+html[data-theme="light"] {
+  --ti-canvas: #f1f5f2;
+  --ti-surface: #ffffff;
+  --ti-surface-elevated: #f7faf8;
+  --ti-border: #d8e1db;
+  --ti-text: #17261f;
+  --ti-muted: #66796f;
+  --ti-healthy: #357158;
+  --ti-warn: #956329;
+  --ti-error: #a7443b;
+  --ti-accent: #776b33;
+  --ti-focus-ring: 0 0 0 3px rgba(53, 113, 88, 0.14);
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--ti-healthy);
+  outline-offset: 2px;
+  box-shadow: var(--ti-focus-ring);
+}
+
+.ti-mono {
+  font-family: var(--ti-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.ti-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 4px 7px;
+  border: 1px solid var(--ti-border);
+  border-radius: 999px;
+  font-size: .66rem;
+  font-weight: 750;
+}
+
+.ti-status[data-tone="ok"] {
+  color: var(--ti-healthy);
+}
+
+.ti-status[data-tone="warn"] {
+  color: var(--ti-warn);
+}
+
+.ti-status[data-tone="error"] {
+  color: var(--ti-error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
