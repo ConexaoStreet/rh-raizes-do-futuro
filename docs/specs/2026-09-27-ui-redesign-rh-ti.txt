@@ -1,0 +1,273 @@
+RAÍZES DO FUTURO — ESPECIFICAÇÃO DE REDESIGN UI
+Data: 2026-09-27
+Escopo: RH + Central T.I.
+Objetivo: redesign forte preservando marca e funcionalidades, com identidades visuais independentes para cada produto.
+
+1. PRINCÍPIOS GERAIS
+- O RH e a Central T.I. não devem parecer o mesmo produto.
+- Compartilhar somente padrões técnicos de qualidade: acessibilidade, responsividade, spacing, motion, tokens e consistência de componentes.
+- Não alterar regras de negócio, Supabase, Auth, RLS, permissões ou contratos de API sem necessidade explícita.
+- Não remover módulos existentes.
+- Não recriar banco, autenticação ou infraestrutura.
+- Não desativar modo manutenção ou publicar segredos.
+- Preservar a branch de backup backup/pre-ui-redesign-2026-09-27 como ponto de retorno.
+- Mudanças visuais devem entrar por branches/PRs com CI, build, bundle e E2E antes de merge.
+
+2. DIREÇÃO VISUAL — RH
+Personalidade:
+- Humana, editorial, sofisticada, acolhedora e corporativa.
+- Menos aparência de “painel genérico”.
+- Mais hierarquia visual entre pessoas, ações e dados.
+
+Paleta:
+- Verde floresta escuro como cor institucional.
+- Branco e cinza neutro para superfícies.
+- Grafite para textos e áreas administrativas.
+- Verde-lima apenas como acento de foco/CTA/status positivo.
+- Estados semânticos separados para erro, aviso e sucesso.
+
+Tipografia:
+- Manrope para títulos.
+- DM Sans para interface e texto.
+- Escala tipográfica consistente e mais editorial em páginas de visão geral.
+
+Shell e navegação:
+- Sidebar mais limpa, com agrupamentos visuais claros e menor ruído.
+- Topbar mais leve, com busca, notificações, tema e conta.
+- Estados ativos mais evidentes sem blocos excessivamente pesados.
+- Mobile com drawer simples e navegação otimizada para toque.
+- Manter todas as rotas e permissões atuais.
+
+Dashboard:
+- Reduzir repetição de cards.
+- Criar hierarquia: visão executiva > alertas > operação do dia > tendências.
+- KPIs prioritários em destaque, demais dados em painéis de apoio.
+- Gráficos simples e legíveis, sem excesso de decoração.
+- Ações rápidas contextuais.
+- Empty/loading/error states desenhados, não apenas texto solto.
+
+Páginas operacionais:
+- Colaboradores: tabela/lista mais legível, filtros visuais, busca e ações por contexto.
+- Chamada/Presença: foco em velocidade de uso e leitura de status.
+- Faltas/Atrasos/Justificativas: estados e filtros consistentes.
+- Feedbacks/Boletim/Gestão: visual mais humano e menos administrativo.
+- Calendário: leitura mensal/semanal clara e responsiva.
+- Relatórios/Apresentações: cards editoriais com melhor hierarquia.
+- Administração: visual mais técnico, porém ainda dentro da identidade RH.
+
+Login e ativação:
+- Preservar o split visual, mas com composição mais equilibrada.
+- Mascote deve apoiar a experiência e não competir com CTA.
+- Ativação/cadastro em etapas:
+  1) Identidade
+  2) Credenciais
+  3) Vínculo organizacional
+- Melhorar contraste, foco, labels e estados de loading/erro/sucesso.
+- Mobile deve priorizar o formulário e compactar a área editorial.
+
+Componentes-base RH:
+- Button: primary, secondary, ghost, danger.
+- Input/select/textarea com estados focus/error/disabled.
+- Card/panel com variações editorial, metric, table e action.
+- Table com header sticky opcional e mobile fallback.
+- Badge/status.
+- Empty/loading/error/skeleton.
+- Modal/drawer.
+- Tabs/segmented control.
+- Pagination.
+- Toast/notice.
+- Page heading e section heading.
+
+3. DIREÇÃO VISUAL — CENTRAL T.I.
+Personalidade:
+- Técnica, operacional, escura, densa e precisa.
+- Aparência de console interno, não de portal de RH.
+- Foco em status, confiabilidade e tomada de ação rápida.
+
+Paleta:
+- Fundo quase preto/esverdeado.
+- Superfícies em verde-grafite.
+- Verde sálvia para estado saudável.
+- Âmbar para atenção.
+- Vermelho para falha.
+- Dourado discreto somente como acento secundário.
+- Alto contraste em estados críticos.
+
+Tipografia:
+- Inter para interface.
+- Uso moderado de mono em IDs, paths, logs, payloads e dados técnicos.
+
+Shell:
+- Sidebar compacta e técnica.
+- Environment badge/status global mais visível.
+- Topbar com busca, refresh, alertas e contexto do módulo.
+- Navegação organizada por domínio: overview, usuários, RH, Datasul, storage, banco, integrações, site, segurança, suporte e logs.
+
+Overview:
+- Health summary com estados de módulos.
+- Cards de status operacionais, não apenas números.
+- Indicadores de falha/latência/última atualização.
+- Bloco de incidentes/avisos prioritários.
+- Ações rápidas com risco visualmente diferenciado.
+
+Datasul:
+- Separar configuração, health, operações e testes.
+- Requests/payloads em área técnica dedicada.
+- Resultado técnico com leitura melhor e estados claros.
+
+Usuários e permissões:
+- Tabelas densas, porém escaneáveis.
+- Role/privilege visualmente explícito.
+- Ações destrutivas com confirmação visual forte.
+
+Storage e banco:
+- Cards de capacidade/estado.
+- Tabelas técnicas com mono onde fizer sentido.
+- RLS, extensões, conexões e tamanho com leitura rápida.
+
+Integrações e site:
+- Cada integração como item de status com connected/partial/error/needs_secret.
+- Configuração separada de health.
+- Manutenção do site com preview de estado antes de salvar.
+
+Segurança e logs:
+- Timeline/lista técnica.
+- Severity muito clara.
+- Filtros e busca compactos.
+- Ênfase em sucesso/falha, ator, módulo e horário.
+
+Login T.I.:
+- Preservar os dois métodos: e-mail/senha e código semanal.
+- Tabs com ícones semânticos.
+- Labels à esquerda.
+- CTA principal mais claro.
+- Mascote integrado com intenção visual, sem parecer elemento solto.
+- Mobile compacto, com branding reduzido e foco no login.
+- Manter os indicadores de segurança na T.I. quando fizerem sentido, porque combinam com o contexto técnico.
+
+Componentes-base T.I.:
+- Status tile.
+- Health row.
+- Dense table.
+- Technical field.
+- Code/payload surface.
+- Integration card.
+- Incident/alert.
+- Action bar.
+- Confirm dialog.
+- Skeleton/loading/error.
+- Tabs e filters.
+- Badge de ambiente e severity.
+
+4. RESPONSIVIDADE
+Breakpoints alvo:
+- Mobile pequeno: 320–479px
+- Mobile: 480–767px
+- Tablet: 768–1099px
+- Desktop: 1100–1599px
+- Desktop largo: 1600px+
+- Viewports extremos/zoom reduzido devem continuar utilizáveis.
+
+Regras:
+- Nada de overflow horizontal involuntário.
+- Inputs mobile >= 16px para evitar zoom automático em iOS.
+- Safe-area em iOS.
+- Touch targets >= 44px onde aplicável.
+- Sidebar vira drawer no RH e navegação compacta/drawer na T.I.
+- Tabelas devem degradar para cards/scroll controlado quando necessário.
+
+5. MOTION E MICROINTERAÇÕES
+- Duração padrão 140–220ms.
+- Animações de entrada discretas.
+- Hover/focus/pressed consistentes.
+- Tabs com transição de estado.
+- Loading states reais.
+- Respeitar prefers-reduced-motion.
+- Sem animação decorativa excessiva em telas operacionais.
+
+6. ACESSIBILIDADE
+- Contraste WCAG AA em texto funcional.
+- Focus visible.
+- Labels ligados a campos.
+- Navegação por teclado.
+- ARIA em dialogs, tabs, menus e estados.
+- Estados não devem depender somente de cor.
+- Mensagens de erro próximas ao campo/ação.
+
+7. IMPLEMENTAÇÃO
+Fase A — fundação
+- Consolidar tokens visuais RH e T.I. em arquivos separados.
+- Criar/ajustar componentes-base sem alterar contratos existentes.
+- Preservar APIs e lógica.
+
+Fase B — RH
+- Login/ativação.
+- Shell/sidebar/topbar.
+- Dashboard.
+- Colaboradores/chamada/presença.
+- Desenvolvimento.
+- Relatórios/administração.
+- Mobile final.
+
+Fase C — Central T.I.
+- Login.
+- Shell/sidebar/topbar.
+- Overview.
+- Datasul.
+- Usuários/RH.
+- Storage/banco.
+- Integrações/site.
+- Segurança/suporte/logs.
+- Mobile final.
+
+Fase D — polimento
+- Motion.
+- Empty/loading/error.
+- Acessibilidade.
+- Testes de viewport.
+- Bundle/performance.
+- Verificação visual final.
+
+8. FERRAMENTAS E CONEXÕES
+- GitHub: fonte de verdade, branches, PRs, histórico e rollback.
+- Vercel: preview/deploy e verificação de produção.
+- TinyFish/browser: auditoria visual e smoke tests reais.
+- Webflow: laboratório visual/referência, sem migrar a aplicação para Webflow.
+- Canva: direção visual, assets e feedback quando útil.
+- Figma: retomar quando a cota MCP liberar; não bloquear o redesign por isso.
+- Supabase: somente leitura/validação durante trabalho visual, salvo necessidade funcional explícita.
+- Datadog/observabilidade: validar regressões e comportamento quando disponível/relevante.
+
+9. TESTES OBRIGATÓRIOS
+- Lint.
+- Unit tests.
+- Database tests existentes.
+- Build RH e T.I.
+- Bundle budget.
+- E2E existente.
+- E2E novo para:
+  - RH desktop/mobile.
+  - T.I. desktop/mobile.
+  - overflow horizontal.
+  - tema claro/escuro onde suportado.
+  - login/ativação visual sem submissão real.
+  - estados principais de navegação.
+- Smoke test em produção após deploy.
+
+10. NÃO-OBJETIVOS
+- Não migrar RH/T.I. para Webflow, Wix, Base44 ou outra plataforma.
+- Não trocar Supabase.
+- Não redesenhar regras de permissão.
+- Não remover recursos por “simplificação visual”.
+- Não misturar a identidade visual do RH com a da Central T.I.
+- Não alterar dados reais durante testes visuais.
+
+11. CRITÉRIO DE ACEITE
+O redesign é aceito quando:
+- RH parece um produto de gestão de pessoas sofisticado e coerente.
+- T.I. parece um console técnico interno, claramente diferente do RH.
+- Todos os módulos continuam funcionando.
+- Mobile e desktop estão estáveis.
+- Não há overflow ou layouts quebrados.
+- CI, build, bundle e E2E passam.
+- Produção é validada visualmente após deploy.
