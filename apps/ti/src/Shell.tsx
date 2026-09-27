@@ -36,7 +36,6 @@ export function TiShell({
         <div className="environment" aria-label="Ambiente de produção">
           <span className="pulse" />
           <span>PROD</span>
-          <small>Ambiente protegido</small>
         </div>
 
         <nav className="ti-nav" aria-label="Navegação principal da Central T.I.">
