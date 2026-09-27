@@ -161,7 +161,6 @@ button:hover:not(:disabled),
 
 .brand span {
   color: #91a59a;
-  margin-top: 2px;
   font-size: .7rem;
 }
 
@@ -174,7 +173,6 @@ button:hover:not(:disabled),
   margin: 20px 0 18px;
   min-height: 38px;
   border: 1px solid var(--border);
-  border-radius: 9px;
   padding: 7px 9px;
   display: flex;
   align-items: center;
@@ -182,14 +180,12 @@ button:hover:not(:disabled),
   color: #b4c5bc;
   font-size: .67rem;
   font-weight: 800;
-  letter-spacing: .05em;
 }
 
 .environment small {
   margin-left: auto;
   color: #70857a;
   font-size: .56rem;
-  font-weight: 600;
   letter-spacing: 0;
 }
 
@@ -198,7 +194,6 @@ button:hover:not(:disabled),
   height: 7px;
   background: #72c28f;
   border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(114, 194, 143, .07);
 }
 
 .ti-nav {
@@ -216,7 +211,6 @@ button:hover:not(:disabled),
   color: #61776b;
   font-size: .55rem;
   font-weight: 850;
-  letter-spacing: .13em;
 }
 
 .ti-nav-group-items {
