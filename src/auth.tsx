@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  type ChangeEventHandler,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -217,10 +218,14 @@ function PasswordInput({
   name = "password",
   minLength = 12,
   autoComplete = "current-password",
+  value,
+  onChange,
 }: {
   name?: string;
   minLength?: number;
   autoComplete?: "current-password" | "new-password";
+  value?: string;
+  onChange?: ChangeEventHandler<HTMLInputElement>;
 }) {
   const [show, setShow] = useState(false);
   return (
@@ -231,6 +236,8 @@ function PasswordInput({
         autoComplete={autoComplete}
         required
         minLength={minLength}
+        value={value}
+        onChange={onChange}
       />
       <button
         type="button"
@@ -315,6 +322,15 @@ function Login({ configured: ready }: { configured: boolean }) {
   const [sent, setSent] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [signupName, setSignupName] = useState("");
+  const [signupStep, setSignupStep] = useState<1 | 2 | 3>(1);
+  const [signupDraft, setSignupDraft] = useState({
+    email: "",
+    phone: "",
+    password: "",
+    confirmation: "",
+    departmentId: "",
+    roleCode: "COLLABORATOR",
+  });
   const [mascotMood, setMascotMood] = useState<MascotMood>("idle");
   const options = useRegistrationOptions();
   const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
@@ -323,7 +339,52 @@ function Login({ configured: ready }: { configured: boolean }) {
     setSent(false);
     setVerificationEmail("");
     setMascotMood("idle");
+    setSignupStep(1);
+    setSignupDraft({
+      email: "",
+      phone: "",
+      password: "",
+      confirmation: "",
+      departmentId: "",
+      roleCode: "COLLABORATOR",
+    });
     setMode(next);
+  }
+
+  function continueSignupIdentity() {
+    const email = signupDraft.email.trim().toLowerCase();
+    if (!nameMatch.result?.matched) {
+      toast.error("Digite o nome completo exatamente como está no cadastro pré-existente.");
+      setMascotMood("error");
+      return;
+    }
+    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+      toast.error("Use um endereço @gmail.com válido.");
+      setMascotMood("error");
+      return;
+    }
+    if (signupDraft.phone.trim().length < 8) {
+      toast.error("Informe um número de telefone válido.");
+      setMascotMood("error");
+      return;
+    }
+    setMascotMood("idle");
+    setSignupStep(2);
+  }
+
+  function continueSignupCredentials() {
+    if (!strongPassword(signupDraft.password)) {
+      toast.error(PASSWORD_POLICY_MESSAGE);
+      setMascotMood("error");
+      return;
+    }
+    if (signupDraft.password !== signupDraft.confirmation) {
+      toast.error("As senhas precisam ser iguais.");
+      setMascotMood("error");
+      return;
+    }
+    setMascotMood("idle");
+    setSignupStep(3);
   }
 
   async function resendVerification() {
@@ -355,8 +416,12 @@ function Login({ configured: ready }: { configured: boolean }) {
     setMascotMood("work");
     const data = new FormData(event.currentTarget);
     try {
-      const email = String(data.get("email")).trim().toLowerCase();
-      const password = String(data.get("password"));
+      const email =
+        mode === "signup"
+          ? signupDraft.email.trim().toLowerCase()
+          : String(data.get("email")).trim().toLowerCase();
+      const password =
+        mode === "signup" ? signupDraft.password : String(data.get("password"));
       const redirect = new URL(import.meta.env.BASE_URL, location.origin).href;
 
       if (mode === "login") {
@@ -376,9 +441,9 @@ function Login({ configured: ready }: { configured: boolean }) {
       }
 
       if (mode === "signup") {
-        const phone = String(data.get("phone")).trim();
-        const departmentId = String(data.get("department_id")).trim();
-        const roleCode = String(data.get("role_code")).trim().toUpperCase();
+        const phone = signupDraft.phone.trim();
+        const departmentId = signupDraft.departmentId.trim();
+        const roleCode = signupDraft.roleCode.trim().toUpperCase();
 
         if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
           toast.error("Use um endereço @gmail.com válido.");
@@ -410,7 +475,7 @@ function Login({ configured: ready }: { configured: boolean }) {
           setMascotMood("error");
           return;
         }
-        if (password !== data.get("confirmation")) {
+        if (password !== signupDraft.confirmation) {
           toast.error("As senhas precisam ser iguais.");
           setMascotMood("error");
           return;
@@ -561,9 +626,25 @@ function Login({ configured: ready }: { configured: boolean }) {
                   Voltar ao login
                 </button>
               </div>
-            ) : (
-              <form onSubmit={submit} className="form-stack rh-login-form">
-                {mode === "signup" && (
+            ) : mode === "signup" ? (
+              <form
+                onSubmit={submit}
+                className="form-stack rh-login-form signup-flow"
+                aria-label={`Etapa ${signupStep} de 3 do primeiro acesso`}
+              >
+                <div className="steps" aria-label="Etapas do primeiro acesso">
+                  <span className={signupStep === 1 ? "active" : signupStep > 1 ? "done" : ""}>
+                    1. Identidade
+                  </span>
+                  <span className={signupStep === 2 ? "active" : signupStep > 2 ? "done" : ""}>
+                    2. Credenciais
+                  </span>
+                  <span className={signupStep === 3 ? "active" : ""}>
+                    3. Vínculo
+                  </span>
+                </div>
+
+                {signupStep === 1 && (
                   <>
                     <Field label="Nome completo">
                       <input
@@ -573,6 +654,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                         onChange={(event) => setSignupName(event.target.value)}
                         required
                         minLength={4}
+                        autoFocus
                       />
                     </Field>
                     {nameMatch.checking ? (
@@ -590,47 +672,104 @@ function Login({ configured: ready }: { configured: boolean }) {
                         Digite seu nome completo para o sistema localizar seu cadastro.
                       </span>
                     )}
+                    <Field label="Gmail">
+                      <input
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        inputMode="email"
+                        placeholder="seunome@gmail.com"
+                        value={signupDraft.email}
+                        onChange={(event) =>
+                          setSignupDraft((current) => ({
+                            ...current,
+                            email: event.target.value,
+                          }))
+                        }
+                        required
+                      />
+                    </Field>
+                    <Field label="Telefone">
+                      <input
+                        name="phone"
+                        type="tel"
+                        autoComplete="tel"
+                        inputMode="tel"
+                        value={signupDraft.phone}
+                        onChange={(event) =>
+                          setSignupDraft((current) => ({
+                            ...current,
+                            phone: event.target.value,
+                          }))
+                        }
+                        required
+                        minLength={8}
+                      />
+                    </Field>
+                    <button
+                      type="button"
+                      className="primary large"
+                      disabled={nameMatch.checking || !ready}
+                      onClick={continueSignupIdentity}
+                    >
+                      Continuar para credenciais
+                      <ArrowRight size={18} />
+                    </button>
                   </>
                 )}
 
-                <Field label={mode === "signup" ? "Gmail" : "E-mail"}>
-                  <input
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder={mode === "signup" ? "seunome@gmail.com" : "seu@email.com"}
-                    required
-                    inputMode="email"
-                  />
-                </Field>
-
-                {mode === "signup" && (
-                  <Field label="Telefone">
-                    <input
-                      name="phone"
-                      type="tel"
-                      autoComplete="tel"
-                      inputMode="tel"
-                      required
-                      minLength={8}
-                    />
-                  </Field>
-                )}
-
-                {mode !== "recover" && (
-                  <Field label="Senha">
-                    <PasswordInput
-                      minLength={mode === "login" ? 1 : 12}
-                      autoComplete={mode === "login" ? "current-password" : "new-password"}
-                    />
-                  </Field>
-                )}
-
-                {mode === "signup" && (
+                {signupStep === 2 && (
                   <>
-                    <Field label="Confirmar senha">
-                      <PasswordInput name="confirmation" autoComplete="new-password" />
+                    <span className="muted">
+                      Crie uma senha exclusiva para seu acesso ao RH.
+                    </span>
+                    <Field label="Senha">
+                      <PasswordInput
+                        autoComplete="new-password"
+                        value={signupDraft.password}
+                        onChange={(event) =>
+                          setSignupDraft((current) => ({
+                            ...current,
+                            password: event.target.value,
+                          }))
+                        }
+                      />
                     </Field>
+                    <Field label="Confirmar senha">
+                      <PasswordInput
+                        name="confirmation"
+                        autoComplete="new-password"
+                        value={signupDraft.confirmation}
+                        onChange={(event) =>
+                          setSignupDraft((current) => ({
+                            ...current,
+                            confirmation: event.target.value,
+                          }))
+                        }
+                      />
+                    </Field>
+                    <span className="muted">{PASSWORD_POLICY_MESSAGE}</span>
+                    <div className="actions">
+                      <button type="button" onClick={() => setSignupStep(1)}>
+                        Voltar
+                      </button>
+                      <button
+                        type="button"
+                        className="primary"
+                        onClick={continueSignupCredentials}
+                      >
+                        Continuar
+                        <ArrowRight size={18} />
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {signupStep === 3 && (
+                  <>
+                    <span className="muted">
+                      Confirme como seu cadastro deve ser vinculado à organização.
+                    </span>
                     <Field label="Turma">
                       <input
                         value={options?.class?.name || "Turma padrão"}
@@ -639,7 +778,17 @@ function Login({ configured: ready }: { configured: boolean }) {
                       />
                     </Field>
                     <Field label="Departamento">
-                      <select name="department_id" required defaultValue="">
+                      <select
+                        name="department_id"
+                        required
+                        value={signupDraft.departmentId}
+                        onChange={(event) =>
+                          setSignupDraft((current) => ({
+                            ...current,
+                            departmentId: event.target.value,
+                          }))
+                        }
+                      >
                         <option value="">Selecionar departamento</option>
                         {options?.departments.map((department) => (
                           <option key={department.id} value={department.id}>
@@ -649,7 +798,17 @@ function Login({ configured: ready }: { configured: boolean }) {
                       </select>
                     </Field>
                     <Field label="Cargo">
-                      <select name="role_code" required defaultValue="COLLABORATOR">
+                      <select
+                        name="role_code"
+                        required
+                        value={signupDraft.roleCode}
+                        onChange={(event) =>
+                          setSignupDraft((current) => ({
+                            ...current,
+                            roleCode: event.target.value,
+                          }))
+                        }
+                      >
                         {options?.roles.map((role) => (
                           <option key={role.code} value={role.code}>
                             {role.name}
@@ -660,8 +819,44 @@ function Login({ configured: ready }: { configured: boolean }) {
                     <span className="muted">
                       Cargos com acesso elevado só são liberados quando já estiverem autorizados no cadastro-base.
                     </span>
-                    <span className="muted">{PASSWORD_POLICY_MESSAGE}</span>
+                    <div className="actions">
+                      <button type="button" disabled={busy} onClick={() => setSignupStep(2)}>
+                        Voltar
+                      </button>
+                      <button
+                        className="primary"
+                        disabled={
+                          busy ||
+                          !ready ||
+                          !options ||
+                          !nameMatch.result?.matched ||
+                          !signupDraft.departmentId
+                        }
+                      >
+                        {busy ? "Aguarde..." : "Verificar Gmail e ativar"}
+                        <ArrowRight size={18} />
+                      </button>
+                    </div>
                   </>
+                )}
+              </form>
+            ) : (
+              <form onSubmit={submit} className="form-stack rh-login-form">
+                <Field label="E-mail">
+                  <input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="seu@email.com"
+                    required
+                    inputMode="email"
+                  />
+                </Field>
+
+                {mode !== "recover" && (
+                  <Field label="Senha">
+                    <PasswordInput minLength={1} autoComplete="current-password" />
+                  </Field>
                 )}
 
                 {mode === "login" && (
@@ -674,22 +869,13 @@ function Login({ configured: ready }: { configured: boolean }) {
                   </button>
                 )}
 
-                <button
-                  className="primary large login-submit"
-                  disabled={
-                    busy ||
-                    !ready ||
-                    (mode === "signup" && (!options || !nameMatch.result?.matched))
-                  }
-                >
+                <button className="primary large login-submit" disabled={busy || !ready}>
                   {mode === "login" ? <KeyRound size={18} /> : <ArrowRight size={18} />}
                   {busy
                     ? "Aguarde..."
-                    : mode === "signup"
-                      ? "Verificar Gmail e continuar"
-                      : mode === "recover"
-                        ? "Enviar link"
-                        : "Entrar"}
+                    : mode === "recover"
+                      ? "Enviar link"
+                      : "Entrar"}
                 </button>
 
                 {mode === "recover" && (

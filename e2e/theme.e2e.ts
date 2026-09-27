@@ -193,14 +193,17 @@ test("first access uses the pre-registered onboarding flow", async ({ page }) =>
   await expect(
     page.getByRole("heading", { name: "Ativar meu cadastro" }),
   ).toBeVisible();
+  await expect(page.getByText("1. Identidade")).toBeVisible();
+  await expect(page.getByText("2. Credenciais")).toBeVisible();
+  await expect(page.getByText("3. Vínculo")).toBeVisible();
   await expect(page.getByLabel("Nome completo")).toBeVisible();
   await expect(page.getByLabel("Gmail")).toBeVisible();
   await expect(page.getByLabel("Telefone")).toBeVisible();
-  await expect(page.getByLabel("Senha", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Confirmar senha")).toBeVisible();
-  await expect(page.getByLabel("Turma")).toBeVisible();
-  await expect(page.getByLabel("Departamento")).toBeVisible();
-  await expect(page.getByLabel("Cargo")).toBeVisible();
+  await expect(page.getByLabel("Senha", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Turma")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Continuar para credenciais" }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Ativar acesso de gestor" }),
   ).toHaveCount(0);
