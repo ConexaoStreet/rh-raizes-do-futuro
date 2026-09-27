@@ -1059,7 +1059,7 @@ html[data-theme="light"] @media (prefers-reduced-motion: reduce) {
 
 .table-wrap th,
 .table-wrap td {
-  padding: 12px 14px;
+  padding: 9px 11px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
@@ -1112,6 +1112,7 @@ html[data-theme="light"] @media (prefers-reduced-motion: reduce) {
 .row-actions button,
 .actions button {
   width: auto;
+  min-height: 44px;
 }
 
 .form-grid,
