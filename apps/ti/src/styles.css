@@ -31,9 +31,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 80% 10%, rgba(64, 120, 92, 0.12), transparent 22rem),
-    linear-gradient(180deg, #08110e 0%, #0a1411 100%);
+  background: var(--bg);
 }
 
 button,
@@ -133,9 +131,7 @@ button:hover:not(:disabled),
   display: flex;
   flex-direction: column;
   padding: 22px 16px 16px;
-  background:
-    linear-gradient(180deg, rgba(17, 34, 27, .98), rgba(9, 20, 16, .98)),
-    radial-gradient(circle at 20% 0%, rgba(146, 199, 166, .12), transparent 16rem);
+  background: linear-gradient(180deg, #10221b, #091410);
   border-right: 1px solid var(--border);
 }
 
@@ -313,9 +309,7 @@ main {
   min-height: 220px;
   border: 1px solid rgba(164, 206, 183, .13);
   border-radius: 22px;
-  background:
-    radial-gradient(circle at 84% 12%, rgba(213, 221, 158, .18), transparent 18rem),
-    linear-gradient(135deg, #11251d 0%, #163327 60%, #15362a 100%);
+  background: linear-gradient(135deg, #11251d, #163327 60%, #15362a);
   padding: 34px;
   display: flex;
   align-items: center;
@@ -353,7 +347,6 @@ main {
   border-radius: 50%;
   border: 1px solid rgba(228, 216, 157, .2);
   background: rgba(6, 18, 13, .28);
-  box-shadow: inset 0 0 0 12px rgba(146, 199, 166, .04);
   display: grid;
   place-content: center;
   text-align: center;
@@ -700,9 +693,7 @@ pre {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background:
-    radial-gradient(circle at 16% 5%, rgba(146, 199, 166, .16), transparent 20rem),
-    linear-gradient(145deg, #0a1712, #10271d 65%, #173428);
+  background: linear-gradient(145deg, #0a1712, #10271d 65%, #173428);
   border-right: 1px solid var(--border);
 }
 
