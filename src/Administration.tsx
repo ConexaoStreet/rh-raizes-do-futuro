@@ -45,7 +45,7 @@ function Notifications() {
   }, [page]);
   return (
     <>
-      <Heading title="Notificações" />
+      <Heading title="Notificações" className="operational-heading" />
       <section className="panel">
         {data.loading ? (
           <Loading />
@@ -105,7 +105,7 @@ function Sessions({ target }: { target?: string }) {
   );
   return (
     <>
-      <Heading title={target ? "Sessões do usuário" : "Minhas sessões"} />
+      <Heading title={target ? "Sessões do usuário" : "Minhas sessões"} className="operational-heading" />
       <section className="panel">
         {data.loading ? (
           <Loading />
@@ -168,7 +168,7 @@ function UsersPage() {
   }, [search, status, page]);
   return (
     <>
-      <Heading title="Usuários" eyebrow="ACESSOS INDIVIDUAIS" />
+      <Heading title="Usuários" eyebrow="ACESSOS INDIVIDUAIS" className="operational-heading" />
       <section className="panel">
         <div className="table-toolbar">
           <div className="search-input">
