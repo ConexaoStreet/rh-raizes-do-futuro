@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const app = readFileSync("apps/ti/src/App.tsx", "utf8");
+const redesign = readFileSync("apps/ti/src/redesign.css", "utf8");
 
 describe("TI operational overview redesign", () => {
   it("preserves overview data sources", () => {
@@ -34,6 +35,12 @@ describe("TI operational overview redesign", () => {
     expect(app).toContain("<StatusTile");
     expect(app).toContain("<HealthRow");
     expect(app).toContain("<IncidentNotice");
+  });
+
+  it("keeps overview action touch targets at least 44px", () => {
+    expect(redesign).toMatch(
+      /\.ti-health-row-action button\s*\{[^}]*min-height:\s*44px;/s,
+    );
   });
 
   it("keeps activity audit visible", () => {
