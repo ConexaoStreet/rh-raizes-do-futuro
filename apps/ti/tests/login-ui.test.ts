@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const auth = readFileSync("apps/ti/src/auth.tsx", "utf8");
 const redesign = readFileSync("apps/ti/src/redesign.css", "utf8");
+const styles = readFileSync("apps/ti/src/styles.css", "utf8") + "\n" + redesign;
 
 describe("TI login redesign", () => {
   it("preserves password and weekly-code authentication contracts", () => {
@@ -42,10 +43,10 @@ describe("TI login redesign", () => {
   });
 
   it("provides clear tab, theme and mascot interaction contracts", () => {
-    expect(redesign).toMatch(/\.login-mode-switch button\s*\{[^}]*min-height:\s*44px;[^}]*transition:[^}]*180ms/s);
-    expect(redesign).toContain(".login-mode-switch button:not(.active)");
-    expect(redesign).toMatch(/\.login-theme-control \.theme-toggle\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
-    expect(redesign).toMatch(/\.login-mascot-dock\s*\{[\s\S]*?position:\s*relative;/s);
-    expect(redesign).toMatch(/\.login-mascot-dock \.root-mascot-login\s*\{[^}]*position:\s*relative;/s);
+    expect(styles).toMatch(/\.login-mode-switch button\s*\{[^}]*min-height:\s*44px;[^}]*transition:[^}]*180ms/s);
+    expect(styles).toContain(".login-mode-switch button:not(.active)");
+    expect(styles).toMatch(/\.login-theme-control \.theme-toggle\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
+    expect(styles).toMatch(/\.login-mascot-dock\s*\{[\s\S]*?position:\s*relative;/s);
+    expect(styles).toMatch(/\.login-mascot-dock \.root-mascot-login\s*\{[^}]*position:\s*relative;/s);
   });
 });
