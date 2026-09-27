@@ -15,20 +15,14 @@ export function TechnicalField({
   mono = false,
   hint = "",
 }: TechnicalFieldProps) {
-  const classes = [
-    "field",
-    "ti-technical-field",
-    wide ? "wide" : "",
-    mono ? "is-mono" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   return (
-    <label className={classes}>
+    <label
+      className={wide ? "field wide" : "field"}
+      data-technical-mono={mono || undefined}
+    >
       <span>{label}</span>
       {children}
-      {hint && <small className="ti-technical-field-hint">{hint}</small>}
+      {hint && <small className="panel-copy">{hint}</small>}
     </label>
   );
 }
