@@ -833,8 +833,6 @@ input[type="radio"] {
   background: linear-gradient(100deg, #f5faf4, #fff);
 }
 .dashboard-priority-band {
-  position: relative;
-  overflow: hidden;
   box-shadow: 0 12px 30px rgba(34, 75, 57, .06);
 }
 .dashboard-priority-band:before {
