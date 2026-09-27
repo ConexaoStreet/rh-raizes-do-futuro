@@ -889,8 +889,7 @@ html[data-theme="light"] .topbar {
   border-color: var(--border);
   color: var(--text);
 }
-html[data-theme="light"] html[data-theme="light"] html[data-theme="light"] .hero p,
-html[data-theme="light"] html[data-theme="light"] html[data-theme="light"] html[data-theme="light"] .panel,
+html[data-theme="light"] .panel,
 html[data-theme="light"] .login-card,
 html[data-theme="light"] .access-card {
   background: rgba(255,255,255,.94);
