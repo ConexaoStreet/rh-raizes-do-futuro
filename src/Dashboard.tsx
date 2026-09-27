@@ -131,26 +131,12 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
             aria-hidden="true"
           />
           <div className="raizes-hero-copy">
-            <span className="eyebrow">ANHANGUERA · ESPRO · TURMA 16807</span>
-            <h2>Raízes do Futuro</h2>
-            <p>Gestão de pessoas, presença e desenvolvimento da turma em um único lugar.</p>
-            <div className="department-pills">
-              <span>Recursos Humanos</span>
-              <span>Eventos</span>
-              <span>Educação</span>
-              <span>Ecológico</span>
-              <span>Marketing</span>
-            </div>
+            <span className="eyebrow">PAINEL DE GESTÃO · TURMA 16807</span>
+            <h2>Um panorama claro da turma.</h2>
+            <p>Presença, desenvolvimento e pendências importantes reunidos para facilitar as decisões do dia.</p>
           </div>
         </section>
       )}
-      <div className="notice maintenance-notice">
-        <TriangleAlert size={20} />
-        <div>
-          <strong>Histórico da planilha importado</strong>
-          <span>Faltas e registros de presença da base histórica já foram lançados. A planilha registra ocorrências, não uma chamada completa; por isso, quem não aparece nela não foi presumido como presente.</span>
-        </div>
-      </div>
       {data.loading ? (
         <Loading />
       ) : data.error ? (
@@ -158,19 +144,6 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
       ) : (
         stats && (
           <>
-            <section className="attendance-banner">
-              <div className="banner-icon">
-                <ClipboardCheck size={25} />
-              </div>
-              <div>
-                <h2>Chamada da turma</h2>
-                <p>Terças-feiras · 08:00 às 14:00</p>
-              </div>
-              <Link to="/chamada" className="button primary">
-                Abrir chamada
-                <ArrowUpRight size={17} />
-              </Link>
-            </section>
             <div className="stats-grid">
               <Stat
                 title="Colaboradores ativos"
@@ -179,6 +152,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 icon={<Users size={18} />}
               />
               <Stat
+                variant="primary"
                 title="Presença"
                 value={
                   stats.attendance_rate === null
@@ -189,6 +163,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 icon={<Check size={18} />}
               />
               <Stat
+                variant={stats.late > 0 ? "attention" : "default"}
                 title="Pontualidade"
                 value={
                   stats.punctuality_rate === null
@@ -205,6 +180,26 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 icon={<ArrowUpRight size={18} />}
               />
             </div>
+            <div className="notice maintenance-notice">
+              <TriangleAlert size={19} />
+              <div>
+                <strong>Base histórica importada</strong>
+                <span>Os registros antigos representam ocorrências lançadas na planilha, não uma chamada completa. Ausência na planilha não significa presença confirmada.</span>
+              </div>
+            </div>
+            <section className="attendance-banner">
+              <div className="banner-icon">
+                <ClipboardCheck size={25} />
+              </div>
+              <div>
+                <h2>Chamada da turma</h2>
+                <p>Terças-feiras · 08:00 às 14:00</p>
+              </div>
+              <Link to="/chamada" className="button primary">
+                Abrir chamada
+                <ArrowUpRight size={17} />
+              </Link>
+            </section>
             <div className="dashboard-grid">
               <section className="panel chart-panel">
                 <div className="panel-heading">
