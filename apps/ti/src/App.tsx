@@ -17,7 +17,6 @@ import {
   FileClock,
   FolderOpen,
   GitBranch,
-  Globe2,
   HardDrive,
   KeyRound,
   Mail,
@@ -38,6 +37,9 @@ import { client, rpc, updateSetting } from "./api";
 import { useAuth } from "./auth";
 import { LoginMascot } from "./LoginMascot";
 import { TiShell } from "./Shell";
+import { StatusTile } from "./components/StatusTile";
+import { HealthRow } from "./components/HealthRow";
+import { IncidentNotice } from "./components/IncidentNotice";
 import type { TiView } from "./navigation";
 
 type JsonObject = Record<string, unknown>;
@@ -968,51 +970,96 @@ export default function App() {
           ) : (
             <>
               {view === "overview" && (
-                <>
-                  <section className="hero">
+                <div className="ti-overview">
+                  <section className="ti-overview-health">
                     <div>
-                      <span className="eyebrow">OPERAÇÃO CENTRAL</span>
-                      <h2>Controle técnico completo do Raízes do Futuro.</h2>
+                      <span className="eyebrow">SITUAÇÃO ATUAL</span>
+                      <h2>Operação técnica do Raízes do Futuro.</h2>
                       <p>
-                        Usuários, Datasul, banco, storage, deploys, segurança,
-                        notificações e operação do RH em um único console.
+                        Saúde, incidentes e serviços críticos primeiro; volume e
+                        atividade logo abaixo, sem esconder módulos saudáveis.
                       </p>
                     </div>
-                    <div className="health-ring">
+                    <div
+                      className="ti-overview-score"
+                      data-tone={healthScore >= 80 ? "ok" : healthScore >= 55 ? "warn" : "error"}
+                    >
                       <strong>{healthScore}%</strong>
                       <span>saúde técnica</span>
                     </div>
                   </section>
-                  <div className="stats-grid ti-stats">
-                    <Stat title="Perfis" value={numberValue(snapshot.profiles_total)} detail={numberValue(snapshot.profiles_active) + " ativos"} />
-                    <Stat title="Colaboradores" value={numberValue(snapshot.employees_total)} detail={numberValue(snapshot.employees_active) + " ativos"} />
-                    <Stat title="Sessões Auth" value={numberValue(snapshot.auth_sessions)} detail="sessões abertas" />
-                    <Stat title="Push" value={numberValue(snapshot.push_devices)} detail="dispositivos" />
-                    <Stat title="Storage" value={numberValue(snapshot.storage_objects)} detail="objetos" />
-                    <Stat title="Auditoria 24h" value={numberValue(snapshot.audit_24h)} detail="eventos" />
-                    <Stat title="Datasul 24h" value={numberValue(snapshot.datasul_operations_24h)} detail={numberValue(snapshot.datasul_failures_24h) + " falhas"} />
-                    <Stat title="Fotos Espro" value={numberValue(snapshot.photo_status?.basic_passed) + numberValue(snapshot.photo_status?.approved)} detail="válidas ou aprovadas" />
+
+                  <IncidentNotice modules={Object.keys(moduleErrors)} />
+
+                  <section className="ti-health-grid" aria-label="Saúde dos serviços">
+                    <HealthRow
+                      name="RH"
+                      status={flag(maintenance.enabled) ? "Manutenção" : "Operação normal"}
+                      secondary="Aplicação de gestão"
+                      tone={flag(maintenance.enabled) ? "warn" : "ok"}
+                      action={
+                        <button type="button" onClick={() => setView("site")}>
+                          Abrir controle
+                        </button>
+                      }
+                    />
+                    <HealthRow
+                      name="Datasul"
+                      status={labelStatus(datasul.status)}
+                      secondary="ERP / RH"
+                      tone={toneFor(datasul.status)}
+                      action={
+                        <button type="button" onClick={() => setView("datasul")}>
+                          Diagnóstico
+                        </button>
+                      }
+                    />
+                    <HealthRow
+                      name="GitHub"
+                      status={labelStatus(github.status)}
+                      secondary={text(github.repository, "Repositório")}
+                      tone={toneFor(github.status)}
+                    />
+                    <HealthRow
+                      name="Vercel"
+                      status={labelStatus(vercel.status)}
+                      secondary={text(vercel.project, "Deploy")}
+                      tone={toneFor(vercel.status)}
+                    />
+                    <HealthRow
+                      name="E-mail"
+                      status={labelStatus(email.status)}
+                      secondary="Resend"
+                      tone={toneFor(email.status)}
+                    />
+                  </section>
+
+                  <div className="ti-status-grid">
+                    <StatusTile label="Perfis" value={numberValue(snapshot.profiles_total)} detail={numberValue(snapshot.profiles_active) + " ativos"} icon={<Users size={16} />} />
+                    <StatusTile label="Colaboradores" value={numberValue(snapshot.employees_total)} detail={numberValue(snapshot.employees_active) + " ativos"} icon={<UserCog size={16} />} />
+                    <StatusTile label="Sessões Auth" value={numberValue(snapshot.auth_sessions)} detail="sessões abertas" icon={<ShieldCheck size={16} />} />
+                    <StatusTile label="Push" value={numberValue(snapshot.push_devices)} detail="dispositivos" icon={<BellRing size={16} />} />
+                    <StatusTile label="Storage" value={numberValue(snapshot.storage_objects)} detail="objetos" icon={<HardDrive size={16} />} />
+                    <StatusTile label="Auditoria 24h" value={numberValue(snapshot.audit_24h)} detail="eventos" icon={<Activity size={16} />} />
+                    <StatusTile
+                      label="Datasul 24h"
+                      value={numberValue(snapshot.datasul_operations_24h)}
+                      detail={numberValue(snapshot.datasul_failures_24h) + " falhas"}
+                      tone={numberValue(snapshot.datasul_failures_24h) > 0 ? "warn" : "ok"}
+                      icon={<Database size={16} />}
+                    />
+                    <StatusTile
+                      label="Fotos Espro"
+                      value={numberValue(snapshot.photo_status?.basic_passed) + numberValue(snapshot.photo_status?.approved)}
+                      detail="válidas ou aprovadas"
+                      icon={<CheckCircle2 size={16} />}
+                    />
                   </div>
-                  <ServiceGrid
-                    datasul={datasul}
-                    github={github}
-                    vercel={vercel}
-                    email={email}
-                    maintenance={maintenance}
-                  />
-                  <div className="two-columns">
-                    <Panel title="Atividade recente" kicker="AUDITORIA" icon={<FileClock />}>
-                      <AuditList rows={audit.slice(0, 8)} />
-                    </Panel>
-                    <Panel title="Estado operacional" kicker="SERVIÇOS" icon={<Server />}>
-                      <StateRow name="RH" value={flag(maintenance.enabled) ? "Manutenção" : "Operação normal"} tone={flag(maintenance.enabled) ? "warn" : "ok"} />
-                      <StateRow name="Datasul" value={labelStatus(datasul.status)} tone={toneFor(datasul.status)} />
-                      <StateRow name="GitHub" value={labelStatus(github.status)} tone={toneFor(github.status)} />
-                      <StateRow name="Vercel" value={labelStatus(vercel.status)} tone={toneFor(vercel.status)} />
-                      <StateRow name="E-mail" value={labelStatus(email.status)} tone={toneFor(email.status)} />
-                    </Panel>
-                  </div>
-                </>
+
+                  <Panel title="Atividade recente" kicker="AUDITORIA" icon={<FileClock />}>
+                    <AuditList rows={audit.slice(0, 8)} />
+                  </Panel>
+                </div>
               )}
 
               {view === "datasul" && (
@@ -1874,51 +1921,3 @@ function AuditList({
   );
 }
 
-function ServiceGrid({
-  datasul,
-  github,
-  vercel,
-  email,
-  maintenance,
-}: {
-  datasul: JsonObject;
-  github: JsonObject;
-  vercel: JsonObject;
-  email: JsonObject;
-  maintenance: JsonObject;
-}) {
-  return (
-    <section className="service-grid">
-      <Service icon={<Globe2 />} title="Site RH" subtitle="Produção" status={flag(maintenance.enabled) ? "Manutenção" : "Online"} tone={flag(maintenance.enabled) ? "warn" : "ok"} />
-      <Service icon={<Database />} title="Datasul" subtitle="ERP / RH" status={labelStatus(datasul.status)} tone={toneFor(datasul.status)} />
-      <Service icon={<GitBranch />} title="GitHub" subtitle={text(github.repository, "Repositório")} status={labelStatus(github.status)} tone={toneFor(github.status)} />
-      <Service icon={<Server />} title="Vercel" subtitle={text(vercel.project, "Deploy")} status={labelStatus(vercel.status)} tone={toneFor(vercel.status)} />
-      <Service icon={<Mail />} title="E-mail" subtitle="Resend" status={labelStatus(email.status)} tone={toneFor(email.status)} />
-    </section>
-  );
-}
-
-function Service({
-  icon,
-  title,
-  subtitle,
-  status,
-  tone,
-}: {
-  icon: ReactNode;
-  title: string;
-  subtitle: string;
-  status: string;
-  tone: string;
-}) {
-  return (
-    <article className="service-card">
-      <div className="service-icon">{icon}</div>
-      <div className="service-text">
-        <strong>{title}</strong>
-        <span>{subtitle}</span>
-      </div>
-      <Badge tone={tone}>{status}</Badge>
-    </article>
-  );
-}
