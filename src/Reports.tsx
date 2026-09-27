@@ -135,6 +135,7 @@ export default function Reports({
       <Heading
         title={presentation ? "Apresentações" : "Relatórios"}
         eyebrow="RESULTADOS DO RH"
+        className="operational-heading"
       >
         <button onClick={() => setHistoryOpen(true)}>
           Histórico de arquivos
