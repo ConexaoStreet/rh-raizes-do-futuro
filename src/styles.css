@@ -3318,6 +3318,11 @@ html[data-theme="dark"] .diff-table .changed td {
 html[data-theme="dark"] .progress-track {
   background: #1d2d25;
 }
+html[data-theme="dark"] .stats-grid .stat:first-child {
+  background: var(--paper);
+  border-color: var(--line);
+}
+
 html[data-theme="dark"] .status-selected.present {
   background: #173025;
   border-color: #355b42;
