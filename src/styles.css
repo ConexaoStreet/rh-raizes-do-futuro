@@ -615,21 +615,6 @@ input[type="radio"] {
   box-shadow: inset 2px 0 0 #bcda70;
   font-weight: 700;
 }
-.sidebar-footer {
-  min-height: 58px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 16px 22px max(16px, env(safe-area-inset-bottom));
-  border-top: 1px solid rgba(205, 228, 214, .08);
-  color: #728c7d;
-  font-size: .68rem;
-}
-.subtle-mark {
-  color: #b3ca95;
-  font-size: .67rem;
-  letter-spacing: .12em;
-}
 .main-column {
   width: calc(100% - 252px);
   min-width: 0;
