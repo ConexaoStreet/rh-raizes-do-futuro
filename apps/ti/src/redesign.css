@@ -258,7 +258,6 @@
 
 
 /* TI login redesign */
-.login-stage { display:grid; }
 .login-mascot-dock {
   position:relative;
   min-height:108px;
@@ -276,7 +275,6 @@
   background:color-mix(in srgb,var(--ti-healthy) 9%,transparent);
 }
 .login-mode-panel { display:grid; gap:13px; }
-.login-mode-panel label > span { text-align:left; }
 .login-theme-control .theme-toggle {
   width:44px;
   min-width:44px;
