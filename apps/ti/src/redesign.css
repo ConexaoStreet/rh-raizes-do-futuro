@@ -1,0 +1,33 @@
+:root {
+  --ti-canvas: var(--bg);
+  --ti-surface: var(--panel);
+  --ti-surface-elevated: var(--panel-2);
+  --ti-border: var(--border);
+  --ti-text: var(--text);
+  --ti-muted: var(--muted);
+  --ti-healthy: var(--green);
+  --ti-warn: var(--warning);
+  --ti-error: var(--danger);
+  --ti-accent: var(--accent);
+  --ti-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --ti-focus-ring: 0 0 0 3px color-mix(in srgb, var(--green) 16%, transparent);
+  --ti-motion-fast: 140ms;
+  --ti-motion-base: 190ms;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--ti-healthy);
+  outline-offset: 2px;
+  box-shadow: var(--ti-focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

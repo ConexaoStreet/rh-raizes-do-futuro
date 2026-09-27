@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { AuthBoundary } from "./auth";
 import App from "./App";
 import "./styles.css";
+import "./redesign.css";
 import { initializeTheme } from "./theme";
 import ErrorBoundary from "./ErrorBoundary";
 import { CinematicGate } from "./CinematicGate";
