@@ -31,3 +31,227 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+.ti-overview {
+  display: grid;
+  gap: 14px;
+}
+
+.ti-overview-health {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 22px;
+  border: 1px solid var(--ti-border);
+  border-radius: 16px;
+  background: var(--ti-surface);
+}
+
+.ti-overview-health h2 {
+  margin: 5px 0 7px;
+  font-size: clamp(1.35rem, 2.3vw, 2rem);
+}
+
+.ti-overview-health p {
+  margin: 0;
+  max-width: 720px;
+  color: var(--ti-muted);
+  font-size: .78rem;
+  line-height: 1.55;
+}
+
+.ti-overview-score {
+  min-width: 112px;
+  text-align: right;
+}
+
+.ti-overview-score strong,
+.ti-overview-score span {
+  display: block;
+}
+
+.ti-overview-score strong {
+  font: 800 2rem/1 var(--ti-mono);
+}
+
+.ti-overview-score span {
+  margin-top: 5px;
+  color: var(--ti-muted);
+  font-size: .62rem;
+}
+
+.ti-overview-score[data-tone="ok"],
+.ti-health-row[data-tone="ok"] .ti-health-row-status,
+.ti-status-tile[data-tone="ok"] > strong {
+  color: var(--ti-healthy);
+}
+
+.ti-overview-score[data-tone="warn"],
+.ti-health-row[data-tone="warn"] .ti-health-row-status,
+.ti-status-tile[data-tone="warn"] > strong {
+  color: var(--ti-warn);
+}
+
+.ti-overview-score[data-tone="error"],
+.ti-health-row[data-tone="error"] .ti-health-row-status,
+.ti-status-tile[data-tone="error"] > strong {
+  color: var(--ti-error);
+}
+
+.ti-incident-notice {
+  display: grid;
+  grid-template-columns: minmax(220px, .7fr) 1.3fr;
+  gap: 14px;
+  padding: 13px 15px;
+  border: 1px solid color-mix(in srgb, var(--ti-warn) 28%, var(--ti-border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ti-warn) 7%, var(--ti-surface));
+}
+
+.ti-incident-notice span,
+.ti-incident-notice strong {
+  display: block;
+}
+
+.ti-incident-notice span {
+  color: var(--ti-warn);
+  font-size: .55rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.ti-incident-notice strong {
+  margin-top: 3px;
+  font-size: .76rem;
+}
+
+.ti-incident-notice p {
+  margin: 0;
+  color: var(--ti-muted);
+  font-size: .7rem;
+  line-height: 1.5;
+}
+
+.ti-health-grid {
+  overflow: hidden;
+  border: 1px solid var(--ti-border);
+  border-radius: 14px;
+  background: var(--ti-surface);
+}
+
+.ti-health-row {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--ti-border);
+}
+
+.ti-health-row:last-child {
+  border-bottom: 0;
+}
+
+.ti-health-row-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ti-muted);
+}
+
+.ti-health-row[data-tone="ok"] .ti-health-row-dot { background: var(--ti-healthy); }
+.ti-health-row[data-tone="warn"] .ti-health-row-dot { background: var(--ti-warn); }
+.ti-health-row[data-tone="error"] .ti-health-row-dot { background: var(--ti-error); }
+
+.ti-health-row strong,
+.ti-health-row small {
+  display: block;
+}
+
+.ti-health-row strong {
+  font-size: .74rem;
+}
+
+.ti-health-row small {
+  margin-top: 2px;
+  color: var(--ti-muted);
+  font-size: .61rem;
+}
+
+.ti-health-row-status {
+  font: 700 .64rem/1 var(--ti-mono);
+}
+
+.ti-health-row-action button {
+  min-height: 32px;
+  padding: 6px 9px;
+  font-size: .62rem;
+}
+
+.ti-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.ti-status-tile {
+  min-height: 92px;
+  padding: 13px;
+  border: 1px solid var(--ti-border);
+  border-radius: 12px;
+  background: var(--ti-surface);
+}
+
+.ti-status-tile-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ti-muted);
+  font-size: .64rem;
+}
+
+.ti-status-tile-icon {
+  color: var(--ti-healthy);
+}
+
+.ti-status-tile > strong {
+  display: block;
+  margin-top: 9px;
+  font: 800 1.35rem/1 var(--ti-mono);
+}
+
+.ti-status-tile > small {
+  display: block;
+  margin-top: 5px;
+  color: var(--ti-muted);
+  font-size: .61rem;
+}
+
+@media (max-width: 760px) {
+  .ti-overview-health {
+    align-items: flex-start;
+    padding: 17px;
+  }
+
+  .ti-overview-score {
+    min-width: 82px;
+  }
+
+  .ti-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ti-incident-notice {
+    grid-template-columns: 1fr;
+  }
+
+  .ti-health-row {
+    grid-template-columns: 8px minmax(0, 1fr) auto;
+  }
+
+  .ti-health-row-action {
+    grid-column: 2 / -1;
+  }
+}
