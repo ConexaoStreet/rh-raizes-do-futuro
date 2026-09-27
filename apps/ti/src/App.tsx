@@ -17,7 +17,6 @@ import {
   FileClock,
   FolderOpen,
   GitBranch,
-  Globe2,
   HardDrive,
   KeyRound,
   Mail,
