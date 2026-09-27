@@ -48,4 +48,17 @@ describe("RH dashboard redesign", () => {
     expect(styles).toContain(".raizes-hero {");
     expect(styles).toContain(".dashboard-grid {");
   });
+  it("makes the RH dashboard refresh visibly distinct", () => {
+    expect(dashboard).toContain('className="stats-grid executive-metrics"');
+    expect(dashboard).toContain('className="attendance-banner dashboard-priority-band"');
+    expect(dashboard).toContain('className="panel chart-panel dashboard-insight-panel"');
+    expect(dashboard).toContain('className="panel pending-panel dashboard-action-panel"');
+    expect(dashboard).toContain('className="dashboard-bottom editorial-support-grid"');
+    expect(dashboard).toContain("O que precisa da sua atenção hoje.");
+    expect(dashboard).toContain("Presença, atrasos, notas e pendências");
+    expect(styles).toContain(".executive-metrics");
+    expect(styles).toContain(".dashboard-priority-band");
+    expect(styles).toContain(".dashboard-action-panel");
+  });
+
 });
