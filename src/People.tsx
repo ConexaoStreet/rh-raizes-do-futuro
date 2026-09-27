@@ -164,6 +164,7 @@ function EmployeeProfile() {
   return (
     <>
       <Heading
+        className="operational-heading"
         title={employee.social_name || employee.full_name}
         eyebrow="RAÍZES DO FUTURO · TURMA 16807"
       >
@@ -829,7 +830,7 @@ function Occurrences({
   return (
     <>
       {!employeeId && (
-        <Heading title={late ? "Atrasos" : "Faltas"} eyebrow="PRESENÇA">
+        <Heading className="operational-heading" title={late ? "Atrasos" : "Faltas"} eyebrow="PRESENÇA">
           {can("attendance.manage") && (
             <Link to="/chamada" className="button primary">
               <Plus size={17} />
