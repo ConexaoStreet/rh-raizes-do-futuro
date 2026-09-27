@@ -1379,32 +1379,6 @@ html[data-theme="light"] @media (prefers-reduced-motion: reduce) {
   outline-offset: 2px;
 }
 
-.login-mode-switch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin: 18px 0 14px;
-  padding: 5px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: rgba(4, 15, 11, .32);
-}
-
-.login-mode-switch button {
-  min-height: 38px;
-  border-color: transparent;
-  background: transparent;
-  color: var(--muted);
-  font-size: .74rem;
-  font-weight: 800;
-}
-
-.login-mode-switch button.active {
-  background: rgba(146, 199, 166, .12);
-  border-color: rgba(146, 199, 166, .22);
-  color: var(--text);
-}
-
 .weekly-access-code {
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -1715,15 +1689,35 @@ select:focus-visible {
   font-weight: 760;
 }
 .login-mode-switch {
-  margin: 20px 0 18px;
-  border-radius: 14px;
-  background: rgba(3,13,9,.38);
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  margin:20px 0 18px;
+  padding:5px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:rgba(3,13,9,.38);
 }
-.login-mode-switch button { min-height: 40px; border-radius: 10px; }
+.login-mode-switch button {
+  min-height:44px;
+  justify-content:flex-start;
+  gap:8px;
+  border-color:transparent;
+  border-radius:10px;
+  background:transparent;
+  color:var(--muted);
+  font-size:.74rem;
+  font-weight:800;
+  transition:color 180ms ease,background 180ms ease,border-color 180ms ease;
+}
+.login-mode-switch button:not(.active) {
+  color:color-mix(in srgb,var(--text) 66%,var(--muted));
+  background:color-mix(in srgb,var(--panel-2) 42%,transparent);
+}
 .login-mode-switch button.active {
-  color: #f3f8f4;
-  border-color: rgba(167,215,184,.13);
-  background: linear-gradient(180deg,rgba(154,207,174,.13),rgba(154,207,174,.075));
+  color:#f3f8f4;
+  border-color:rgba(167,215,184,.13);
+  background:linear-gradient(180deg,rgba(154,207,174,.13),rgba(154,207,174,.075));
 }
 .login-card input,
 .access-card input {
@@ -2577,10 +2571,12 @@ html[data-theme="light"] .datasul-pulse-card{background:#fafcfb;border-color:#df
   animation: rootMascotApprove .55s ease-out;
 }
 .root-mascot-login {
-  position: absolute;
-  z-index: 4;
-  top: -103px;
-  right: 27px;
+  position:relative;
+  z-index:4;
+  top:auto;
+  right:auto;
+  transform:scale(.86);
+  transform-origin:50% 100%;
 }
 .datasul-command-header {
   position: relative;
@@ -2672,10 +2668,10 @@ html[data-theme="light"] .root-mascot-note {
 }
 @media(max-width:620px){
   .root-mascot-login {
-    right: 13px;
-    top: -91px;
-    transform: scale(.82);
-    transform-origin: bottom right;
+    right:auto;
+    top:auto;
+    transform:scale(.76);
+    transform-origin:50% 100%;
   }
   .datasul-command-header {
     grid-template-columns:1fr;
