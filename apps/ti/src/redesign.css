@@ -258,205 +258,65 @@
 
 
 /* Technical module primitives */
-.ti-technical-table {
-  background: var(--ti-surface);
-  border-radius: 10px;
-  scrollbar-gutter: stable;
-}
-
 .ti-technical-table:focus-visible {
   outline: 2px solid var(--ti-healthy);
   outline-offset: 2px;
 }
-
 .ti-technical-table th,
-.ti-technical-table td {
-  padding: 9px 11px;
-}
-
-.ti-technical-table th {
-  font-size: .64rem;
-}
-
-.ti-technical-table td {
-  font-size: .76rem;
-}
+.ti-technical-table td { padding: 9px 11px; }
 
 .ti-technical-field.is-mono :is(input, select, textarea) {
   font-family: var(--ti-mono);
-  font-size: .78rem;
 }
-
 .ti-technical-field-hint {
   color: var(--ti-muted);
   font-size: .61rem;
-  line-height: 1.45;
-}
-
-.ti-code-surface {
-  overflow: hidden;
-  margin-top: 14px;
-  border: 1px solid var(--ti-border);
-  border-radius: 12px;
-  background: var(--ti-surface);
 }
 
 .ti-code-surface-head {
-  min-height: 38px;
-  padding: 8px 12px;
+  margin-top: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid var(--ti-border);
+  gap: 8px;
 }
-
 .ti-code-surface-head span {
   font-size: .68rem;
   font-weight: 800;
 }
-
 .ti-code-surface-head small {
   color: var(--ti-muted);
-  font: 700 .54rem/1 var(--ti-mono);
-  letter-spacing: .1em;
+  font-size: .54rem;
 }
-
 .ti-code-surface pre {
-  margin: 0;
-  max-height: 420px;
-  border: 0;
-  border-radius: 0;
-  background: color-mix(in srgb, var(--ti-canvas) 78%, black);
+  margin-top: 8px;
   font-family: var(--ti-mono);
-  font-size: .7rem;
 }
-
-.ti-code-surface.is-compact pre {
-  max-height: 220px;
-}
-
-.ti-integration-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.ti-integration-card {
-  min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--ti-border);
-  border-radius: 14px;
-  background: var(--ti-surface);
-}
+.ti-code-surface.is-compact pre { max-height: 220px; }
 
 .ti-integration-card > header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
 }
-
 .ti-integration-card > header strong,
-.ti-integration-card > header small {
-  display: block;
-}
-
+.ti-integration-card > header small { display: block; }
 .ti-integration-card > header strong {
   margin-top: 4px;
   font-size: .84rem;
 }
-
 .ti-integration-card > header small {
   margin-top: 3px;
   color: var(--ti-muted);
   font: 600 .62rem/1.4 var(--ti-mono);
   overflow-wrap: anywhere;
 }
-
-.ti-integration-card-kicker {
-  color: var(--ti-muted);
-  font-size: .54rem;
-  font-weight: 800;
-  letter-spacing: .12em;
-}
-
-.ti-integration-card-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  flex: 0 0 auto;
-  font: 700 .62rem/1 var(--ti-mono);
-}
-
-.ti-integration-card-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ti-muted);
-}
-
-.ti-integration-card[data-tone="ok"] .ti-integration-card-status {
-  color: var(--ti-healthy);
-}
-
-.ti-integration-card[data-tone="ok"] .ti-integration-card-dot {
-  background: var(--ti-healthy);
-}
-
-.ti-integration-card[data-tone="warn"] .ti-integration-card-status {
-  color: var(--ti-warn);
-}
-
-.ti-integration-card[data-tone="warn"] .ti-integration-card-dot {
-  background: var(--ti-warn);
-}
-
-.ti-integration-card[data-tone="error"] .ti-integration-card-status {
-  color: var(--ti-error);
-}
-
-.ti-integration-card[data-tone="error"] .ti-integration-card-dot {
-  background: var(--ti-error);
-}
-
-.ti-integration-card-body {
-  margin-top: 13px;
-  padding-top: 12px;
-  border-top: 1px solid var(--ti-border);
-}
-
-.ti-integration-card-body .panel-copy {
-  margin: 0;
-}
-
-.ti-integration-card-action {
-  margin-top: 13px;
-}
-
-.ti-integration-card-action button,
-.ti-integration-card button {
-  min-height: 44px;
-}
-
-.ticket-card details .ti-code-surface {
-  margin-top: 10px;
-}
+.ti-integration-card-body,
+.ti-integration-card-action { margin-top: 12px; }
+.ti-integration-card button { min-height: 44px; }
 
 @media (max-width: 760px) {
-  .ti-integration-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ti-integration-card > header {
-    display: grid;
-  }
-
-  .ti-code-surface-head {
-    align-items: flex-start;
-  }
-
-  .ti-technical-field.is-mono :is(input, select, textarea) {
-    font-size: 16px;
-  }
+  .ti-integration-card > header { display: grid; }
+  .ti-technical-field.is-mono :is(input, select, textarea) { font-size: 16px; }
 }
