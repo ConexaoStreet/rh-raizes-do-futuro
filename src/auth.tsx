@@ -315,6 +315,15 @@ function Login({ configured: ready }: { configured: boolean }) {
   const [sent, setSent] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [signupName, setSignupName] = useState("");
+  const [signupStep, setSignupStep] = useState<1 | 2 | 3>(1);
+  const [signupDraft, setSignupDraft] = useState({
+    email: "",
+    phone: "",
+    password: "",
+    confirmation: "",
+    departmentId: "",
+    roleCode: "COLLABORATOR",
+  });
   const [mascotMood, setMascotMood] = useState<MascotMood>("idle");
   const options = useRegistrationOptions();
   const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
@@ -323,7 +332,52 @@ function Login({ configured: ready }: { configured: boolean }) {
     setSent(false);
     setVerificationEmail("");
     setMascotMood("idle");
+    setSignupStep(1);
+    setSignupDraft({
+      email: "",
+      phone: "",
+      password: "",
+      confirmation: "",
+      departmentId: "",
+      roleCode: "COLLABORATOR",
+    });
     setMode(next);
+  }
+
+  function continueSignupIdentity() {
+    const email = signupDraft.email.trim().toLowerCase();
+    if (!nameMatch.result?.matched) {
+      toast.error("Digite o nome completo exatamente como está no cadastro pré-existente.");
+      setMascotMood("error");
+      return;
+    }
+    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+      toast.error("Use um endereço @gmail.com válido.");
+      setMascotMood("error");
+      return;
+    }
+    if (signupDraft.phone.trim().length < 8) {
+      toast.error("Informe um número de telefone válido.");
+      setMascotMood("error");
+      return;
+    }
+    setMascotMood("idle");
+    setSignupStep(2);
+  }
+
+  function continueSignupCredentials() {
+    if (!strongPassword(signupDraft.password)) {
+      toast.error(PASSWORD_POLICY_MESSAGE);
+      setMascotMood("error");
+      return;
+    }
+    if (signupDraft.password !== signupDraft.confirmation) {
+      toast.error("As senhas precisam ser iguais.");
+      setMascotMood("error");
+      return;
+    }
+    setMascotMood("idle");
+    setSignupStep(3);
   }
 
   async function resendVerification() {
@@ -355,8 +409,12 @@ function Login({ configured: ready }: { configured: boolean }) {
     setMascotMood("work");
     const data = new FormData(event.currentTarget);
     try {
-      const email = String(data.get("email")).trim().toLowerCase();
-      const password = String(data.get("password"));
+      const email =
+        mode === "signup"
+          ? signupDraft.email.trim().toLowerCase()
+          : String(data.get("email")).trim().toLowerCase();
+      const password =
+        mode === "signup" ? signupDraft.password : String(data.get("password"));
       const redirect = new URL(import.meta.env.BASE_URL, location.origin).href;
 
       if (mode === "login") {
@@ -376,9 +434,9 @@ function Login({ configured: ready }: { configured: boolean }) {
       }
 
       if (mode === "signup") {
-        const phone = String(data.get("phone")).trim();
-        const departmentId = String(data.get("department_id")).trim();
-        const roleCode = String(data.get("role_code")).trim().toUpperCase();
+        const phone = signupDraft.phone.trim();
+        const departmentId = signupDraft.departmentId.trim();
+        const roleCode = signupDraft.roleCode.trim().toUpperCase();
 
         if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
           toast.error("Use um endereço @gmail.com válido.");
@@ -410,7 +468,7 @@ function Login({ configured: ready }: { configured: boolean }) {
           setMascotMood("error");
           return;
         }
-        if (password !== data.get("confirmation")) {
+        if (password !== signupDraft.confirmation) {
           toast.error("As senhas precisam ser iguais.");
           setMascotMood("error");
           return;
