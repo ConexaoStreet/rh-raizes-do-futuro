@@ -420,7 +420,6 @@ function Login({
               role="tab"
               aria-selected={loginMode === "password"}
               aria-controls="ti-login-password-panel"
-              tabIndex={loginMode === "password" ? 0 : -1}
               className={loginMode === "password" ? "active" : ""}
               onClick={() => {
                 setLoginMode("password");
@@ -437,7 +436,6 @@ function Login({
               role="tab"
               aria-selected={loginMode === "code"}
               aria-controls="ti-login-code-panel"
-              tabIndex={loginMode === "code" ? 0 : -1}
               className={loginMode === "code" ? "active" : ""}
               onClick={() => {
                 setLoginMode("code");
