@@ -1626,11 +1626,12 @@ export default function App() {
                         <span>A Central T.I. mantém acesso técnico durante manutenção.</span>
                       </div>
                     </div>
-                    <button className={flag(maintenance.enabled) ? "primary-button" : "danger-button"} onClick={() => void run("maintenance", toggleMaintenance, "Estado de manutenção atualizado.")}>
-                      <Wrench size={16} />
-                      {flag(maintenance.enabled) ? "Desativar manutenção" : "Ativar manutenção"}
-                    </button>
-                  
+                    <div className="actions">
+                      <button className={flag(maintenance.enabled) ? "primary-button" : "danger-button"} onClick={() => void run("maintenance", toggleMaintenance, "Estado de manutenção atualizado.")}>
+                        <Wrench size={16} />
+                        {flag(maintenance.enabled) ? "Desativar manutenção" : "Ativar manutenção"}
+                      </button>
+                    </div>
                   </IntegrationCard>
                   <Panel title="Mensagem de manutenção" kicker="COMUNICAÇÃO" icon={<Mail />}>
                     <TechnicalField label="Título"><input value={maintenanceTitle} onChange={(event) => setMaintenanceTitle(event.target.value)} /></TechnicalField>
