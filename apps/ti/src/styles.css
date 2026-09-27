@@ -379,6 +379,36 @@ main {
   line-height: 1.65;
 }
 
+.state-row {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(191, 222, 204, .07);
+  font-size: .76rem;
+}
+
+.state-row:last-child {
+  border-bottom: 0;
+}
+
+.state-row span {
+  color: #9fb2a8;
+}
+
+.state-row strong {
+  font-size: .7rem;
+}
+
+.state-row strong.ok {
+  color: #8ed2a7;
+}
+
+.state-row strong.warn {
+  color: #e0ae67;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -899,10 +929,16 @@ html[data-theme="light"] .notice {
   border-color: #ead7af;
   color: #765526;
 }
-html[data-theme="light"] html[data-theme="light"] .field > span,
+html[data-theme="light"] .state-row {
+  border-color: #e8ede9;
+}
+html[data-theme="light"] .state-row span,
+html[data-theme="light"] .field > span,
 html[data-theme="light"] .panel-copy,
-html[data-theme="light"] .operator span,
-html[data-theme="light"] html[data-theme="light"] .eyebrow { color: #698073; }
+html[data-theme="light"] .operator span {
+  color: var(--muted);
+}
+html[data-theme="light"] .eyebrow { color: #698073; }
 html[data-theme="light"] .theme-toggle {
   background: #f7f9f7;
   color: #315d49;
