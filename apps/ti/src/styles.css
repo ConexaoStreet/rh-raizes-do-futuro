@@ -304,17 +304,6 @@ main {
   font-size: .62rem;
 }
 
-.operator-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: #c6d7a0;
-  color: #0d1814;
-  font-weight: 900;
-}
-
 .content {
   padding: 28px 34px 48px;
   max-width: 1500px;
@@ -1113,12 +1102,7 @@ html[data-theme="light"] .login-panel,
 html[data-theme="light"] .access-page {
   background: #eef3ef;
 }
-html[data-theme="light"] .operator-avatar {
-  background: linear-gradient(135deg, #a9d1b7, #ded49d);
-  color: #173027;
-}
-
-@media (prefers-reduced-motion: reduce) {
+html[data-theme="light"] @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
