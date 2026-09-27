@@ -510,6 +510,17 @@ html[data-theme="light"] .root-mascot-note {
     padding-right: 0;
   }
 }
+@media(min-width:3000px){
+  .root-mascot-login {
+    transform: scale(2);
+    transform-origin: bottom right;
+  }
+}
+@media(min-width:5000px){
+  .root-mascot-login {
+    transform: scale(4);
+  }
+}
 @media(prefers-reduced-motion:reduce){
   .root-mascot,
   .root-mascot * {

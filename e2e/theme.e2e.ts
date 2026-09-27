@@ -70,6 +70,30 @@ test("login surfaces do not overflow on mobile", async ({ page }) => {
     .toBe(true);
 });
 
+test("RH login stays readable at extreme zoom-equivalent desktop width", async ({ page }) => {
+  await page.setViewportSize({ width: 6500, height: 3600 });
+  await page.goto("/");
+
+  const metrics = await page.evaluate(() => {
+    const card = document.querySelector<HTMLElement>(".login-card");
+    const brandCopy = document.querySelector<HTMLElement>(".login-brand-copy");
+    const mascot = document.querySelector<HTMLElement>(".root-mascot-login");
+    if (!card || !brandCopy || !mascot) throw new Error("LOGIN_LAYOUT_MISSING");
+    return {
+      viewport: window.innerWidth,
+      card: card.getBoundingClientRect().width,
+      brandCopy: brandCopy.getBoundingClientRect().width,
+      mascot: mascot.getBoundingClientRect().width,
+      cardFont: Number.parseFloat(getComputedStyle(card).fontSize),
+    };
+  });
+
+  expect(metrics.card / metrics.viewport).toBeGreaterThan(0.25);
+  expect(metrics.brandCopy / metrics.viewport).toBeGreaterThan(0.25);
+  expect(metrics.cardFont).toBeGreaterThan(40);
+  expect(metrics.mascot).toBeGreaterThan(400);
+});
+
 
 test("internal apps stay non-indexable", async ({ page, request }) => {
   await page.goto("/");
