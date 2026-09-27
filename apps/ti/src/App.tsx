@@ -3,6 +3,12 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import {
+  Activity,
   AlertTriangle,
   ArrowUpRight,
   BellRing,
@@ -35,20 +41,6 @@ import { TiShell } from "./Shell";
 import type { TiView } from "./navigation";
 
 type JsonObject = Record<string, unknown>;
-type View =
-  | "overview"
-  | "datasul"
-  | "users"
-  | "rh"
-  | "storage"
-  | "notifications"
-  | "database"
-  | "integrations"
-  | "site"
-  | "security"
-  | "support"
-  | "logs";
-
 type SettingRow = { key: string; value: unknown };
 type ProfileRow = {
   id: string;
