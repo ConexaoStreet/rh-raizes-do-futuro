@@ -4120,12 +4120,21 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
   min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1.16fr) minmax(430px, .84fr);
+  grid-template-areas: "brand panel";
   overflow: hidden;
   background: #07100d;
   color: #edf5ef;
 }
 
+.login-theme-control {
+  position: fixed;
+  top: max(20px, env(safe-area-inset-top));
+  right: max(20px, env(safe-area-inset-right));
+  z-index: 20;
+}
+
 .login-brand {
+  grid-area: brand;
   position: relative;
   font-size: max(16px, .9vw);
   isolation: isolate;
@@ -4258,6 +4267,7 @@ html[data-theme="dark"] .gradebook-summary article:first-child {
 }
 
 .login-panel {
+  grid-area: panel;
   min-height: 100dvh;
   overflow-x: clip;
   display: grid;
@@ -4564,6 +4574,9 @@ html[data-theme="light"] .login-card .notice {
 @media (max-width: 1100px) {
   .login-page {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "brand"
+      "panel";
     overflow: visible;
   }
 
