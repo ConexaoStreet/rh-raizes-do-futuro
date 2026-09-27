@@ -1,0 +1,49 @@
+name: Drive Backup Snapshot
+
+on:
+  push:
+    branches:
+      - backup/drive-snapshot-2026-09-27-0625
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build recovery archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backup
+          git fetch --no-tags origin c7d7d0778ccbb1af3fe828dbc2247903470bc0f8
+          git archive --format=zip --output=backup/rh-raizes-main-943713f.zip 943713f75f9ebf479a71e0b4706c9a4e4c158f0c
+          git archive --format=zip --output=backup/rh-raizes-pr47-c7d7d07.zip c7d7d0778ccbb1af3fe828dbc2247903470bc0f8
+          cat > backup/MANIFEST.txt <<'EOF'
+          Raizes do Futuro - Backup de recuperacao
+          Data: 2026-09-27
+          Repositorio: ConexaoStreet/rh-raizes-do-futuro
+          Main: 943713f75f9ebf479a71e0b4706c9a4e4c158f0c
+          PR #47 / feat/rh-shell-redesign: c7d7d0778ccbb1af3fe828dbc2247903470bc0f8
+          Backup GitHub pre-redesign: backup/pre-ui-redesign-2026-09-27
+          Conteudo:
+          - snapshot completo da main
+          - snapshot completo da branch do PR #47
+          - manifesto de recuperacao
+          EOF
+          cd backup
+          zip -9 raizes-do-futuro-backup-2026-09-27.zip \
+            rh-raizes-main-943713f.zip \
+            rh-raizes-pr47-c7d7d07.zip \
+            MANIFEST.txt
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: raizes-do-futuro-drive-backup-2026-09-27
+          path: backup/raizes-do-futuro-backup-2026-09-27.zip
+          if-no-files-found: error
+          retention-days: 30
