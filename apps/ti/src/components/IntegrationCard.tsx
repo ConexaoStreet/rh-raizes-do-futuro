@@ -19,17 +19,14 @@ export function IntegrationCard({
   action,
 }: IntegrationCardProps) {
   return (
-    <article className="ti-integration-card" data-tone={tone}>
+    <article className="panel ti-integration-card">
       <header>
         <div>
           <span className="ti-integration-card-kicker">INTEGRAÇÃO</span>
           <strong>{name}</strong>
           {detail && <small>{detail}</small>}
         </div>
-        <div className="ti-integration-card-status">
-          <span className="ti-integration-card-dot" aria-hidden="true" />
-          <b>{status}</b>
-        </div>
+        <span className={"badge " + tone}>{status}</span>
       </header>
       {children && <div className="ti-integration-card-body">{children}</div>}
       {action && <div className="ti-integration-card-action">{action}</div>}
