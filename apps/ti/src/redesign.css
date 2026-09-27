@@ -255,3 +255,30 @@
     grid-column: 2 / -1;
   }
 }
+
+
+/* TI login redesign */
+.login-mascot-dock {
+  position:relative;
+  min-height:108px;
+  display:grid;
+  place-items:end center;
+  pointer-events:none;
+}
+.login-mode-icon {
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  border-radius:8px;
+  background:color-mix(in srgb,var(--ti-healthy) 9%,transparent);
+}
+.login-mode-panel { display:grid; gap:13px; }
+.login-theme-control .theme-toggle {
+  width:44px;
+  height:44px;
+}
+@media (max-width:620px) {
+  .login-mascot-dock { min-height:92px; }
+}

@@ -56,6 +56,33 @@ test("TI theme cycles and persists", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
+test("TI login switches access methods without submitting", async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem("raizes-ti-intro-seen", "1"));
+  await page.goto("http://127.0.0.1:4174/", { waitUntil: "domcontentloaded" });
+
+  const passwordTab = page.getByRole("tab", { name: "E-mail e senha" });
+  const codeTab = page.getByRole("tab", { name: "Código semanal" });
+
+  await expect(passwordTab).toHaveAttribute("aria-selected", "true");
+  await expect(codeTab).toHaveAttribute("aria-selected", "false");
+  await expect(page.getByRole("textbox", { name: "E-mail", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Senha", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Esqueci minha senha" })).toBeVisible();
+  await expect(page.locator(".login-submit")).toContainText("Entrar com segurança");
+
+  await codeTab.click();
+  await expect(codeTab).toHaveAttribute("aria-selected", "true");
+  await expect(passwordTab).toHaveAttribute("aria-selected", "false");
+  await expect(page.locator('input[name="access_code"]')).toBeVisible();
+  await expect(page.locator('input[name="email"]')).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Esqueci minha senha" })).toHaveCount(0);
+  await expect(page.locator(".login-submit")).toContainText("Entrar com código");
+
+  await passwordTab.click();
+  await expect(page.getByRole("textbox", { name: "E-mail", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Esqueci minha senha" })).toBeVisible();
+});
+
 test("login surfaces do not overflow on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
