@@ -608,7 +608,7 @@ export function EntityPage({
   }, [spec.table, query, page, filter?.key, filter?.value]);
   return (
     <>
-      <Heading title={spec.title} eyebrow="GESTÃO DE RH">
+      <Heading title={spec.title} eyebrow="GESTÃO DE RH" className="operational-heading">
         {extra}
         {can(spec.permission) && (
           <button className="primary" onClick={() => setEdit(null)}>
@@ -618,7 +618,7 @@ export function EntityPage({
         )}
       </Heading>
       {subnav}
-      <section className="panel">
+      <section className="panel entity-panel">
         <div className="table-toolbar">
           <div className="search-input">
             <Search size={18} />
