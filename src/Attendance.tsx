@@ -100,6 +100,7 @@ export default function Attendance({ history = false }: { history?: boolean }) {
       <Heading
         title={history ? "Histórico de chamadas" : "Chamada do dia"}
         eyebrow="PRESENÇA"
+        className="operational-heading"
       />
       {!history && (
         <section className="panel start-attendance">
