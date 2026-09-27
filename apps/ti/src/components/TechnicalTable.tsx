@@ -11,9 +11,7 @@ export function TechnicalTable({
   children,
   className = "",
 }: TechnicalTableProps) {
-  const classes = ["table-wrap", "ti-technical-table", className]
-    .filter(Boolean)
-    .join(" ");
+  const classes = ["table-wrap", className].filter(Boolean).join(" ");
 
   return (
     <div className={classes} role="region" aria-label={label} tabIndex={0}>
