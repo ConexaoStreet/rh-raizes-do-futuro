@@ -778,7 +778,6 @@ input[type="radio"] {
   border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--paper);
-  box-shadow: 0 14px 34px rgba(32, 53, 43, .055);
 }
 .stat-label {
   display: flex;
@@ -833,7 +832,6 @@ input[type="radio"] {
   background: linear-gradient(100deg, #f5faf4, #fff);
 }
 .dashboard-priority-band {
-  box-shadow: 0 12px 30px rgba(34, 75, 57, .06);
 }
 .dashboard-priority-band:before {
   width: 4px;
@@ -874,7 +872,6 @@ input[type="radio"] {
 }
 .dashboard-insight-panel {
   border-radius: 22px;
-  box-shadow: 0 16px 42px rgba(32, 53, 43, .07);
 }
 .dashboard-insight-panel > .panel-heading {
   padding-top: 26px;
