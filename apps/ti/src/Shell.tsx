@@ -107,9 +107,6 @@ export function TiShell({
               <strong>{fullName}</strong>
               <span>{roles.join(" · ")}</span>
             </div>
-            <div className="operator-avatar" aria-hidden="true">
-              {fullName.slice(0, 1).toUpperCase()}
-            </div>
           </div>
         </header>
 
