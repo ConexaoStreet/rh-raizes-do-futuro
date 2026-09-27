@@ -57,6 +57,7 @@ test("TI theme cycles and persists", async ({ page }) => {
 });
 
 test("TI login switches access methods without submitting", async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem("raizes-ti-intro-seen", "1"));
   await page.goto("http://127.0.0.1:4174/", { waitUntil: "domcontentloaded" });
 
   const passwordTab = page.getByRole("tab", { name: "E-mail e senha" });
