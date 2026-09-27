@@ -79,7 +79,7 @@ test("TI login switches access methods without submitting", async ({ page }) => 
   await expect(page.locator(".login-submit")).toContainText("Entrar com código");
 
   await passwordTab.click();
-  await expect(page.getByLabel("E-mail")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "E-mail", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Esqueci minha senha" })).toBeVisible();
 });
 
