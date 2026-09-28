@@ -189,7 +189,6 @@ h2 {
 }
 h3 {
   font-size: 1rem;
-  font-weight: 700;
   line-height: 1.45;
   margin: 0 0 13px;
 }
@@ -790,14 +789,12 @@ input[type="radio"] {
 }
 .stat-label svg {
   color: #688274;
-  stroke-width: 1.8;
 }
 .stat > strong {
   display: block;
   margin-top: 10px;
   color: var(--ink);
   font: 770 2rem/1.05 "Manrope", Arial, sans-serif;
-  letter-spacing: -.05rem;
 }
 .stat-detail {
   margin-top: 7px;
@@ -1812,7 +1809,6 @@ td small {
   gap: 12px;
 }
 .setting-link-v2 {
-  width: 100%;
   min-height: 104px;
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) auto;
@@ -1821,7 +1817,6 @@ td small {
   margin: 0;
   padding: 16px;
   border-radius: 16px;
-  color: var(--ink);
   text-align: left;
   white-space: normal;
 }
