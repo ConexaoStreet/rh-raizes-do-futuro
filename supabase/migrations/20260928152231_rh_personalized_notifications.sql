@@ -210,14 +210,10 @@ as $$
 begin
   if new.profile_id is null then return new; end if;
 
-  if row(
-    new.full_name,new.social_name,new.email,new.phone,new.registration,new.class_id,
-    new.department_id,new.job_position_id,new.manager_id,new.expected_arrival,
-    new.expected_departure,new.status,new.photo_path,new.member_group,new.access_role_code
-  ) is distinct from row(
-    old.full_name,old.social_name,old.email,old.phone,old.registration,old.class_id,
-    old.department_id,old.job_position_id,old.manager_id,old.expected_arrival,
-    old.expected_departure,old.status,old.photo_path,old.member_group,old.access_role_code
+  if (
+    to_jsonb(new) - 'profile_id' - 'updated_at' - 'version'
+  ) is distinct from (
+    to_jsonb(old) - 'profile_id' - 'updated_at' - 'version'
   ) then
     perform private.rh_notify_employee(
       new.id,
