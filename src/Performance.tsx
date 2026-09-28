@@ -147,6 +147,11 @@ export default function Performance() {
           ).values(),
         );
 
+  const totalCriterionWeight = criteriaRows.reduce(
+    (sum, criterion) => sum + Number(criterion.weight || 0),
+    0,
+  );
+
   const reviewByCycle = new Map(reviews.map((review) => [review.cycle_id, review]));
   const cycleAverages = visibleCycles.map((cycle) =>
     weightedAverage(reviewByCycle.get(cycle.id)?.performance_scores || []),
@@ -301,18 +306,26 @@ export default function Performance() {
                       );
                       return (
                         <tr key={criterion.id}>
-                          <td>
+                          <td data-label="Competência">
                             <strong>{criterion.name}</strong>
-                            <small>Peso {number(criterion.weight, 1)}</small>
+                            <span className="badge grade-weight">
+                              Peso {number(criterion.weight, 1)}
+                              {totalCriterionWeight > 0
+                                ? ` · ${number((Number(criterion.weight) / totalCriterionWeight) * 100, 0)}% da média`
+                                : ""}
+                            </span>
                           </td>
                           {scores.map((score, index) => (
-                            <td key={visibleCycles[index].id}>
+                            <td
+                              key={visibleCycles[index].id}
+                              data-label={visibleCycles[index].title}
+                            >
                               <span className={score == null ? "grade-empty" : "grade-score"}>
                                 {number(score, 1)}
                               </span>
                             </td>
                           ))}
-                          <td>
+                          <td data-label="Média">
                             <strong className="grade-average">
                               {number(average(scores), 1)}
                             </strong>
@@ -325,7 +338,7 @@ export default function Performance() {
                         <strong>Média do período</strong>
                       </td>
                       {visibleCycles.map((cycle) => (
-                        <td key={cycle.id}>
+                        <td key={cycle.id} data-label={cycle.title}>
                           <strong>
                             {number(
                               weightedAverage(
@@ -336,7 +349,7 @@ export default function Performance() {
                           </strong>
                         </td>
                       ))}
-                      <td>
+                      <td data-label="Média geral">
                         <strong>{number(overallAverage, 1)}</strong>
                       </td>
                     </tr>
@@ -552,7 +565,7 @@ function ReviewForm({
               <div className="criterion-row" key={criterion.id}>
                 <label htmlFor={criterion.id}>
                   {criterion.name}
-                  <small>Peso {number(criterion.weight, 1)}</small>
+                  <small className="badge grade-weight">Peso {number(criterion.weight, 1)}</small>
                 </label>
                 <input
                   id={criterion.id}

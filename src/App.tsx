@@ -121,7 +121,9 @@ function Shell() {
           </button>
         </div>
         <div className="workspace-label">
-          <span className="workspace-icon">RH</span>
+          <span className="workspace-icon" aria-hidden="true">
+            <img src="/brand/raizes-logo-mark.png" alt="" width={25} height={25} />
+          </span>
           <div className="workspace-copy">
             <strong>Gestão de RH</strong>
             <small>Raízes do Futuro · Turma 16807</small>
