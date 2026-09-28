@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 
 const LaunchCeremony = lazy(() => import("./LaunchCeremony"));
 const PREVIEW_START_AT = Date.parse("2026-09-28T18:20:00-03:00");
-const PREVIEW_END_AT = Date.parse("2026-09-28T18:30:00-03:00");
+const PREVIEW_END_AT = Date.parse("2026-09-28T18:40:00-03:00");
 const START_AT = Date.parse("2026-09-29T08:00:00-03:00");
 const END_AT = Date.parse("2026-09-29T14:00:00-03:00");
 const SESSION_KEY = "raizes-inauguracao-2026-09-29";
