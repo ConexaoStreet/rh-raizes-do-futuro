@@ -122,7 +122,7 @@ Deno.serve(async (request) => {
       serviceRole,
       `registration-bootstrap:${body.action || "unknown"}`,
     );
-    const maxAttempts = body.action === "match" ? 8 : 30;
+    const maxAttempts = body.action === "match" ? 30 : 30;
     const windowSeconds = body.action === "match" ? 900 : 300;
     const { data: rateAllowed, error: rateError } = await admin.rpc(
       "consume_edge_rate_limit",
@@ -210,9 +210,12 @@ Deno.serve(async (request) => {
       );
       if (error) throw error;
 
-      const matches = (data || []).filter(
-        (employee) =>
-          normalizeName(employee.full_name) === submitted,
+      const eligible = (data || []).map((employee) => ({
+        ...employee,
+        normalized_name: normalizeName(employee.full_name),
+      }));
+      const matches = eligible.filter(
+        (employee) => employee.normalized_name === submitted,
       );
 
       if (matches.length === 1) {
@@ -237,14 +240,36 @@ Deno.serve(async (request) => {
           reason: "AMBIGUOUS_NAME",
         });
       }
+      const suggestions = Array.from(
+        new Set(
+          eligible
+            .filter(
+              (employee) =>
+                employee.normalized_name.startsWith(submitted) ||
+                employee.normalized_name.includes(` ${submitted}`),
+            )
+            .sort((left, right) => {
+              const leftStarts = left.normalized_name.startsWith(submitted) ? 0 : 1;
+              const rightStarts = right.normalized_name.startsWith(submitted) ? 0 : 1;
+              return (
+                leftStarts - rightStarts ||
+                left.full_name.localeCompare(right.full_name, "pt-BR")
+              );
+            })
+            .map((employee) => employee.full_name),
+        ),
+      ).slice(0, 5);
+
       observe("registration_bootstrap.match", {
-        outcome: "not_found",
+        outcome: suggestions.length ? "suggestions" : "not_found",
         status: 200,
+        suggestion_count: suggestions.length,
         latency_ms: Date.now() - startedAt,
       });
       return response(origin, {
         matched: false,
-        reason: "NOT_FOUND",
+        reason: suggestions.length ? "SUGGESTIONS" : "NOT_FOUND",
+        suggestions,
       });
     }
 
