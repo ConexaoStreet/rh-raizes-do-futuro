@@ -258,6 +258,7 @@ type RegistrationOptions = {
 type PreRegistrationMatch = {
   matched: boolean;
   canonical_name?: string;
+  suggestions?: string[];
   reason?: string;
 };
 
@@ -285,8 +286,8 @@ function usePreRegistrationMatch(name: string) {
   const [checking, setChecking] = useState(false);
   useEffect(() => {
     const clean = name.trim();
+    setResult(null);
     if (!configured) {
-      setResult(null);
       setChecking(false);
       return;
     }
@@ -310,7 +311,7 @@ function usePreRegistrationMatch(name: string) {
           setResult(null);
         })
         .finally(() => setChecking(false));
-    }, 450);
+    }, 350);
     return () => window.clearTimeout(timer);
   }, [name]);
   return { result, checking };
@@ -354,7 +355,7 @@ function Login({ configured: ready }: { configured: boolean }) {
   function continueSignupIdentity() {
     const email = signupDraft.email.trim().toLowerCase();
     if (!nameMatch.result?.matched) {
-      toast.error("Digite o nome completo exatamente como está no cadastro pré-existente.");
+      toast.error("Localize e selecione seu nome na lista de pré-cadastros.");
       setMascotMood("error");
       return;
     }
@@ -451,7 +452,7 @@ function Login({ configured: ready }: { configured: boolean }) {
           return;
         }
         if (!nameMatch.result?.matched) {
-          toast.error("Digite o nome completo exatamente como está no cadastro pré-existente.");
+          toast.error("Localize e selecione seu nome na lista de pré-cadastros.");
           setMascotMood("error");
           return;
         }
@@ -663,13 +664,32 @@ function Login({ configured: ready }: { configured: boolean }) {
                       <div className="notice">
                         Cadastro localizado: <strong>{nameMatch.result.canonical_name}</strong>
                       </div>
+                    ) : nameMatch.result?.suggestions?.length ? (
+                      <div className="notice">
+                        <strong>Encontramos estes pré-cadastros:</strong>
+                        <div className="actions">
+                          {nameMatch.result.suggestions.map((candidate) => (
+                            <button
+                              key={candidate}
+                              type="button"
+                              className="text-button"
+                              onClick={() => {
+                                setSignupName(candidate);
+                                setMascotMood("idle");
+                              }}
+                            >
+                              {candidate}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ) : signupName.trim().length >= 4 ? (
                       <span className="muted">
-                        Ainda não localizamos esse nome na base pré-cadastrada.
+                        Nenhum pré-cadastro parecido foi encontrado.
                       </span>
                     ) : (
                       <span className="muted">
-                        Digite seu nome completo para o sistema localizar seu cadastro.
+                        Digite pelo menos 4 letras do seu nome para localizar seu cadastro.
                       </span>
                     )}
                     <Field label="Gmail">
