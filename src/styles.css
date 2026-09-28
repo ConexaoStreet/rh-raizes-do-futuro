@@ -774,11 +774,10 @@ input[type="radio"] {
 }
 .stat {
   min-height: 116px;
-  padding: 18px 19px;
+  padding: 18px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--paper);
-  box-shadow: 0 8px 24px rgba(24, 58, 43, .045);
 }
 .stat-label {
   display: flex;
@@ -786,14 +785,10 @@ input[type="radio"] {
   justify-content: space-between;
   gap: 12px;
   color: var(--muted);
-  font-size: .73rem;
+  font-size: .74rem;
   font-weight: 700;
 }
 .stat-label svg {
-  box-sizing: content-box;
-  padding: 5px;
-  border-radius: 9px;
-  background: var(--rh-surface-raised);
   color: #688274;
   stroke-width: 1.8;
 }
@@ -819,7 +814,6 @@ input[type="radio"] {
   color: #c9ddd1;
 }
 .executive-metrics .stat-primary .stat-label svg {
-  background: rgba(255,255,255,.08);
   color: #d5eaa7;
 }
 .executive-metrics .stat-primary > strong {
@@ -1814,14 +1808,10 @@ td small {
 }
 .settings-intro {
   margin: -4px 0 16px;
-  padding: 20px 22px;
-  border: 1px solid #dbe5dc;
-  border-radius: 18px;
   background: linear-gradient(135deg, #f7faf7, #eef5ef);
 }
 .settings-intro h2 {
-  margin: 3px 0 5px;
-  font-size: 1.18rem;
+  margin-bottom: 5px;
 }
 .settings-intro p {
   margin: 0;
@@ -1833,58 +1823,45 @@ td small {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
-.setting-link {
-  min-height: 84px;
-  margin: 0;
-  white-space: normal;
-}
 .setting-link-v2 {
   width: 100%;
-  min-height: 108px;
+  min-height: 104px;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  padding: 17px 18px;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
   border-radius: 16px;
   color: var(--ink);
   text-align: left;
-  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-}
-.setting-link-v2:hover {
-  transform: translateY(-2px);
-  border-color: #c5d5c7;
-  box-shadow: 0 10px 26px rgba(24, 58, 43, .07);
+  white-space: normal;
 }
 .setting-link-number {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 11px;
   background: #183e30;
   color: #d7eaa9 !important;
-  font-size: .72rem;
+  font-size: .7rem;
   font-weight: 800;
-  letter-spacing: .04em;
 }
 .setting-link-copy {
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 .setting-link-copy strong {
   font-size: .88rem;
-  font-weight: 750;
 }
 .setting-link-copy small {
   color: var(--muted);
   font-size: .7rem;
-  line-height: 1.4;
 }
 .setting-link-arrow {
   color: #819b71 !important;
-  font-size: 1.12rem;
 }
 .role-cards {
   display: grid;
@@ -3521,8 +3498,7 @@ html[data-theme="dark"] .avatar {
 html[data-theme="dark"] .auth-page {
   background: #09120f;
 }
-html[data-theme="dark"] .auth-card,
-{
+html[data-theme="dark"] .auth-card {
   color: var(--ink);
 }
 html[data-theme="dark"] .notice {
