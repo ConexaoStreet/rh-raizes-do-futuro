@@ -1841,15 +1841,9 @@ td small {
   display: grid;
   gap: 3px;
 }
-.setting-link-copy strong {
-  font-size: .88rem;
-}
 .setting-link-copy small {
   color: var(--muted);
   font-size: .7rem;
-}
-.setting-link-arrow {
-  color: #819b71 !important;
 }
 .role-cards {
   display: grid;
