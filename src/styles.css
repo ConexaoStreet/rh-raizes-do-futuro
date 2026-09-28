@@ -4852,33 +4852,3 @@ html[data-theme="light"] .login-card .notice {
     animation: none !important;
   }
 }
-
-.launch-ceremony{position:fixed;inset:0;z-index:10000;min-height:100dvh;overflow:auto;display:grid;place-items:center;padding:54px 24px 70px;color:#f4faf5;background:radial-gradient(circle at 12% 16%,rgba(176,225,119,.13),transparent 27%),radial-gradient(circle at 85% 82%,rgba(73,151,104,.18),transparent 31%),linear-gradient(145deg,#06100b 0%,#0a1911 48%,#07120c 100%);isolation:isolate}
-.launch-ceremony::before{content:"";position:fixed;inset:0;z-index:-1;opacity:.11;background-image:linear-gradient(rgba(198,235,206,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(198,235,206,.2) 1px,transparent 1px);background-size:54px 54px;mask-image:radial-gradient(circle at center,#000 12%,transparent 75%)}
-.launch-ceremony::after{content:"";position:fixed;inset:18px;z-index:-1;border:1px solid rgba(197,230,205,.08);border-radius:28px;pointer-events:none}
-.launch-glow{position:fixed;z-index:-1;width:min(46vw,580px);aspect-ratio:1;border:1px solid rgba(185,223,120,.14);border-radius:50%;box-shadow:0 0 100px rgba(105,171,111,.08);animation:launchOrbit 14s ease-in-out infinite alternate}
-.launch-glow::after{content:"";position:absolute;inset:12%;border:1px solid rgba(184,222,155,.08);border-radius:inherit}
-.launch-glow-one{top:-25%;right:-11%}.launch-glow-two{bottom:-30%;left:-13%;animation-delay:-7s}
-.launch-card{width:min(100%,760px);padding:clamp(34px,6vw,62px);text-align:center;border:1px solid rgba(187,224,197,.14);border-radius:34px;background:linear-gradient(160deg,rgba(19,45,32,.84),rgba(7,19,13,.91));box-shadow:0 38px 120px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.035);backdrop-filter:blur(22px);animation:launchReveal .8s cubic-bezier(.2,.8,.2,1) both}
-.launch-badge{display:inline-flex;align-items:center;gap:11px;padding:8px 13px;border:1px solid rgba(185,223,120,.18);border-radius:999px;color:#bad49f;background:rgba(173,220,118,.06);font-size:.67rem;font-weight:850;letter-spacing:.16em}
-.launch-badge i{width:4px;height:4px;border-radius:50%;background:#b9df78;box-shadow:0 0 14px #b9df78}
-.launch-mark{position:relative;width:124px;height:124px;display:grid;place-items:center;margin:28px auto 18px;border-radius:36px;background:linear-gradient(145deg,rgba(185,223,120,.14),rgba(91,151,105,.05));border:1px solid rgba(192,231,158,.17);box-shadow:0 20px 55px rgba(0,0,0,.24)}
-.launch-mark span{position:absolute;inset:-10px;border:1px solid rgba(185,223,120,.12);border-radius:42px;animation:launchPulse 2.8s ease-in-out infinite}
-.launch-mark img{width:82px;height:82px;object-fit:contain;filter:drop-shadow(0 12px 24px rgba(0,0,0,.25))}
-.launch-kicker{margin:0;color:#8cab97;font-size:.72rem;font-weight:800;letter-spacing:.18em}
-.launch-card h1{max-width:680px;margin:14px auto 16px;font-size:clamp(2.55rem,7vw,5rem);line-height:.96;letter-spacing:-.065em;color:#f7fbf8}
-.launch-copy{max-width:620px;margin:0 auto;color:#a9beaf;font-size:clamp(.95rem,2vw,1.08rem);line-height:1.7}
-.launch-pill-row{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin:24px 0 28px}
-.launch-pill-row span{padding:7px 10px;border:1px solid rgba(171,210,183,.11);border-radius:999px;color:#87a593;background:rgba(255,255,255,.025);font-size:.62rem;font-weight:800;letter-spacing:.12em}
-.launch-metrics{display:grid;grid-template-columns:.82fr .82fr 1.35fr;gap:9px;margin:0 0 20px}
-.launch-metrics>div{min-height:83px;display:grid;align-content:center;gap:5px;padding:13px;text-align:left;border:1px solid rgba(181,215,191,.1);border-radius:17px;background:rgba(255,255,255,.025)}
-.launch-metrics small{color:#6f8e7b;font-size:.58rem;font-weight:850;letter-spacing:.12em}.launch-metrics strong{color:#eaf5ed;font-size:1.28rem;font-variant-numeric:tabular-nums}
-.launch-countdown{background:linear-gradient(135deg,rgba(185,223,120,.1),rgba(255,255,255,.02))!important}.launch-countdown strong{color:#c6e893;letter-spacing:.05em}
-.launch-enter{width:100%;min-height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 21px;border:1px solid rgba(210,239,172,.32);border-radius:16px;background:linear-gradient(135deg,#b9df78,#8fc49a);color:#0b1a11;font-size:.92rem;font-weight:900;box-shadow:0 18px 38px rgba(89,145,88,.2)}
-.launch-enter:hover{transform:translateY(-2px);filter:brightness(1.045)}.launch-enter b{font-size:1.35rem;font-weight:500}.launch-note{margin:13px 0 0;color:#657f6f;font-size:.69rem}
-.launch-signature{position:fixed;left:50%;bottom:27px;transform:translateX(-50%);margin:0;color:#536a5b;font-size:.58rem;font-weight:800;letter-spacing:.16em;white-space:nowrap}
-@keyframes launchReveal{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes launchOrbit{from{transform:translate3d(-10px,-6px,0) scale(.96)}to{transform:translate3d(14px,12px,0) scale(1.04)}}
-@keyframes launchPulse{0%,100%{opacity:.35;transform:scale(.96)}50%{opacity:.8;transform:scale(1.02)}}
-@media(max-width:640px){.launch-ceremony{padding:24px 14px 60px}.launch-ceremony::after{inset:8px;border-radius:22px}.launch-card{padding:30px 20px;border-radius:26px}.launch-mark{width:104px;height:104px;border-radius:30px}.launch-mark span{border-radius:35px}.launch-mark img{width:68px;height:68px}.launch-card h1{font-size:clamp(2.55rem,14vw,4.1rem)}.launch-metrics{grid-template-columns:1fr 1fr}.launch-countdown{grid-column:1/-1}.launch-signature{bottom:17px}}
-@media(prefers-reduced-motion:reduce){.launch-card,.launch-glow,.launch-mark span{animation:none!important}}
