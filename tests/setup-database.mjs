@@ -2,7 +2,11 @@ import fs from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 export async function createDatabase() {
   const db = new PGlite();
-  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create schema storage;
+  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create schema storage; create schema graphql_public; create schema vault;
+ create function graphql_public.graphql(text,text,jsonb,jsonb) returns jsonb language sql as $ select '{}'::jsonb $;
+ create table vault.secrets(id uuid primary key default gen_random_uuid(),secret text not null,name text unique not null,description text);
+ create table vault.decrypted_secrets(id uuid primary key,name text unique not null,decrypted_secret text not null);
+ create function vault.create_secret(secret text,name text,description text default '') returns uuid language plpgsql as $vault$ declare created_id uuid := gen_random_uuid(); begin insert into vault.secrets(id,secret,name,description) values(created_id,secret,name,description); insert into vault.decrypted_secrets(id,name,decrypted_secret) values(created_id,name,secret); return created_id; end $vault$;
  create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');
  create table auth.sessions(id uuid primary key,user_id uuid references auth.users(id),created_at timestamptz default now(),updated_at timestamptz default now(),not_after timestamptz);
  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claims',true)::jsonb->>'sub','')::uuid $$;
