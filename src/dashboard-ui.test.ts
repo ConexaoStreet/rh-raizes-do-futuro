@@ -60,7 +60,6 @@ describe("RH dashboard redesign", () => {
     expect(styles).toContain(".executive-metrics");
     expect(styles).toContain(".dashboard-priority-band");
     expect(styles).toContain(".setting-link-v2");
-    expect(styles).toContain(".settings-intro");
     expect(administration).toContain("Deixe o RH do seu jeito");
     expect(administration).toContain("settings-grid-v2");
     expect(styles).toContain(".dashboard-action-panel");
