@@ -28,9 +28,12 @@ describe("presentation launch ceremony", () => {
     );
   });
 
-  it("keeps ceremony styling outside the initial stylesheet", () => {
+  it("keeps the editorial ceremony lazy and branded", () => {
     expect(ceremony).toContain('import "./launch-ceremony.css"');
     expect(ceremony).toContain('/brand/raizes-logo-mark.png');
-    expect(visualStyles).toContain(".launch-ceremony");
+    expect(ceremony).toContain('className="lc__horizon"');
+    expect(ceremony).toContain("Hoje, o projeto");
+    expect(visualStyles).toContain(".lc__horizon");
+    expect(visualStyles).toContain(".lc__mask--num");
   });
 });
