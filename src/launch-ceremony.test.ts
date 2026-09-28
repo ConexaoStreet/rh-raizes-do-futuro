@@ -33,13 +33,14 @@ describe("presentation launch ceremony", () => {
     );
   });
 
-  it("assigns a stable theme and uses individual responsive artwork", () => {
-    expect(ceremony).toContain("raizes-inauguracao-theme-v3");
+  it("assigns a stable theme and renders responsive artwork as image content", () => {
+    expect(ceremony).toContain("raizes-inauguracao-theme-v4");
     expect(ceremony).toContain('params.get("tema")');
+    expect(ceremony).toContain("<picture");
+    expect(ceremony).toContain('media="(max-width: 760px)"');
     expect(ceremony).toContain("/launch/desktop-");
     expect(ceremony).toContain("/launch/mobile-");
-    expect(visualStyles).toContain("background-image: var(--lc-desktop-image)");
-    expect(visualStyles).toContain("background-image: var(--lc-mobile-image)");
-    expect(visualStyles).toContain("background-size: cover");
+    expect(visualStyles).toContain("object-fit: cover");
+    expect(visualStyles).toContain(".lc__picture");
   });
 });

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 import "./launch-ceremony.css";
 
 const THEME_COLOR = "#07110d";
-const THEME_KEY = "raizes-inauguracao-theme-v3";
+const THEME_KEY = "raizes-inauguracao-theme-v4";
 const EXIT_MS = 460;
 
 export interface LaunchCeremonyProps {
@@ -39,6 +38,7 @@ function chooseTheme() {
   } catch {
     void 0;
   }
+
   return next;
 }
 
@@ -52,6 +52,8 @@ export default function LaunchCeremony({
   const [theme] = useState(chooseTheme);
   const [leaving, setLeaving] = useState(false);
   const themeNumber = theme + 1;
+  const mobileSrc = `/launch/mobile-${themeNumber}.webp?v=4`;
+  const desktopSrc = `/launch/desktop-${themeNumber}.webp?v=4`;
 
   useEffect(() => {
     onEnterRef.current = onEnter;
@@ -109,11 +111,6 @@ export default function LaunchCeremony({
     );
   }, []);
 
-  const style = {
-    "--lc-desktop-image": `url("/launch/desktop-${themeNumber}.webp?v=3")`,
-    "--lc-mobile-image": `url("/launch/mobile-${themeNumber}.webp?v=3")`,
-  } as CSSProperties;
-
   return (
     <div
       className={leaving ? "lc lc--leaving" : "lc"}
@@ -121,7 +118,6 @@ export default function LaunchCeremony({
       aria-modal="true"
       aria-label="Inauguração do Raízes do Futuro"
       lang="pt-BR"
-      style={style}
     >
       <button
         type="button"
@@ -129,6 +125,20 @@ export default function LaunchCeremony({
         onClick={handleEnter}
         aria-label="Entrar no Raízes do Futuro"
       >
+        <picture className="lc__picture" aria-hidden="true">
+          <source media="(max-width: 760px)" srcSet={mobileSrc} />
+          <img
+            className="lc__image"
+            src={desktopSrc}
+            alt=""
+            decoding="async"
+            fetchPriority="high"
+            draggable={false}
+          />
+        </picture>
+
+        <span className="lc__shade" aria-hidden="true" />
+
         <span className="lc__sr">
           Raízes do Futuro. Gestão de RH. Hoje, o projeto ganha vida.
           Inauguração em 29 de setembro de 2026. Apresentação das 08:00 às

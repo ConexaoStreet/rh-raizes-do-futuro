@@ -1,6 +1,4 @@
 .lc {
-  --lc-desktop-image: none;
-  --lc-mobile-image: none;
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -27,29 +25,55 @@
 .lc__artboard {
   position: absolute;
   inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
   border: 0;
   border-radius: 0;
-  background-color: #07110d;
-  background-image: var(--lc-desktop-image);
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center;
+  background: #07110d;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
-.lc__artboard::after {
-  content: "";
+.lc__picture,
+.lc__image,
+.lc__shade {
   position: absolute;
   inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lc__picture {
+  overflow: hidden;
+}
+
+.lc__image {
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.lc__shade {
   background:
-    linear-gradient(180deg, rgba(3, 10, 7, 0.04), transparent 18%, transparent 82%, rgba(3, 10, 7, 0.1)),
-    radial-gradient(circle at 50% 44%, transparent 52%, rgba(2, 8, 5, 0.08) 100%);
+    linear-gradient(
+      180deg,
+      rgba(3, 10, 7, 0.02),
+      transparent 18%,
+      transparent 82%,
+      rgba(3, 10, 7, 0.08)
+    ),
+    radial-gradient(
+      circle at 50% 44%,
+      transparent 55%,
+      rgba(2, 8, 5, 0.06) 100%
+    );
   pointer-events: none;
 }
 
@@ -129,8 +153,8 @@
 }
 
 @media (max-width: 760px) {
-  .lc__artboard {
-    background-image: var(--lc-mobile-image);
+  .lc__image {
+    object-position: center center;
   }
 
   .lc__status {
