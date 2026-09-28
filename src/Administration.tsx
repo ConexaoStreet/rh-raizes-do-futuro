@@ -1130,7 +1130,7 @@ function SettingsPage() {
   return (
     <>
       <Heading title="Configurações" eyebrow="AJUSTES DO RH" />
-      <section className="settings-intro">
+      <section className="panel padded settings-intro">
         <div>
           <span className="eyebrow">TUDO EM UM LUGAR</span>
           <h2>Deixe o RH do seu jeito</h2>
