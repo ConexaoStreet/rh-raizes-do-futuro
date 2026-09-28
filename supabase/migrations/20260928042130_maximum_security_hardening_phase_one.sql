@@ -1,4 +1,3 @@
--- Maximum security hardening phase 1: backward-compatible database changes.
 
 create or replace function private.account_ready()
 returns boolean
