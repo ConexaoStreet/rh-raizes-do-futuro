@@ -37,6 +37,31 @@ function pickThemeIndex() {
   }
 }
 
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 56 12" aria-hidden="true">
+      <path d="M0 6h54M49 1l5 5-5 5" />
+    </svg>
+  );
+}
+
 export default function LaunchCeremony({
   remaining,
   onEnter,
@@ -155,44 +180,74 @@ export default function LaunchCeremony({
         />
       </picture>
 
-      <div className="lc__shade" aria-hidden="true" />
+      <div className="lc__veil" aria-hidden="true" />
 
-      <div className="lc__semantic">
-        <h1 id="lc-title">Hoje, o projeto ganha vida.</h1>
-        <p id="lc-desc">
-          Raízes do Futuro, Gestão de RH. Depois de planejamento,
-          desenvolvimento e muitas decisões, o Raízes do Futuro abre suas
-          portas em 29 de setembro de 2026, das 08:00 às 14:00. Espro,
-          Anhanguera, Turma 16807.
-        </p>
-      </div>
-
-      {imageFailed ? (
-        <div className="lc__fallback" aria-hidden="true">
+      <main className="lc__panel">
+        <div className="lc__brand">
           <img src="/brand/raizes-logo-mark.png" alt="" />
-          <p>Raízes do Futuro</p>
-          <h2>
-            Hoje, o projeto <em>ganha vida.</em>
-          </h2>
-          <span>29.09.2026 · 08:00 às 14:00</span>
+          <div>
+            <p>Raízes do Futuro</p>
+            <span>Gestão de RH</span>
+          </div>
         </div>
-      ) : null}
+
+        <div className="lc__ornament" aria-hidden="true">
+          <i />
+          <span />
+          <i />
+        </div>
+
+        <div className="lc__copy">
+          <p className="lc__eyebrow">Inauguração · 29.09.2026</p>
+          <h1 id="lc-title">
+            Hoje, o projeto
+            <em>ganha vida.</em>
+          </h1>
+          <p id="lc-desc">
+            Depois de planejamento, desenvolvimento e muitas decisões,
+            o Raízes do Futuro abre suas portas.
+          </p>
+        </div>
+
+        <div className="lc__event">
+          <div>
+            <CalendarIcon />
+            <span>29 / SET / 2026</span>
+          </div>
+          <div>
+            <ClockIcon />
+            <span>08:00 — 14:00</span>
+          </div>
+        </div>
+
+        <div className="lc__meta">
+          <span>Espro</span>
+          <i>·</i>
+          <span>Anhanguera</span>
+          <i>·</i>
+          <span>Turma 16807</span>
+        </div>
+
+        <button
+          ref={ctaRef}
+          type="button"
+          className="lc__cta"
+          onClick={handleEnter}
+          aria-label="Entrar no Raízes do Futuro"
+        >
+          <span>Entrar no Raízes</span>
+          <ArrowIcon />
+        </button>
+      </main>
 
       <div className="lc__timer" aria-label={`Tempo restante: ${remaining}`}>
         <span>Encerra em</span>
         <strong>{remaining}</strong>
       </div>
 
-      <button
-        ref={ctaRef}
-        type="button"
-        className="lc__cta-hit"
-        onClick={handleEnter}
-        aria-label="Entrar no Raízes do Futuro"
-        title="Entrar no Raízes"
-      >
-        <span className="lc__semantic">Entrar no Raízes do Futuro</span>
-      </button>
+      <div className="lc__theme-mark" aria-hidden="true">
+        Experiência {String(theme).padStart(2, "0")}
+      </div>
     </div>
   );
 }
