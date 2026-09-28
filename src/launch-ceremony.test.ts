@@ -32,8 +32,11 @@ describe("presentation launch ceremony", () => {
     expect(ceremony).toContain('import "./launch-ceremony.css"');
     expect(ceremony).toContain('/brand/raizes-logo-mark.png');
     expect(ceremony).toContain('className="lc__horizon"');
+    expect(ceremony).toContain('className="lc__mobile"');
+    expect(ceremony).toContain('className="lcm__title"');
     expect(ceremony).toContain("Hoje, o projeto");
     expect(visualStyles).toContain(".lc__horizon");
     expect(visualStyles).toContain(".lc__mask--num");
+    expect(visualStyles).toContain(".lcm__schedule");
   });
 });
