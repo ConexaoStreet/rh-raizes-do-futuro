@@ -766,52 +766,60 @@ input[type="radio"] {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 18px;
 }
 .executive-metrics {
-  grid-template-columns: minmax(230px, 1.25fr) repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(220px, 1.15fr) repeat(3, minmax(0, 1fr));
 }
 .stat {
-  min-height: 128px;
-  padding: 20px;
+  min-height: 116px;
+  padding: 18px 19px;
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 16px;
   background: var(--paper);
+  box-shadow: 0 8px 24px rgba(24, 58, 43, .045);
 }
 .stat-label {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   color: var(--muted);
-  font-size: .76rem;
+  font-size: .73rem;
+  font-weight: 700;
 }
 .stat-label svg {
-  color: #789181;
-  stroke-width: 1.7;
+  box-sizing: content-box;
+  padding: 5px;
+  border-radius: 9px;
+  background: var(--rh-surface-raised);
+  color: #688274;
+  stroke-width: 1.8;
 }
 .stat > strong {
   display: block;
-  margin-top: 13px;
+  margin-top: 10px;
   color: var(--ink);
-  font: 760 2.08rem/1.1 "Manrope", Arial, sans-serif;
-  letter-spacing: -.055rem;
+  font: 770 2rem/1.05 "Manrope", Arial, sans-serif;
+  letter-spacing: -.05rem;
 }
 .stat-detail {
-  margin-top: 9px;
+  margin-top: 7px;
   color: var(--muted);
-  font-size: .71rem;
+  font-size: .7rem;
 }
 .executive-metrics .stat.stat-primary {
   border-color: #285a45;
   background: linear-gradient(145deg, #163c2d, #245e4b);
-  box-shadow: 0 18px 42px rgba(21, 66, 48, .2);
+  box-shadow: 0 14px 34px rgba(21, 66, 48, .16);
 }
 .executive-metrics .stat-primary .stat-label,
 .executive-metrics .stat-primary .stat-detail {
   color: #c9ddd1;
 }
 .executive-metrics .stat-primary .stat-label svg {
+  background: rgba(255,255,255,.08);
   color: #d5eaa7;
 }
 .executive-metrics .stat-primary > strong {
@@ -819,7 +827,7 @@ input[type="radio"] {
 }
 .executive-metrics .stat.stat-attention {
   border-color: color-mix(in srgb, var(--rh-warning) 32%, var(--line));
-  background: color-mix(in srgb, var(--rh-warning) 9%, var(--paper));
+  background: color-mix(in srgb, var(--rh-warning) 7%, var(--paper));
 }
 .attendance-banner {
   display: flex;
@@ -1804,27 +1812,79 @@ td small {
 .calendar-panel .table-toolbar h2 {
   text-transform: capitalize;
 }
+.settings-intro {
+  margin: -4px 0 16px;
+  padding: 20px 22px;
+  border: 1px solid #dbe5dc;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f7faf7, #eef5ef);
+}
+.settings-intro h2 {
+  margin: 3px 0 5px;
+  font-size: 1.18rem;
+}
+.settings-intro p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .8rem;
+}
 .settings-links {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 .setting-link {
   min-height: 84px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin: 0;
-  padding: 18px;
-  border-radius: 12px;
-  font-size: .86rem;
   white-space: normal;
 }
-.setting-link strong {
-  font-weight: 550;
+.setting-link-v2 {
+  width: 100%;
+  min-height: 108px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 17px 18px;
+  border-radius: 16px;
+  color: var(--ink);
+  text-align: left;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
-.setting-link > span {
-  color: #9db480;
+.setting-link-v2:hover {
+  transform: translateY(-2px);
+  border-color: #c5d5c7;
+  box-shadow: 0 10px 26px rgba(24, 58, 43, .07);
+}
+.setting-link-number {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #183e30;
+  color: #d7eaa9 !important;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.setting-link-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.setting-link-copy strong {
+  font-size: .88rem;
+  font-weight: 750;
+}
+.setting-link-copy small {
+  color: var(--muted);
+  font-size: .7rem;
+  line-height: 1.4;
+}
+.setting-link-arrow {
+  color: #819b71 !important;
+  font-size: 1.12rem;
 }
 .role-cards {
   display: grid;
