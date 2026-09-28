@@ -9,7 +9,7 @@ export async function createDatabase() {
  create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
  grant usage on schema auth to authenticated,anon,service_role; grant execute on all functions in schema auth to authenticated,anon,service_role;
  create schema graphql_public;
- create function graphql_public.graphql(text,text,jsonb,jsonb) returns jsonb language sql as $ select '{}'::jsonb $;
+ create function graphql_public.graphql(text,text,jsonb,jsonb) returns jsonb language sql as 'select ''{}''::jsonb';
  grant usage on schema graphql_public to anon,authenticated,service_role;
  grant execute on function graphql_public.graphql(text,text,jsonb,jsonb) to anon,authenticated,service_role;
  create schema vault;
