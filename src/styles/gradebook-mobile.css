@@ -1,0 +1,60 @@
+/* Mobile-first gradebook and identity overrides */
+.workspace-icon {
+  overflow: hidden;
+}
+.workspace-icon img {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+}
+.grade-weight {
+  display: block;
+  width: fit-content;
+  margin-top: 5px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(36, 94, 75, .08);
+  color: var(--green);
+  font-size: .61rem;
+  font-weight: 750;
+}
+@media (max-width: 560px) {
+  .gradebook-scroll { border: 0; overflow: visible; }
+  .gradebook-table, .gradebook-table tbody { display: block; }
+  .gradebook-table thead { display: none; }
+  .gradebook-table tbody { display: grid; gap: 10px; }
+  .gradebook-table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+  }
+  .gradebook-table td,
+  .gradebook-table td:first-child {
+    min-width: 0;
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 13px;
+    background: transparent;
+    border-bottom: 1px solid var(--line);
+  }
+  .gradebook-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: .65rem;
+    font-weight: 700;
+  }
+  .gradebook-table td:first-child {
+    grid-column: 1 / -1;
+    display: block;
+    padding: 14px;
+    background: var(--soft);
+  }
+  .gradebook-table td:first-child::before { display: none; }
+  .gradebook-final-row { border-color: rgba(36, 94, 75, .24) !important; }
+}
