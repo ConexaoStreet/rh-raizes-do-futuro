@@ -1,6 +1,0 @@
-.grade-weight{margin-top:5px}
-@media(max-width:560px){
-.gradebook-scroll{border:0}
-.gradebook-table th:first-child,.gradebook-table td:first-child{position:static;min-width:0}
-.gradebook-table td:first-child{background:var(--soft)}
-}
