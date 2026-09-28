@@ -21,6 +21,7 @@ import {
   ChevronsUpDown,
 } from "lucide-react";
 import { AuthBoundary, useAuth } from "./auth";
+import { LaunchCeremony } from "./LaunchCeremony";
 import { client, rpc, runAction, useAsync, useDebounce } from "./api";
 import { Brand, Loading, Modal } from "./components";
 import { captureNavigation } from "./telemetry";
@@ -47,9 +48,11 @@ type InstallPromptEvent = Event & {
 
 export default function App() {
   return (
-    <AuthBoundary>
-      <Shell />
-    </AuthBoundary>
+    <LaunchCeremony>
+      <AuthBoundary>
+        <Shell />
+      </AuthBoundary>
+    </LaunchCeremony>
   );
 }
 function Guard({
