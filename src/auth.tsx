@@ -565,7 +565,7 @@ function Login({ configured: ready }: { configured: boolean }) {
           <h1>Gestão de RH.</h1>
           <p>
             Presença, desenvolvimento, feedbacks, avaliações e acompanhamento
-            da turma em um ambiente único, seguro e responsivo.
+            da turma em um ambiente único.
           </p>
         </div>
         <div className="login-brand-foot">RH · ANHANGUERA / ESPRO</div>
