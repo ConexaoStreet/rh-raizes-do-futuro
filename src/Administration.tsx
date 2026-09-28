@@ -1116,37 +1116,54 @@ function SettingsPage() {
     return data;
   }, []);
   const links = [
-    ["turmas", "Turmas"],
-    ["areas", "Áreas"],
-    ["funcoes", "Funções"],
-    ["gestores", "Gestores"],
-    ["categorias", "Tipos de justificativa"],
-    ["criterios", "Critérios e pesos"],
-    ["ciclos", "Ciclos de notas"],
-    ["criterios-gestao", "Critérios da gestão"],
-    ["eventos", "Eventos"],
+    ["turmas", "Turmas", "Organize a turma e os grupos."],
+    ["areas", "Áreas", "Separe o RH por áreas."],
+    ["funcoes", "Funções", "Cadastre as funções usadas."],
+    ["gestores", "Gestores", "Defina quem acompanha a turma."],
+    ["categorias", "Tipos de justificativa", "Escolha os motivos de falta."],
+    ["criterios", "Critérios e pesos", "Ajuste como as notas são calculadas."],
+    ["ciclos", "Ciclos de notas", "Organize os períodos de avaliação."],
+    ["criterios-gestao", "Critérios da gestão", "Defina o que será avaliado."],
+    ["eventos", "Eventos", "Datas importantes e atividades."],
   ];
   const row = data.data?.find((r) => r.key === editing);
   return (
     <>
-      <Heading title="Configurações" eyebrow="GESTÃO DE RH" />
-      <div className="settings-links">
-        {links.map(([path, title]) => (
+      <Heading title="Configurações" eyebrow="AJUSTES DO RH" />
+      <section className="panel padded settings-intro">
+        <div>
+          <span className="eyebrow">TUDO EM UM LUGAR</span>
+          <h2>Deixe o RH do seu jeito</h2>
+          <p>Entre no que quiser mudar. O resto continua como está.</p>
+        </div>
+      </section>
+      <div className="settings-links settings-grid-v2">
+        {links.map(([path, title, description], index) => (
           <Link
             to={`/configuracoes/${path}`}
-            className="panel setting-link"
+            className="panel setting-link setting-link-v2"
             key={path}
           >
-            <strong>{title}</strong>
-            <span>→</span>
+            <span className="setting-link-number">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <span className="setting-link-copy">
+              <strong>{title}</strong>
+              <small>{description}</small>
+            </span>
+            <span className="setting-link-arrow" aria-hidden="true">→</span>
           </Link>
         ))}
         <button
-          className="panel setting-link"
+          className="panel setting-link setting-link-v2"
           onClick={() => setEditing("lateness")}
         >
-          <strong>Limites de atraso</strong>
-          <span>→</span>
+          <span className="setting-link-number">10</span>
+          <span className="setting-link-copy">
+            <strong>Limites de atraso</strong>
+            <small>Escolha quando o atraso fica leve ou moderado.</small>
+          </span>
+          <span className="setting-link-arrow" aria-hidden="true">→</span>
         </button>
       </div>
       {row && (

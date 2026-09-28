@@ -131,9 +131,9 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
             aria-hidden="true"
           />
           <div className="raizes-hero-copy">
-            <span className="eyebrow">TURMA 16807 · VISÃO DO RH</span>
-            <h2>O que precisa da sua atenção hoje.</h2>
-            <p>Presença, atrasos, notas e pendências reunidos para você agir sem procurar informação em várias telas.</p>
+            <span className="eyebrow">RH · TURMA 16807</span>
+            <h2>Raizes Do Futuro</h2>
+            <p>Datasul desenvolvido para Gestão Do Rh</p>
           </div>
         </section>
       )}
@@ -170,11 +170,11 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                     ? "-"
                     : `${number(stats.punctuality_rate, 1)}%`
                 }
-                detail={`${stats.late} registros com atraso`}
+                detail={`${stats.late} atrasos no período`}
                 icon={<Clock3 size={18} />}
               />
               <Stat
-                title="Média das notas"
+                title="Média de notas"
                 value={number(stats.performance_average, 1)}
                 detail="Escala de 0 a 10"
                 icon={<ArrowUpRight size={18} />}
@@ -183,8 +183,8 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
             <div className="notice maintenance-notice">
               <TriangleAlert size={19} />
               <div>
-                <strong>Base histórica importada</strong>
-                <span>Os registros antigos representam ocorrências lançadas na planilha, não uma chamada completa. Ausência na planilha não significa presença confirmada.</span>
+                <strong>Importante sobre o histórico</strong>
+                <span>Os dados antigos vieram da planilha. Se um nome não aparece em um dia, isso não quer dizer que a pessoa estava presente.</span>
               </div>
             </div>
             <section className="attendance-banner dashboard-priority-band">
@@ -203,7 +203,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
             <div className="dashboard-grid">
               <section className="panel chart-panel dashboard-insight-panel">
                 <div className="panel-heading">
-                  <h2>Presença no período</h2>
+                  <h2>Presenças e faltas</h2>
                   <div className="legend">
                     <span className="legend-present">Presenças</span>
                     <span className="legend-absent">Faltas</span>
@@ -291,7 +291,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                     <FileBadge />
                   </span>
                   <div>
-                    Justificativas<small>Aguardando análise</small>
+                    Justificativas<small>Para revisar</small>
                   </div>
                   <strong>{data.data?.justifications}</strong>
                   <ArrowUpRight size={17} />
@@ -301,7 +301,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                     <Users size={18} />
                   </span>
                   <div>
-                    Feedbacks<small>Em acompanhamento</small>
+                    Feedbacks<small>Em andamento</small>
                   </div>
                   <strong>{data.data?.feedbacks}</strong>
                   <ArrowUpRight size={17} />
@@ -311,7 +311,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                     <ClipboardCheck size={18} />
                   </span>
                   <div>
-                    Chamada<small>Registros não preenchidos</small>
+                    Chamada<small>Ainda sem resposta</small>
                   </div>
                   <strong>{stats.pending}</strong>
                   <ArrowUpRight size={17} />
@@ -359,7 +359,7 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 )}
               </section>
               <section className="panel period-comparison">
-                <h2>Comparação com o período anterior</h2>
+                <h2>Comparar com o período anterior</h2>
                 <div>
                   <span>Presenças</span>
                   <strong>

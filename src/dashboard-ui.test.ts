@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const dashboard = readFileSync("src/Dashboard.tsx", "utf8");
 const styles = readFileSync("src/styles.css", "utf8");
+const administration = readFileSync("src/Administration.tsx", "utf8");
 
 describe("RH dashboard redesign", () => {
   it("preserves the dashboard data contracts", () => {
@@ -19,7 +20,7 @@ describe("RH dashboard redesign", () => {
       "Colaboradores ativos",
       "Presença",
       "Pontualidade",
-      "Média das notas",
+      "Média de notas",
     ]) {
       expect(dashboard).toContain(`title="${label}"`);
     }
@@ -54,10 +55,13 @@ describe("RH dashboard redesign", () => {
     expect(dashboard).toContain('className="panel chart-panel dashboard-insight-panel"');
     expect(dashboard).toContain('className="panel pending-panel dashboard-action-panel"');
     expect(dashboard).toContain('className="dashboard-bottom editorial-support-grid"');
-    expect(dashboard).toContain("O que precisa da sua atenção hoje.");
-    expect(dashboard).toContain("Presença, atrasos, notas e pendências");
+    expect(dashboard).toContain("Raizes Do Futuro");
+    expect(dashboard).toContain("Datasul desenvolvido para Gestão Do Rh");
     expect(styles).toContain(".executive-metrics");
     expect(styles).toContain(".dashboard-priority-band");
+    expect(styles).toContain(".setting-link-v2");
+    expect(administration).toContain("Deixe o RH do seu jeito");
+    expect(administration).toContain("settings-grid-v2");
     expect(styles).toContain(".dashboard-action-panel");
   });
 
