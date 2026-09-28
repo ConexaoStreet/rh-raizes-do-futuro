@@ -54,10 +54,12 @@ describe("RH dashboard redesign", () => {
     expect(dashboard).toContain('className="panel chart-panel dashboard-insight-panel"');
     expect(dashboard).toContain('className="panel pending-panel dashboard-action-panel"');
     expect(dashboard).toContain('className="dashboard-bottom editorial-support-grid"');
-    expect(dashboard).toContain("O que precisa da sua atenção hoje.");
-    expect(dashboard).toContain("Presença, atrasos, notas e pendências");
+    expect(dashboard).toContain("Raizes Do Futuro");
+    expect(dashboard).toContain("Datasul desenvolvido para Gestão Do Rh");
     expect(styles).toContain(".executive-metrics");
     expect(styles).toContain(".dashboard-priority-band");
+    expect(styles).toContain(".setting-link-v2");
+    expect(styles).toContain(".settings-intro");
     expect(styles).toContain(".dashboard-action-panel");
   });
 
