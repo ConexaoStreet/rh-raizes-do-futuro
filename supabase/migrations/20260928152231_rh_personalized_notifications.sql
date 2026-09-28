@@ -243,12 +243,10 @@ security definer
 set search_path=''
 as $$
 begin
-  if row(
-    new.full_name,new.email,new.phone,new.registration,new.status,
-    new.requested_department_id,new.requested_role_code,new.espro_photo_status
-  ) is distinct from row(
-    old.full_name,old.email,old.phone,old.registration,old.status,
-    old.requested_department_id,old.requested_role_code,old.espro_photo_status
+  if (
+    to_jsonb(new) - 'last_seen_at' - 'updated_at' - 'version'
+  ) is distinct from (
+    to_jsonb(old) - 'last_seen_at' - 'updated_at' - 'version'
   ) then
     perform private.rh_notify_profile(
       new.id,
