@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 
 const LaunchCeremony = lazy(() => import("./LaunchCeremony"));
+const PREVIEW_START_AT = Date.parse("2026-09-28T17:55:00-03:00");
+const PREVIEW_END_AT = Date.parse("2026-09-28T18:00:00-03:00");
 const START_AT = Date.parse("2026-09-29T08:00:00-03:00");
 const END_AT = Date.parse("2026-09-29T14:00:00-03:00");
 const SESSION_KEY = "raizes-inauguracao-2026-09-29";
@@ -26,22 +28,33 @@ function remainingLabel(milliseconds: number) {
 export function PresentationGate({ children }: { children: ReactNode }) {
   const [now, setNow] = useState(() => Date.now());
   const [dismissed, setDismissed] = useState(seenInSession);
+  const previewRequested =
+    new URLSearchParams(window.location.search).get("inauguracao") ===
+    "preview";
+
+  const preview =
+    previewRequested && now >= PREVIEW_START_AT && now < PREVIEW_END_AT;
+  const official = now >= START_AT && now < END_AT;
+  const active = preview || official;
 
   useEffect(() => {
     if (now >= END_AT) return;
-    const delay =
-      now < START_AT
-        ? Math.min(Math.max(START_AT - now, 250), 60000)
-        : 1000;
+
+    const boundaries = [
+      previewRequested ? PREVIEW_START_AT : Number.POSITIVE_INFINITY,
+      previewRequested ? PREVIEW_END_AT : Number.POSITIVE_INFINITY,
+      START_AT,
+      END_AT,
+    ].filter((time) => time > now);
+
+    const nextBoundary = Math.min(...boundaries);
+    const delay = active
+      ? Math.min(1000, Math.max(nextBoundary - now, 50))
+      : Math.min(Math.max(nextBoundary - now, 50), 60000);
+
     const timer = window.setTimeout(() => setNow(Date.now()), delay);
     return () => window.clearTimeout(timer);
-  }, [now]);
-
-  const preview =
-    now < START_AT &&
-    new URLSearchParams(window.location.search).get("inauguracao") ===
-      "preview";
-  const active = preview || (now >= START_AT && now < END_AT);
+  }, [active, now, previewRequested]);
 
   if (!active || dismissed) return <>{children}</>;
 
@@ -54,9 +67,11 @@ export function PresentationGate({ children }: { children: ReactNode }) {
     setDismissed(true);
   };
 
+  const endsAt = preview ? PREVIEW_END_AT : END_AT;
+
   return (
     <Suspense fallback={null}>
-      <LaunchCeremony remaining={remainingLabel(END_AT - now)} onEnter={enter} />
+      <LaunchCeremony remaining={remainingLabel(endsAt - now)} onEnter={enter} />
     </Suspense>
   );
 }
