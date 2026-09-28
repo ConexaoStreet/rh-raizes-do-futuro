@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { withSupabase } from "npm:@supabase/server";
+import { isBrazilRequest } from "../_shared/request-security.ts";
 
 type StorageBucket = {
   id: string;
@@ -92,6 +93,7 @@ Deno.serve(
       request.headers.get("origin") ||
       "https://ti-raizes-do-futuro.vercel.app";
     if (!ORIGINS.has(origin)) return new Response(null, { status: 403 });
+    if (!isBrazilRequest(request)) return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,

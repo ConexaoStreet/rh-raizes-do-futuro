@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { observe, observeError } from "../_shared/observability.ts";
+import { isBrazilRequest, requestFingerprint } from "../_shared/request-security.ts";
 
 const ALLOWED_ORIGINS = new Set([
   "https://ti-raizes-do-futuro.vercel.app",
@@ -80,6 +81,14 @@ Deno.serve(async (request) => {
   }
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers: cors(origin) });
+  if (!isBrazilRequest(request)) {
+    observe("ti_code_login.request", {
+      outcome: "denied_country",
+      status: 403,
+      latency_ms: Date.now() - startedAt,
+    });
+    return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
+  }
   if (request.method !== "POST") {
     observe("ti_code_login.request", {
       outcome: "method_not_allowed",
@@ -107,21 +116,19 @@ Deno.serve(async (request) => {
       claim_token?: string;
     };
 
+    const serviceRole = required("SUPABASE_SERVICE_ROLE_KEY");
     const admin = createClient(
       required("SUPABASE_URL"),
-      required("SUPABASE_SERVICE_ROLE_KEY"),
+      serviceRole,
       { auth: { persistSession: false, autoRefreshToken: false } },
     );
 
     if (body.action === "login") {
       const input = String(body.code || "").trim();
-      const forwarded =
-        request.headers.get("x-forwarded-for") ||
-        request.headers.get("cf-connecting-ip") ||
-        "unknown";
-      const userAgent = request.headers.get("user-agent") || "unknown";
-      const fingerprint = await sha256(
-        forwarded.split(",")[0].trim() + "|" + userAgent,
+      const fingerprint = await requestFingerprint(
+        request,
+        serviceRole,
+        "ti-code-login",
       );
 
       const randomBytes = new Uint8Array(32);

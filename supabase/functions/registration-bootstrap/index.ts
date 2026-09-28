@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { observe, observeError } from "../_shared/observability.ts";
+import { isBrazilRequest, requestFingerprint } from "../_shared/request-security.ts";
 
 const PROD_ORIGIN = "https://rh-raizes-do-futuro.vercel.app";
 
@@ -71,6 +72,14 @@ Deno.serve(async (request) => {
     });
     return new Response(null, { status: 403 });
   }
+  if (!isBrazilRequest(request)) {
+    observe("registration_bootstrap.request", {
+      outcome: "denied_country",
+      status: 403,
+      latency_ms: Date.now() - startedAt,
+    });
+    return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
+  }
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: cors(origin) });
   }
@@ -107,6 +116,32 @@ Deno.serve(async (request) => {
     const admin = createClient(url, serviceRole, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    const fingerprint = await requestFingerprint(
+      request,
+      serviceRole,
+      `registration-bootstrap:${body.action || "unknown"}`,
+    );
+    const maxAttempts = body.action === "match" ? 8 : 30;
+    const windowSeconds = body.action === "match" ? 900 : 300;
+    const { data: rateAllowed, error: rateError } = await admin.rpc(
+      "consume_edge_rate_limit",
+      {
+        rate_scope: `registration-bootstrap:${body.action || "unknown"}`,
+        fingerprint_hash: fingerprint,
+        max_attempts: maxAttempts,
+        window_seconds: windowSeconds,
+      },
+    );
+    if (rateError) throw rateError;
+    if (rateAllowed !== true) {
+      observe("registration_bootstrap.request", {
+        outcome: "rate_limited",
+        status: 429,
+        latency_ms: Date.now() - startedAt,
+      });
+      return response(origin, { error: "RATE_LIMITED" }, 429);
+    }
 
     if (body.action === "options") {
       const [classResult, departmentResult] = await Promise.all([

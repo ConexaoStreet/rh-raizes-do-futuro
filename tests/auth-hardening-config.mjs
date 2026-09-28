@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -108,5 +109,44 @@ const planLimited = run(
 assert.equal(planLimited.status, 0, planLimited.stderr);
 assert.match(planLimited.stdout, /could not be enabled/);
 assert.match(planLimited.stdout, /"leaked_password_protection":false/);
+
+const supabaseConfig = fs.readFileSync(
+  fileURLToPath(new URL("../supabase/config.toml", import.meta.url)),
+  "utf8",
+);
+for (const functionName of [
+  "datasul-bridge",
+  "platform-bridge",
+  "profile-photo-verify",
+  "ti-admin-bridge",
+]) {
+  assert.match(
+    supabaseConfig,
+    new RegExp(
+      `\\[functions\\.${functionName.replaceAll("-", "\\-")}\\]\\s+verify_jwt\\s*=\\s*true`,
+    ),
+    `${functionName} must remain protected by Supabase JWT verification.`,
+  );
+}
+
+for (const relativePath of ["../vercel.json", "../apps/ti/vercel.json"]) {
+  const config = JSON.parse(
+    fs.readFileSync(fileURLToPath(new URL(relativePath, import.meta.url)), "utf8"),
+  );
+  const catchAll = config.headers.find((entry) => entry.source === "/(.*)");
+  assert.ok(catchAll, `${relativePath} must define catch-all security headers.`);
+  const securityHeaders = new Map(
+    catchAll.headers.map((entry) => [entry.key, entry.value]),
+  );
+  assert.equal(
+    securityHeaders.get("Strict-Transport-Security"),
+    "max-age=31536000; includeSubDomains",
+  );
+  assert.equal(securityHeaders.get("X-Frame-Options"), "DENY");
+  assert.equal(
+    securityHeaders.get("Content-Security-Policy"),
+    "frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+  );
+}
 
 console.log("Auth hardening configuration checks passed.");
