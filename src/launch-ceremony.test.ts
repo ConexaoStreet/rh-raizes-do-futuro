@@ -28,15 +28,22 @@ describe("presentation launch ceremony", () => {
     );
   });
 
-  it("keeps the editorial ceremony lazy and branded", () => {
-    expect(ceremony).toContain('import "./launch-ceremony.css"');
-    expect(ceremony).toContain('/brand/raizes-logo-mark.png');
-    expect(ceremony).toContain('className="lc__horizon"');
-    expect(ceremony).toContain('className="lc__mobile"');
-    expect(ceremony).toContain('className="lcm__title"');
-    expect(ceremony).toContain("Hoje, o projeto");
-    expect(visualStyles).toContain(".lc__horizon");
-    expect(visualStyles).toContain(".lc__mask--num");
-    expect(visualStyles).toContain(".lcm__schedule");
+  it("assigns one stable paired artwork theme per browser", () => {
+    expect(ceremony).toContain("raizes-inauguracao-theme-2026");
+    expect(ceremony).toContain("THEME_COUNT = 5");
+    expect(ceremony).toContain("/brand/inauguracao/mobile-");
+    expect(ceremony).toContain("/brand/inauguracao/desktop-");
+    expect(ceremony).toContain("<picture");
+    expect(ceremony).toContain('className="lc__cta-hit"');
+    expect(visualStyles).toContain(".lc__art");
+    expect(visualStyles).toContain('.lc[data-theme="5"] .lc__cta-hit');
+  });
+
+  it("keeps a functional accessible layer above the artwork", () => {
+    expect(ceremony).toContain('aria-label="Entrar no Raízes do Futuro"');
+    expect(ceremony).toContain("Tempo restante:");
+    expect(ceremony).toContain('aria-labelledby="lc-title"');
+    expect(visualStyles).toContain(".lc__semantic");
+    expect(visualStyles).toContain("@media (prefers-reduced-motion: reduce)");
   });
 });
