@@ -1,4 +1,4 @@
-# HANDOFF — CONTINUAR EXATAMENTE DAQUI — 28/09/2026
+# HANDOFF - CONTINUAR EXATAMENTE DAQUI - 28/09/2026
 
 > **INSTRUÇÃO OBRIGATÓRIA PARA O PRÓXIMO CHAT**
 >
@@ -50,7 +50,7 @@ Já foram mapeados:
 
 Não repetir esse inventário.
 
-## 2. Boletim / Pesos — estado atual
+## 2. Boletim / Pesos - estado atual
 
 Arquivo principal:
 - `src/Performance.tsx`
@@ -127,7 +127,7 @@ Consequência:
 - não usar templates de T.I. para colaboradores;
 - não afirmar que Gmail é o provedor do backend: o requisito é “chegar no Gmail/e-mail do usuário”; o canal transacional deve continuar via Resend/Supabase.
 
-## 5. Supabase — estado real
+## 5. Supabase - estado real
 
 Tabelas públicas possuem RLS habilitado.
 Edge Functions ativas incluíam:
@@ -160,7 +160,7 @@ RLS relevante já conferida:
 - feedback só fica visível ao colaborador quando liberado;
 - push subscriptions só são manipuláveis pelo próprio usuário.
 
-## 6. ACHADO ALTO — DRIFT DE MIGRATIONS
+## 6. ACHADO ALTO - DRIFT DE MIGRATIONS
 
 **IMPORTANTE: produção tem migrations aplicadas que NÃO existem no `main` do GitHub.**
 
@@ -196,7 +196,7 @@ Busca por padrões perigosos:
 
 ---
 
-# PONTO EXATO DE CONTINUAÇÃO — NÃO RECOMEÇAR
+# PONTO EXATO DE CONTINUAÇÃO - NÃO RECOMEÇAR
 
 A varredura parou **exatamente na auditoria estrutural final do Supabase**.
 
@@ -293,7 +293,7 @@ Excluir:
 
 ---
 
-# REQUISITOS DE UI — BOLETIM
+# REQUISITOS DE UI - BOLETIM
 
 Principalmente em <=560px:
 - abandonar sensação de “tabela desktop espremida”;
@@ -308,7 +308,7 @@ Principalmente em <=560px:
 
 ---
 
-# REQUISITOS DE UI — CARDS / IDENTIDADE
+# REQUISITOS DE UI - CARDS / IDENTIDADE
 
 Alvo explícito da imagem:
 ```tsx
