@@ -3,9 +3,8 @@ import type { CSSProperties } from "react";
 import "./launch-ceremony.css";
 
 const THEME_COLOR = "#07110d";
-const THEME_KEY = "raizes-inauguracao-theme-v2";
+const THEME_KEY = "raizes-inauguracao-theme-v3";
 const EXIT_MS = 460;
-const POSITIONS = ["0%", "25%", "50%", "75%", "100%"] as const;
 
 export interface LaunchCeremonyProps {
   remaining: string;
@@ -52,6 +51,7 @@ export default function LaunchCeremony({
   const exitTimer = useRef<number | undefined>(undefined);
   const [theme] = useState(chooseTheme);
   const [leaving, setLeaving] = useState(false);
+  const themeNumber = theme + 1;
 
   useEffect(() => {
     onEnterRef.current = onEnter;
@@ -110,7 +110,8 @@ export default function LaunchCeremony({
   }, []);
 
   const style = {
-    "--lc-theme-position": POSITIONS[theme],
+    "--lc-desktop-image": `url("/launch/desktop-${themeNumber}.webp?v=3")`,
+    "--lc-mobile-image": `url("/launch/mobile-${themeNumber}.webp?v=3")`,
   } as CSSProperties;
 
   return (
