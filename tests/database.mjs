@@ -588,6 +588,47 @@ async function service(sql, params = []) {
   await db.exec("set role service_role");
   return db.query(sql, params);
 }
+await test("Rate limit de Edge Function bloqueia a terceira chamada na janela", async () => {
+  const fingerprint = "a".repeat(64);
+  assert.equal(
+    await value(
+      await service(
+        "select public.consume_edge_rate_limit($1,$2,$3,$4)",
+        ["security-test", fingerprint, 2, 60],
+      ),
+    ),
+    true,
+  );
+  assert.equal(
+    await value(
+      await service(
+        "select public.consume_edge_rate_limit($1,$2,$3,$4)",
+        ["security-test", fingerprint, 2, 60],
+      ),
+    ),
+    true,
+  );
+  assert.equal(
+    await value(
+      await service(
+        "select public.consume_edge_rate_limit($1,$2,$3,$4)",
+        ["security-test", fingerprint, 2, 60],
+      ),
+    ),
+    false,
+  );
+});
+
+await test("Authenticated não executa rate limiter reservado ao service role", async () =>
+  blocked(
+    as(
+      "rafaella",
+      "select public.consume_edge_rate_limit($1,$2,$3,$4)",
+      ["security-test-auth", "b".repeat(64), 2, 60],
+    ),
+    /FORBIDDEN|permission denied/,
+  ));
+
 await test("2FA: código errado contabiliza tentativa e não libera sessão", async () => {
   assert.equal(
     (
