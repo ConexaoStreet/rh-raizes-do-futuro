@@ -42,6 +42,9 @@ export async function createDatabase() {
       await db.exec(
         "insert into public.push_config(id,vapid_public_key,vapid_private_key,webhook_secret) values(1,'test-public-key','test-private-key','test-webhook-secret') on conflict(id) do nothing",
       );
+      await db.exec(
+        "select vault.create_secret('test-private-key','raizes_push_vapid_private_key','test-only VAPID secret'); select vault.create_secret('test-webhook-secret','raizes_push_webhook_secret','test-only webhook secret');",
+      );
     }
   }
   return db;
