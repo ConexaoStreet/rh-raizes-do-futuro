@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0'
+import { isBrazilRequest } from '../_shared/request-security.ts'
 const DEFAULT_ALLOWED_ORIGINS=new Set(['https://ti-raizes-do-futuro.vercel.app','https://rh-raizes-do-futuro.vercel.app','http://127.0.0.1:4174','http://localhost:4174','http://127.0.0.1:4173','http://localhost:4173'])
 const allowedOrigins=()=>new Set([...DEFAULT_ALLOWED_ORIGINS,...(Deno.env.get('ALLOWED_ORIGINS')||'').split(',').map(x=>x.trim()).filter(Boolean)])
 const required=(name:string)=>{const value=Deno.env.get(name);if(!value)throw new Error('CONFIGURATION_REQUIRED');return value}
@@ -10,6 +11,7 @@ Deno.serve(async request=>{
  const origin=request.headers.get('origin')||''
  const allowed=allowedOrigins()
  if(!allowed.has(origin))return new Response(null,{status:403})
+ if(!isBrazilRequest(request))return new Response(JSON.stringify({error:'REGION_NOT_ALLOWED'}),{status:403,headers:headers(origin)})
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:headers(origin)})
  if(request.method!=='POST')return new Response(null,{status:405,headers:headers(origin)})
  const respond=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:headers(origin)})
