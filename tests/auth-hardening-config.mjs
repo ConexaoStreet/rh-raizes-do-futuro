@@ -143,10 +143,14 @@ for (const relativePath of ["../vercel.json", "../apps/ti/vercel.json"]) {
     "max-age=31536000; includeSubDomains",
   );
   assert.equal(securityHeaders.get("X-Frame-Options"), "DENY");
-  assert.equal(
-    securityHeaders.get("Content-Security-Policy"),
-    "frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
-  );
+  const csp = securityHeaders.get("Content-Security-Policy") || "";
+  assert.match(csp, /default-src 'self'/);
+  assert.match(csp, /script-src 'self'/);
+  assert.match(csp, /frame-ancestors 'none'/);
+  assert.match(csp, /base-uri 'self'/);
+  assert.match(csp, /object-src 'none'/);
+  assert.match(csp, /form-action 'self'/);
+  assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/);
 }
 
 console.log("Auth hardening configuration checks passed.");

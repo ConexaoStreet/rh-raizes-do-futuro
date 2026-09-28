@@ -1,6 +1,11 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import webpush from "npm:web-push@3.6.7";
 import { observe, observeError } from "../_shared/observability.ts";
+import {
+  isBrazilRequest,
+  requestFingerprint,
+  timingSafeEqual,
+} from "../_shared/request-security.ts";
 
 type NotificationRow = {
   id: string;
@@ -11,15 +16,22 @@ type NotificationRow = {
   created_at: string;
 };
 
+type PushConfig = {
+  vapid_public_key: string;
+  vapid_private_key: string;
+  webhook_secret: string;
+};
+
 const appOrigin = "https://rh-raizes-do-futuro.vercel.app";
 
 const cors = (origin: string) => ({
   "Access-Control-Allow-Origin": origin === appOrigin ? origin : appOrigin,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Cache-Control": "no-store",
   "Content-Type": "application/json",
-  "Vary": "Origin",
+  Vary: "Origin",
 });
 
 const respond = (origin: string, body: unknown, status = 200) =>
@@ -27,13 +39,32 @@ const respond = (origin: string, body: unknown, status = 200) =>
 
 Deno.serve(async (request) => {
   const startedAt = Date.now();
-  const origin = request.headers.get("origin") || appOrigin;
-  if (request.method === "OPTIONS")
+  const origin = request.headers.get("origin") || "";
+
+  if (request.method === "OPTIONS") {
+    if (origin !== appOrigin || !isBrazilRequest(request))
+      return new Response(null, { status: 403 });
     return new Response(null, { status: 204, headers: cors(origin) });
+  }
   if (request.method !== "POST")
     return respond(origin, { error: "METHOD_NOT_ALLOWED" }, 405);
 
   try {
+    const raw = await request.text();
+    if (raw.length > 20000)
+      return respond(origin, { error: "INVALID_REQUEST" }, 400);
+
+    let body: {
+      action?: "sync" | "webhook";
+      limit?: number;
+      notification?: NotificationRow;
+    };
+    try {
+      body = JSON.parse(raw || "{}");
+    } catch {
+      return respond(origin, { error: "INVALID_REQUEST" }, 400);
+    }
+
     const url = Deno.env.get("SUPABASE_URL");
     const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !serviceRole)
@@ -43,13 +74,19 @@ Deno.serve(async (request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: config, error: configError } = await admin
-      .from("push_config")
-      .select("vapid_public_key,vapid_private_key,webhook_secret")
-      .eq("id", 1)
-      .single();
+    const { data: configRows, error: configError } = await admin.rpc(
+      "service_push_config",
+    );
+    const config = (
+      Array.isArray(configRows) ? configRows[0] : configRows
+    ) as PushConfig | null;
 
-    if (configError || !config)
+    if (
+      configError ||
+      !config?.vapid_public_key ||
+      !config.vapid_private_key ||
+      !config.webhook_secret
+    )
       return respond(origin, { error: "PUSH_NOT_CONFIGURED" }, 503);
 
     webpush.setVapidDetails(
@@ -57,15 +94,6 @@ Deno.serve(async (request) => {
       config.vapid_public_key,
       config.vapid_private_key,
     );
-
-    const raw = await request.text();
-    if (raw.length > 20000)
-      return respond(origin, { error: "INVALID_REQUEST" }, 400);
-    const body = JSON.parse(raw || "{}") as {
-      action?: "sync" | "webhook";
-      limit?: number;
-      notification?: NotificationRow;
-    };
 
     async function sendToUser(userId: string, notification: NotificationRow) {
       const { data: subscriptions, error } = await admin
@@ -121,9 +149,33 @@ Deno.serve(async (request) => {
     }
 
     if (body.action === "webhook") {
-      const secret = request.headers.get("x-push-webhook-secret");
-      if (!secret || secret !== config.webhook_secret)
-        return respond(origin, { error: "FORBIDDEN" }, 403);
+      const secret = request.headers.get("x-push-webhook-secret") || "";
+      if (
+        !secret ||
+        !timingSafeEqual(secret, String(config.webhook_secret || ""))
+      ) {
+        const fingerprint = await requestFingerprint(
+          request,
+          serviceRole,
+          "push-notify:webhook-denied",
+        );
+        const { data: allowed } = await admin.rpc("consume_edge_rate_limit", {
+          rate_scope: "push-notify:webhook-denied",
+          fingerprint_hash: fingerprint,
+          max_attempts: 20,
+          window_seconds: 300,
+        });
+        observe("push_notify.webhook", {
+          outcome: allowed === false ? "rate_limited" : "forbidden",
+          status: allowed === false ? 429 : 403,
+          latency_ms: Date.now() - startedAt,
+        });
+        return respond(
+          origin,
+          { error: allowed === false ? "RATE_LIMITED" : "FORBIDDEN" },
+          allowed === false ? 429 : 403,
+        );
+      }
 
       const notification = body.notification;
       if (!notification?.id || !notification.user_id || !notification.title)
@@ -140,11 +192,36 @@ Deno.serve(async (request) => {
     }
 
     if (body.action === "sync") {
+      if (origin !== appOrigin)
+        return respond(origin, { error: "ORIGIN_NOT_ALLOWED" }, 403);
+      if (!isBrazilRequest(request))
+        return respond(origin, { error: "REGION_NOT_ALLOWED" }, 403);
+
+      const fingerprint = await requestFingerprint(
+        request,
+        serviceRole,
+        "push-notify:sync",
+      );
+      const { data: rateAllowed, error: rateError } = await admin.rpc(
+        "consume_edge_rate_limit",
+        {
+          rate_scope: "push-notify:sync",
+          fingerprint_hash: fingerprint,
+          max_attempts: 30,
+          window_seconds: 300,
+        },
+      );
+      if (rateError)
+        return respond(origin, { error: "SECURITY_CHECK_UNAVAILABLE" }, 503);
+      if (rateAllowed !== true)
+        return respond(origin, { error: "RATE_LIMITED" }, 429);
+
       const authorization = request.headers.get("authorization") || "";
       const token = authorization.replace(/^Bearer\s+/i, "").trim();
       if (!token) return respond(origin, { error: "AUTH_REQUIRED" }, 401);
 
-      const { data: authData, error: authError } = await admin.auth.getUser(token);
+      const { data: authData, error: authError } =
+        await admin.auth.getUser(token);
       if (authError || !authData.user)
         return respond(origin, { error: "AUTH_REQUIRED" }, 401);
 
@@ -170,7 +247,10 @@ Deno.serve(async (request) => {
 
       let sent = 0;
       for (const notification of (notifications || []).reverse()) {
-        sent += await sendToUser(authData.user.id, notification as NotificationRow);
+        sent += await sendToUser(
+          authData.user.id,
+          notification as NotificationRow,
+        );
       }
 
       observe("push_notify.sync", {

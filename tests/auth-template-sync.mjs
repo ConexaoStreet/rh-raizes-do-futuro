@@ -19,6 +19,26 @@ assert.match(
   "The sync script must reject a missing project ref when a token is configured.",
 );
 
+
+const templateDir = fileURLToPath(
+  new URL("../supabase/templates/", import.meta.url),
+);
+for (const name of fs.readdirSync(templateDir).filter((entry) => entry.endsWith(".html"))) {
+  const template = fs.readFileSync(fileURLToPath(new URL(`../supabase/templates/${name}`, import.meta.url)), "utf8");
+  assert.doesNotMatch(
+    template,
+    /raw\.githubusercontent\.com\/ConexaoStreet\/rh-raizes-do-futuro/i,
+    `${name} must not depend on the repository being public.`,
+  );
+  if (/email-banners\//.test(template)) {
+    assert.match(
+      template,
+      /https:\/\/rh-raizes-do-futuro\.vercel\.app\/email-banners\//,
+      `${name} must load email banners from the deployed application.`,
+    );
+  }
+}
+
 const cleanEnv = { ...process.env };
 delete cleanEnv.SUPABASE_ACCESS_TOKEN;
 delete cleanEnv.SUPABASE_PROJECT_REF;

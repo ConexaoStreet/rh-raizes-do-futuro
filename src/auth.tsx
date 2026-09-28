@@ -158,10 +158,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         </button>
       </AuthFrame>
     );
-  if (
-    (user.roles.includes("SUPER_ADMIN") || user.roles.includes("TI_ADMIN")) &&
-    !user.mfa_verified
-  )
+  if (user.privileged && !user.mfa_verified)
     return <Verification onDone={refresh} />;
   if (!user.ready && user.maintenance.enabled)
     return (
