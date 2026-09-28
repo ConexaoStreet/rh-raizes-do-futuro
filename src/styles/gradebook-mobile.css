@@ -1,32 +1,6 @@
-.grade-weight { margin-top: 5px; }
-@media (max-width: 560px) {
-  .gradebook-scroll { border: 0; overflow: visible; }
-  .gradebook-table, .gradebook-table tbody { display: block; }
-  .gradebook-table thead { display: none; }
-  .gradebook-table tbody { display: grid; gap: 10px; }
-  .gradebook-table tr {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-  }
-  .gradebook-table td, .gradebook-table td:first-child {
-    min-width: 0;
-    position: static;
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 11px 13px;
-  }
-  .gradebook-table td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: .65rem;
-  }
-  .gradebook-table td:first-child {
-    grid-column: 1 / -1;
-    display: block;
-    background: var(--soft);
-  }
-  .gradebook-table td:first-child::before { display: none; }
+.grade-weight{margin-top:5px}
+@media(max-width:560px){
+.gradebook-scroll{border:0}
+.gradebook-table th:first-child,.gradebook-table td:first-child{position:static;min-width:0}
+.gradebook-table td:first-child{background:var(--soft)}
 }
