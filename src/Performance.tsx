@@ -308,7 +308,7 @@ export default function Performance() {
                         <tr key={criterion.id}>
                           <td data-label="Competência">
                             <strong>{criterion.name}</strong>
-                            <span className="grade-weight">
+                            <span className="badge grade-weight">
                               Peso {number(criterion.weight, 1)}
                               {totalCriterionWeight > 0
                                 ? ` · ${number((Number(criterion.weight) / totalCriterionWeight) * 100, 0)}% da média`
@@ -565,7 +565,7 @@ function ReviewForm({
               <div className="criterion-row" key={criterion.id}>
                 <label htmlFor={criterion.id}>
                   {criterion.name}
-                  <small className="grade-weight">Peso {number(criterion.weight, 1)}</small>
+                  <small className="badge grade-weight">Peso {number(criterion.weight, 1)}</small>
                 </label>
                 <input
                   id={criterion.id}
