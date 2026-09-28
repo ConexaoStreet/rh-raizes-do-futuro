@@ -38,6 +38,11 @@ export async function createDatabase() {
         );
         process.exit(1);
       });
+    if (file === "20260924171425_add_web_push_notifications.sql") {
+      await db.exec(
+        "insert into public.push_config(id,vapid_public_key,vapid_private_key,webhook_secret) values(1,'test-public-key','test-private-key','test-webhook-secret') on conflict(id) do nothing",
+      );
+    }
   }
   return db;
 }
