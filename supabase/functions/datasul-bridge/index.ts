@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { withSupabase } from "npm:@supabase/server";
+import { isBrazilRequest } from "../_shared/request-security.ts";
 
 const PROD_ORIGINS = new Set([
   "https://ti-raizes-do-futuro.vercel.app",
@@ -164,6 +165,8 @@ Deno.serve(
       "https://ti-raizes-do-futuro.vercel.app";
     if (!allowedOrigins().has(origin))
       return new Response(null, { status: 403 });
+    if (!isBrazilRequest(req))
+      return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
     if (req.method === "OPTIONS")
       return new Response(null, { status: 204, headers: cors(origin) });
     if (req.method !== "POST")
