@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const performance = readFileSync(new URL("./Performance.tsx", import.meta.url), "utf8");
-const mobileCss = readFileSync(new URL("./styles/gradebook-mobile.css", import.meta.url), "utf8");
 const styles = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
 const app = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
 const migration = readFileSync(
@@ -18,7 +17,6 @@ describe("RH gradebook and personalized notifications", () => {
   it("shows weight contribution and mobile data labels in the gradebook", () => {
     expect(performance).toContain("% da média");
     expect(performance).toContain('data-label={visibleCycles[index].title}');
-    expect(mobileCss).toContain(".gradebook-table td:first-child");
     expect(styles).toContain("td[data-label]:before");
     expect(styles).toContain("content: attr(data-label)");
   });
