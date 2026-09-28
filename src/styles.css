@@ -810,9 +810,6 @@ input[type="radio"] {
 .executive-metrics .stat-primary .stat-detail {
   color: #c9ddd1;
 }
-.executive-metrics .stat-primary .stat-label svg {
-  color: #d5eaa7;
-}
 .executive-metrics .stat-primary > strong {
   color: #fff;
 }
