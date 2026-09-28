@@ -34,16 +34,17 @@ describe("presentation launch ceremony", () => {
     expect(ceremony).toContain("/brand/inauguracao/mobile-");
     expect(ceremony).toContain("/brand/inauguracao/desktop-");
     expect(ceremony).toContain("<picture");
-    expect(ceremony).toContain('className="lc__cta-hit"');
-    expect(visualStyles).toContain(".lc__art");
-    expect(visualStyles).toContain('.lc[data-theme="5"] .lc__cta-hit');
+    expect(visualStyles).toContain('.lc[data-theme="2"] .lc__panel');
+    expect(visualStyles).toContain('.lc[data-theme="4"] .lc__panel');
   });
 
-  it("keeps a functional accessible layer above the artwork", () => {
+  it("keeps the artwork decorative and the live content accessible", () => {
+    expect(ceremony).toContain('className="lc__panel"');
     expect(ceremony).toContain('aria-label="Entrar no Raízes do Futuro"');
     expect(ceremony).toContain("Tempo restante:");
     expect(ceremony).toContain('aria-labelledby="lc-title"');
-    expect(visualStyles).toContain(".lc__semantic");
+    expect(ceremony).toContain("/brand/raizes-logo-mark.png");
+    expect(visualStyles).toContain(".lc__cta");
     expect(visualStyles).toContain("@media (prefers-reduced-motion: reduce)");
   });
 });
