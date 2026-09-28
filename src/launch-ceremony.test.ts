@@ -13,14 +13,19 @@ const visualStyles = readFileSync(
 );
 
 describe("presentation launch ceremony", () => {
-  it("uses the presentation window with the Sao Paulo UTC offset", () => {
+  it("uses the official Sao Paulo presentation window", () => {
     expect(gate).toContain("2026-09-29T08:00:00-03:00");
     expect(gate).toContain("2026-09-29T14:00:00-03:00");
     expect(gate).toContain("now >= START_AT && now < END_AT");
   });
 
-  it("expires itself and mounts before authentication", () => {
+  it("offers a preview that cannot revive the ceremony after launch day", () => {
+    expect(gate).toContain('"ensaio-final"');
+    expect(gate).toContain("previewRequested && now < START_AT");
     expect(gate).toContain("if (now >= END_AT) return");
+  });
+
+  it("mounts before authentication and stays lazy", () => {
     expect(gate).toContain('lazy(() => import("./LaunchCeremony"))');
     expect(app).toContain("<PresentationGate>");
     expect(app.indexOf("<PresentationGate>")).toBeLessThan(
@@ -28,15 +33,12 @@ describe("presentation launch ceremony", () => {
     );
   });
 
-  it("keeps the editorial ceremony lazy and branded", () => {
-    expect(ceremony).toContain('import "./launch-ceremony.css"');
-    expect(ceremony).toContain('/brand/raizes-logo-mark.png');
-    expect(ceremony).toContain('className="lc__horizon"');
-    expect(ceremony).toContain('className="lc__mobile"');
-    expect(ceremony).toContain('className="lcm__title"');
-    expect(ceremony).toContain("Hoje, o projeto");
-    expect(visualStyles).toContain(".lc__horizon");
-    expect(visualStyles).toContain(".lc__mask--num");
-    expect(visualStyles).toContain(".lcm__schedule");
+  it("assigns a stable theme and uses responsive launch sprites", () => {
+    expect(ceremony).toContain("raizes-inauguracao-theme-v2");
+    expect(ceremony).toContain('params.get("tema")');
+    expect(ceremony).toContain("window.localStorage.setItem");
+    expect(visualStyles).toContain('/launch/desktop-sprite.webp');
+    expect(visualStyles).toContain('/launch/mobile-sprite.webp');
+    expect(visualStyles).toContain("background-size: 500% 100%");
   });
 });
