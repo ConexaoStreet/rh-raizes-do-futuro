@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 
 const auth = readFileSync("src/auth.tsx", "utf8");
 const e2e = readFileSync("e2e/theme.e2e.ts", "utf8");
+const registrationBootstrap = readFileSync(
+  "supabase/functions/registration-bootstrap/index.ts",
+  "utf8",
+);
 
 describe("RH first-access redesign", () => {
   it("presents signup in three focused steps", () => {
@@ -20,6 +24,17 @@ describe("RH first-access redesign", () => {
     expect(auth).toContain("strongPassword(signupDraft.password)");
     expect(auth).toContain("signupDraft.password !== signupDraft.confirmation");
     expect(auth).toContain("signupDraft.phone.trim().length < 8");
+  });
+
+  it("suggests partial pre-registered names but still requires an exact selection", () => {
+    expect(auth).toContain("suggestions?: string[]");
+    expect(auth).toContain("Encontramos estes pré-cadastros:");
+    expect(auth).toContain("setSignupName(candidate)");
+    expect(auth).toContain("nameMatch.result?.matched");
+    expect(registrationBootstrap).toContain("employee.normalized_name.startsWith(submitted)");
+    expect(registrationBootstrap).toContain("employee.normalized_name.includes(\` \${submitted}\`)");
+    expect(registrationBootstrap).toContain("suggestions.length ? \"SUGGESTIONS\" : \"NOT_FOUND\"");
+    expect(registrationBootstrap).toContain(").slice(0, 5)");
   });
 
   it("preserves signup metadata and redirect behavior", () => {
