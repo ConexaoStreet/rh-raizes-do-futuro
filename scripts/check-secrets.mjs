@@ -37,7 +37,7 @@ const sensitiveNames = [
 
 const assignment = new RegExp(
   String.raw`(?:^|\n)\s*(?:export\s+)?(?:${sensitiveNames.join("|")})\s*[:=]\s*([^\n#]+)`,
-  "gi",
+  "g",
 );
 
 function placeholder(value) {
