@@ -8,6 +8,14 @@ export async function createDatabase() {
  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claims',true)::jsonb->>'sub','')::uuid $$;
  create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
  grant usage on schema auth to authenticated,anon,service_role; grant execute on all functions in schema auth to authenticated,anon,service_role;
+ create schema graphql_public;
+ create function graphql_public.graphql(text,text,jsonb,jsonb) returns jsonb language sql as $ select '{}'::jsonb $;
+ grant usage on schema graphql_public to anon,authenticated,service_role;
+ grant execute on function graphql_public.graphql(text,text,jsonb,jsonb) to anon,authenticated,service_role;
+ create schema vault;
+ create table vault.secrets(id uuid primary key default gen_random_uuid(),name text unique,secret text,description text);
+ create view vault.decrypted_secrets as select id,name,secret as decrypted_secret,description from vault.secrets;
+ create function vault.create_secret(new_secret text,new_name text default null,new_description text default null,new_key_id uuid default null) returns uuid language plpgsql as $vault$ declare sid uuid; begin insert into vault.secrets(name,secret,description) values(new_name,new_secret,new_description) returning id into sid; return sid; end $vault$;
  create schema net;
  create table net.http_request_queue(id bigint);
  create function net.http_post(url text, body jsonb default '{}'::jsonb, params jsonb default '{}'::jsonb, headers jsonb default '{"Content-Type":"application/json"}'::jsonb, timeout_milliseconds integer default 5000) returns bigint language sql as $pgnet$ select 1::bigint $pgnet$;
