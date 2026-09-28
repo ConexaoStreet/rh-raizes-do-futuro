@@ -40,9 +40,7 @@ const safePath = (value?: string) =>
 
 Deno.serve(async (request) => {
   const startedAt = Date.now();
-  let notificationId: string | null = null;
-  let claimed = false;
-  let admin: ReturnType<typeof createClient> | null = null;
+  let completeOnFailure: (() => Promise<void>) | null = null;
 
   if (request.method !== "POST")
     return respond({ error: "METHOD_NOT_ALLOWED" }, 405);
@@ -55,7 +53,7 @@ Deno.serve(async (request) => {
     if (!url || !serviceRole || !resendKey || !emailFrom)
       return respond({ error: "CONFIGURATION_REQUIRED" }, 503);
 
-    admin = createClient(url, serviceRole, {
+    const admin = createClient(url, serviceRole, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
@@ -90,8 +88,6 @@ Deno.serve(async (request) => {
       return respond({ ok: true, skipped: true });
     }
 
-    notificationId = notification.id;
-
     const { data: claimData, error: claimError } = await admin.rpc(
       "claim_notification_delivery",
       {
@@ -100,7 +96,7 @@ Deno.serve(async (request) => {
       },
     );
     if (claimError) throw claimError;
-    claimed = claimData === true;
+    const claimed = claimData === true;
 
     if (!claimed)
       return respond({ ok: true, skipped: true, reason: "already_handled" });
@@ -110,7 +106,7 @@ Deno.serve(async (request) => {
       providerId: string | null = null,
       errorCode: string | null = null,
     ) => {
-      const { error } = await admin!.rpc("complete_notification_delivery", {
+      const { error } = await admin.rpc("complete_notification_delivery", {
         notification_identifier: notification.id,
         delivery_channel: "email",
         delivery_status: status,
@@ -119,6 +115,8 @@ Deno.serve(async (request) => {
       });
       if (error) throw error;
     };
+
+    completeOnFailure = () => complete("failed", null, "UNAVAILABLE");
 
     const { data: profile, error: profileError } = await admin
       .from("profiles")
@@ -200,17 +198,11 @@ Deno.serve(async (request) => {
     });
     return respond({ ok: true });
   } catch (error) {
-    if (admin && notificationId && claimed) {
+    if (completeOnFailure) {
       try {
-        await admin.rpc("complete_notification_delivery", {
-          notification_identifier: notificationId,
-          delivery_channel: "email",
-          delivery_status: "failed",
-          provider_identifier: null,
-          error_code: "UNAVAILABLE",
-        });
+        await completeOnFailure();
       } catch {
-        // The original error remains authoritative.
+        void 0;
       }
     }
     observeError("rh_notify.error", error, {
