@@ -26,10 +26,11 @@ describe("RH first-access redesign", () => {
     expect(auth).toContain("signupDraft.phone.trim().length < 8");
   });
 
-  it("suggests partial pre-registered names but still requires an exact selection", () => {
+  it("shows partial pre-registered matches in a selectable list", () => {
     expect(auth).toContain("suggestions?: string[]");
-    expect(auth).toContain("Encontramos estes pré-cadastros:");
-    expect(auth).toContain("setSignupName(candidate)");
+    expect(auth).toContain("Selecione seu cadastro:");
+    expect(auth).toContain('aria-label="Cadastros encontrados"');
+    expect(auth).toContain("setSignupName(event.target.value)");
     expect(auth).toContain("nameMatch.result?.matched");
     expect(registrationBootstrap).toContain("employee.normalized_name.startsWith(submitted)");
     expect(registrationBootstrap).toContain("employee.normalized_name.includes(\` \${submitted}\`)");
@@ -42,7 +43,8 @@ describe("RH first-access redesign", () => {
     expect(auth).toContain("full_name: nameMatch.result.canonical_name || signupName.trim()");
     expect(auth).toContain("phone,");
     expect(auth).toContain("requested_department_id: departmentId");
-    expect(auth).toContain("requested_role_code: roleCode");
+    expect(auth).not.toContain("requested_role_code: roleCode");
+    expect(auth).toContain("Seu cargo será aplicado automaticamente conforme o cadastro-base do RH.");
     expect(auth).toContain("emailRedirectTo: redirect");
   });
 
