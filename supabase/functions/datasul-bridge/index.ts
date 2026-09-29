@@ -18,8 +18,7 @@ function allowedOrigins() {
 }
 
 function cors(origin: string) {
-  const allowed = allowedOrigins();
-  const safeOrigin = allowed.has(origin)
+  const safeOrigin = allowedOrigins().has(origin)
     ? origin
     : "https://ti-raizes-do-futuro.vercel.app";
   return {
@@ -40,36 +39,6 @@ function response(origin: string, body: unknown, status = 200) {
   });
 }
 
-function secret(name: string) {
-  const value = Deno.env.get(name);
-  return value && value.trim() ? value.trim() : null;
-}
-
-const DATASUL_REQUEST_TIMEOUT_MS = 30_000;
-
-function safePath(path: string) {
-  const clean = path.trim();
-  if (
-    !clean.startsWith("/") ||
-    clean.includes("://") ||
-    clean.includes("\\") ||
-    clean.includes("\0") ||
-    clean.length > 1200
-  ) {
-    throw new Error("INVALID_PATH");
-  }
-  return clean;
-}
-
-function joinUrl(base: string, path: string) {
-  const url = new URL(base);
-  const cleanPath = safePath(path);
-  url.pathname = cleanPath;
-  url.search = "";
-  url.hash = "";
-  return url;
-}
-
 function sanitizeForLog(value: unknown) {
   if (value === null || value === undefined) return null;
   const raw = JSON.stringify(value);
@@ -77,113 +46,12 @@ function sanitizeForLog(value: unknown) {
   return { truncated: true, preview: raw.slice(0, 6000) };
 }
 
-function parsePayload(raw: string) {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return { text: raw.slice(0, 12000) };
-  }
-}
-
-async function datasulRequest(args: {
-  method: string;
-  path: string;
-  companyId: string | null;
-  payload?: unknown;
-  query?: Record<string, string | number | boolean | null>;
-}) {
-  const baseUrl = secret("DATASUL_BASE_URL");
-  const username = secret("DATASUL_USERNAME");
-  const password = secret("DATASUL_PASSWORD");
-  if (!baseUrl || !username || !password) {
-    return {
-      configured: false as const,
-      missing: [
-        !baseUrl ? "DATASUL_BASE_URL" : null,
-        !username ? "DATASUL_USERNAME" : null,
-        !password ? "DATASUL_PASSWORD" : null,
-      ].filter(Boolean),
-    };
-  }
-
-  const method = args.method.toUpperCase();
-  const url = joinUrl(baseUrl, args.path);
-  for (const [key, value] of Object.entries(args.query || {})) {
-    if (value !== null && value !== undefined) {
-      url.searchParams.set(key, String(value));
-    }
-  }
-
-  const headers = new Headers({
-    Accept: "application/json",
-    Authorization: "Basic " + btoa(username + ":" + password),
-  });
-  if (args.companyId) headers.set("companyId", args.companyId);
-
-  const init: RequestInit = { method, headers };
-  if (!["GET", "HEAD"].includes(method) && args.payload !== undefined) {
-    const serialized = JSON.stringify(args.payload);
-    if (serialized.length > 150000) throw new Error("PAYLOAD_TOO_LARGE");
-    headers.set("Content-Type", "application/json");
-    init.body = serialized;
-  }
-
-  const started = Date.now();
-  const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    DATASUL_REQUEST_TIMEOUT_MS,
-  );
-
-  try {
-    const res = await fetch(url, { ...init, signal: controller.signal });
-    const raw = await res.text();
-    const data = parsePayload(raw);
-
-    return {
-      configured: true as const,
-      ok: res.ok,
-      status: res.status,
-      duration_ms: Date.now() - started,
-      data,
-    };
-  } catch (error) {
-    if (controller.signal.aborted) {
-      throw new Error(
-        ["GET", "HEAD"].includes(method)
-          ? "DATASUL_TIMEOUT"
-          : "DATASUL_TIMEOUT_UNKNOWN_RESULT",
-      );
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function extractRows(payload: unknown) {
-  if (Array.isArray(payload)) return payload;
-  if (!payload || typeof payload !== "object") return [];
-  const obj = payload as Record<string, unknown>;
-  for (const key of [
-    "rows",
-    "items",
-    "data",
-    "employees",
-    "funcionarios",
-    "value",
-  ]) {
-    if (Array.isArray(obj[key])) return obj[key] as unknown[];
-  }
-  return [];
-}
-
 Deno.serve(
   withSupabase({ auth: "user" }, async (req, ctx) => {
     const origin =
       req.headers.get("origin") ||
       "https://ti-raizes-do-futuro.vercel.app";
+
     if (!allowedOrigins().has(origin))
       return new Response(null, { status: 403 });
     if (!isBrazilRequest(req))
@@ -193,6 +61,21 @@ Deno.serve(
     if (req.method !== "POST")
       return response(origin, { error: "METHOD_NOT_ALLOWED" }, 405);
 
+    const rawBody = await req.text();
+    if (rawBody.length > 32000)
+      return response(origin, { error: "REQUEST_TOO_LARGE" }, 413);
+
+    let body: { action?: string };
+    try {
+      const parsed = JSON.parse(rawBody || "{}");
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return response(origin, { error: "INVALID_JSON_OBJECT" }, 400);
+      }
+      body = parsed as { action?: string };
+    } catch {
+      return response(origin, { error: "INVALID_JSON" }, 400);
+    }
+
     const permission = async (code: string) => {
       const { data, error } = await ctx.supabase.rpc("has_permission", {
         permission_code: code,
@@ -200,295 +83,262 @@ Deno.serve(
       return !error && data === true;
     };
 
-    const recentVerification = async () => {
-      const { data, error } = await ctx.supabase.rpc("bootstrap");
-      return (
-        !error &&
-        Boolean(data) &&
-        typeof data === "object" &&
-        (data as Record<string, unknown>).recently_verified === true
-      );
-    };
-
-    const actorContext = async () => {
-      const {
-        data: { user },
-      } = await ctx.supabase.auth.getUser();
-      if (!user) return { id: null, name: "Sistema" };
-      const { data: profile } = await ctx.supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .maybeSingle();
-      const profileName =
-        profile && typeof profile === "object" && "full_name" in profile
-          ? String(profile.full_name || "")
-          : "";
-      return {
-        id: user.id,
-        name: profileName || user.email || "Usuário T.I.",
-      };
-    };
-
     const canRead =
       (await permission("ti.datasul.read")) ||
       (await permission("ti.datasul.sync"));
     if (!canRead) return response(origin, { error: "FORBIDDEN" }, 403);
 
-    const rawBody = await req.text();
-    if (rawBody.length > 180000)
-      return response(origin, { error: "REQUEST_TOO_LARGE" }, 413);
+    const {
+      data: { user },
+    } = await ctx.supabase.auth.getUser();
+    if (!user) return response(origin, { error: "UNAUTHENTICATED" }, 401);
 
-    let body: {
-      action?: string;
-      method?: string;
-      path?: string;
-      payload?: unknown;
-      query?: Record<string, string | number | boolean | null>;
+    const { data: profile } = await ctx.supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const actorName =
+      profile && typeof profile === "object" && "full_name" in profile
+        ? String(profile.full_name || user.email || "Usuário T.I.")
+        : user.email || "Usuário T.I.";
+
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
+      { auth: { persistSession: false, autoRefreshToken: false } },
+    );
+
+    const audit = async (args: {
+      method: string;
+      path: string;
+      success: boolean;
+      durationMs: number;
+      errorMessage?: string | null;
+      responsePreview?: unknown;
+    }) => {
+      await admin.from("ti_datasul_operations").insert({
+        actor_user_id: user.id,
+        actor_name: actorName,
+        method: args.method,
+        path: args.path,
+        request_body: null,
+        response_status: args.success ? 200 : 500,
+        response_preview: sanitizeForLog(args.responsePreview),
+        success: args.success,
+        duration_ms: args.durationMs,
+        error_message: args.errorMessage || null,
+      });
     };
-    try {
-      const parsed = JSON.parse(rawBody || "{}");
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        return response(origin, { error: "INVALID_JSON_OBJECT" }, 400);
-      }
-      body = parsed as typeof body;
-    } catch {
-      return response(origin, { error: "INVALID_JSON" }, 400);
-    }
+
     const action = body.action || "status";
 
-    const { data: row, error: settingError } = await ctx.supabase
-      .from("settings")
-      .select("value")
-      .eq("key", "ti_datasul")
-      .single();
-    if (settingError)
-      return response(origin, { error: "SETTINGS_UNAVAILABLE" }, 500);
-
-    const config = (row?.value || {}) as Record<string, unknown>;
-    const healthPath = String(
-      config.health_path || "/api/btb/v1/companies",
-    );
-    const employeesPath = config.employees_path
-      ? String(config.employees_path)
-      : "";
-    const companyId = config.company_id
-      ? String(config.company_id)
-      : null;
-
     if (action === "status") {
+      const { data: row } = await admin
+        .from("settings")
+        .select("value")
+        .eq("key", "ti_datasul")
+        .maybeSingle();
+
+      const saved =
+        row?.value && typeof row.value === "object"
+          ? (row.value as Record<string, unknown>)
+          : {};
+
       return response(origin, {
-        configured: Boolean(
-          secret("DATASUL_BASE_URL") &&
-            secret("DATASUL_USERNAME") &&
-            secret("DATASUL_PASSWORD"),
-        ),
-        state: config,
-        capabilities: {
-          read: canRead,
-          write: await permission("ti.datasul.write"),
-          delete: await permission("ti.datasul.delete"),
-          recently_verified: await recentVerification(),
+        ok: true,
+        configured: true,
+        state: {
+          ...saved,
+          enabled: true,
+          status: "connected",
+          mode: "internal",
+          source: "supabase",
+          organization: "Raízes do Futuro",
         },
-        required_secrets: [
-          "DATASUL_BASE_URL",
-          "DATASUL_USERNAME",
-          "DATASUL_PASSWORD",
-        ],
+        capabilities: {
+          read: true,
+          sync: await permission("ti.datasul.sync"),
+          external_api: false,
+          mutations: false,
+        },
+        required_secrets: [],
       });
     }
 
     if (action === "health") {
-      const result = await datasulRequest({
-        method: "GET",
-        path: healthPath,
-        companyId,
-      });
-      const next = {
-        ...config,
-        enabled: result.configured,
-        status: !result.configured
-          ? "needs_connection"
-          : result.ok
-            ? "connected"
-            : "error",
-        last_check_at: new Date().toISOString(),
-        last_error: !result.configured
-          ? "Credenciais do Datasul ainda não configuradas."
-          : result.ok
-            ? null
-            : "HTTP " + result.status,
+      const started = Date.now();
+
+      const [
+        employeesResult,
+        departmentsResult,
+        positionsResult,
+        classesResult,
+        attendanceResult,
+        feedbacksResult,
+        reviewsResult,
+      ] = await Promise.all([
+        admin.from("employees").select("id", { count: "exact", head: true }),
+        admin.from("departments").select("id", { count: "exact", head: true }),
+        admin.from("job_positions").select("id", { count: "exact", head: true }),
+        admin.from("classes").select("id", { count: "exact", head: true }),
+        admin
+          .from("attendance_sessions")
+          .select("id", { count: "exact", head: true }),
+        admin.from("feedbacks").select("id", { count: "exact", head: true }),
+        admin
+          .from("performance_reviews")
+          .select("id", { count: "exact", head: true }),
+      ]);
+
+      const checks = [
+        ["employees", employeesResult],
+        ["departments", departmentsResult],
+        ["job_positions", positionsResult],
+        ["classes", classesResult],
+        ["attendance_sessions", attendanceResult],
+        ["feedbacks", feedbacksResult],
+        ["performance_reviews", reviewsResult],
+      ] as const;
+
+      const failed = checks
+        .filter(([, result]) => Boolean(result.error))
+        .map(([name]) => name);
+
+      const snapshot = {
+        employees: employeesResult.count || 0,
+        departments: departmentsResult.count || 0,
+        job_positions: positionsResult.count || 0,
+        classes: classesResult.count || 0,
+        attendance_sessions: attendanceResult.count || 0,
+        feedbacks: feedbacksResult.count || 0,
+        performance_reviews: reviewsResult.count || 0,
       };
-      await ctx.supabase
+
+      const durationMs = Date.now() - started;
+      const healthy = failed.length === 0;
+      const nextState = {
+        enabled: true,
+        status: healthy ? "connected" : "error",
+        mode: "internal",
+        source: "supabase",
+        organization: "Raízes do Futuro",
+        last_check_at: new Date().toISOString(),
+        last_sync_at: new Date().toISOString(),
+        last_error: healthy
+          ? null
+          : "Falha ao consultar: " + failed.join(", "),
+      };
+
+      await admin
         .from("settings")
-        .update({ value: next, updated_at: new Date().toISOString() })
+        .update({ value: nextState, updated_at: new Date().toISOString() })
         .eq("key", "ti_datasul");
 
-      if (!result.configured)
-        return response(origin, { ok: false, ...result }, 424);
+      await audit({
+        method: "CHECK",
+        path: "internal/health",
+        success: healthy,
+        durationMs,
+        errorMessage: healthy ? null : nextState.last_error,
+        responsePreview: snapshot,
+      });
+
       return response(
         origin,
         {
-          ok: result.ok,
-          status: result.status,
-          duration_ms: result.duration_ms,
-          preview: result.data,
+          ok: healthy,
+          status: healthy ? 200 : 500,
+          duration_ms: durationMs,
+          mode: "internal",
+          source: "supabase",
+          snapshot,
+          failed_checks: failed,
         },
-        result.ok ? 200 : 502,
+        healthy ? 200 : 500,
       );
     }
 
     if (action === "preview") {
-      if (!employeesPath) {
+      const started = Date.now();
+
+      const [
+        employeesResult,
+        departmentsResult,
+        positionsResult,
+        classesResult,
+      ] = await Promise.all([
+        admin
+          .from("employees")
+          .select(
+            "id,full_name,email,registration,status,member_group,access_role_code,class_id,department_id,job_position_id",
+            { count: "exact" },
+          )
+          .order("full_name")
+          .limit(25),
+        admin
+          .from("departments")
+          .select("id,name,active")
+          .order("name"),
+        admin
+          .from("job_positions")
+          .select("id,name,active")
+          .order("name"),
+        admin.from("classes").select("id,name,code,active").order("name"),
+      ]);
+
+      const error =
+        employeesResult.error ||
+        departmentsResult.error ||
+        positionsResult.error ||
+        classesResult.error;
+
+      const durationMs = Date.now() - started;
+      if (error) {
+        await audit({
+          method: "READ",
+          path: "internal/preview",
+          success: false,
+          durationMs,
+          errorMessage: "INTERNAL_DATA_READ_FAILED",
+        });
         return response(
           origin,
-          {
-            error: "EMPLOYEES_PATH_REQUIRED",
-            message:
-              "Defina o endpoint de colaboradores do Datasul antes de executar a prévia.",
-          },
-          409,
+          { ok: false, error: "INTERNAL_DATA_READ_FAILED" },
+          500,
         );
       }
-      const result = await datasulRequest({
-        method: "GET",
-        path: employeesPath,
-        companyId,
-      });
-      if (!result.configured)
-        return response(origin, { ok: false, ...result }, 424);
-      if (!result.ok)
-        return response(
-          origin,
-          {
-            ok: false,
-            status: result.status,
-            preview: result.data,
-          },
-          502,
-        );
 
-      const rows = extractRows(result.data);
-      const sample = rows.slice(0, 25);
-      const keys = [
-        ...new Set(
-          sample.flatMap((item) =>
-            item && typeof item === "object"
-              ? Object.keys(item as Record<string, unknown>)
-              : [],
-          ),
-        ),
-      ].sort();
+      const preview = {
+        employees: employeesResult.data || [],
+        total_employees: employeesResult.count || 0,
+        departments: departmentsResult.data || [],
+        job_positions: positionsResult.data || [],
+        classes: classesResult.data || [],
+      };
+
+      await audit({
+        method: "READ",
+        path: "internal/preview",
+        success: true,
+        durationMs,
+        responsePreview: {
+          total_employees: preview.total_employees,
+          departments: preview.departments.length,
+          job_positions: preview.job_positions.length,
+          classes: preview.classes.length,
+        },
+      });
 
       return response(origin, {
         ok: true,
-        status: result.status,
-        total_returned: rows.length,
-        keys,
-        sample,
+        status: 200,
+        duration_ms: durationMs,
+        mode: "internal",
+        source: "supabase",
+        preview,
       });
-    }
-
-    if (action === "request") {
-      const method = String(body.method || "GET").toUpperCase();
-      if (!["GET", "POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-        return response(origin, { error: "INVALID_METHOD" }, 400);
-      }
-
-      if (method !== "GET") {
-        const required =
-          method === "DELETE"
-            ? "ti.datasul.delete"
-            : "ti.datasul.write";
-        if (!(await permission(required))) {
-          return response(origin, { error: "FORBIDDEN" }, 403);
-        }
-        if (!(await recentVerification())) {
-          return response(
-            origin,
-            { error: "RECENT_VERIFICATION_REQUIRED" },
-            428,
-          );
-        }
-      }
-
-      let path = "";
-      try {
-        path = safePath(String(body.path || ""));
-      } catch {
-        return response(origin, { error: "INVALID_PATH" }, 400);
-      }
-
-      const actor = await actorContext();
-      const started = Date.now();
-      let result:
-        | Awaited<ReturnType<typeof datasulRequest>>
-        | null = null;
-      let errorMessage: string | null = null;
-
-      try {
-        result = await datasulRequest({
-          method,
-          path,
-          companyId,
-          payload: body.payload,
-          query: body.query,
-        });
-      } catch (error) {
-        errorMessage =
-          error instanceof Error ? error.message : "REQUEST_FAILED";
-      }
-
-      const admin = createClient(
-        Deno.env.get("SUPABASE_URL") || "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-        { auth: { persistSession: false, autoRefreshToken: false } },
-      );
-
-      await admin.from("ti_datasul_operations").insert({
-        actor_user_id: actor.id,
-        actor_name: actor.name,
-        method,
-        path,
-        request_body:
-          method === "GET"
-            ? null
-            : (sanitizeForLog(body.payload) as Record<string, unknown> | null),
-        response_status:
-          result && result.configured ? result.status : null,
-        response_preview:
-          result && result.configured
-            ? (sanitizeForLog(result.data) as Record<string, unknown> | null)
-            : null,
-        success: Boolean(
-          result && result.configured && result.ok && !errorMessage,
-        ),
-        duration_ms:
-          result && result.configured
-            ? result.duration_ms
-            : Date.now() - started,
-        error_message: errorMessage,
-      });
-
-      if (errorMessage)
-        return response(
-          origin,
-          { ok: false, error: errorMessage },
-          500,
-        );
-      if (!result?.configured)
-        return response(origin, { ok: false, ...result }, 424);
-
-      return response(
-        origin,
-        {
-          ok: result.ok,
-          status: result.status,
-          duration_ms: result.duration_ms,
-          data: result.data,
-        },
-        result.ok ? 200 : 502,
-      );
     }
 
     return response(origin, { error: "UNKNOWN_ACTION" }, 400);
