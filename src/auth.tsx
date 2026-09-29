@@ -35,6 +35,7 @@ export type Bootstrap = {
   permissions: string[];
   privileged: boolean;
   mfa_verified: boolean;
+  mfa_required: boolean;
   recently_verified: boolean;
   ready: boolean;
   server_time: string;
@@ -158,10 +159,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         </button>
       </AuthFrame>
     );
-  if (
-    (user.roles.includes("SUPER_ADMIN") || user.roles.includes("TI_ADMIN")) &&
-    !user.mfa_verified
-  )
+  if (user.mfa_required && !user.mfa_verified)
     return <Verification onDone={refresh} />;
   if (!user.ready && user.maintenance.enabled)
     return (
@@ -330,7 +328,6 @@ function Login({ configured: ready }: { configured: boolean }) {
     password: "",
     confirmation: "",
     departmentId: "",
-    roleCode: "COLLABORATOR",
   });
   const [mascotMood, setMascotMood] = useState<MascotMood>("idle");
   const options = useRegistrationOptions();
@@ -347,8 +344,7 @@ function Login({ configured: ready }: { configured: boolean }) {
       password: "",
       confirmation: "",
       departmentId: "",
-      roleCode: "COLLABORATOR",
-    });
+      });
     setMode(next);
   }
 
@@ -444,7 +440,6 @@ function Login({ configured: ready }: { configured: boolean }) {
       if (mode === "signup") {
         const phone = signupDraft.phone.trim();
         const departmentId = signupDraft.departmentId.trim();
-        const roleCode = signupDraft.roleCode.trim().toUpperCase();
 
         if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
           toast.error("Use um endereço @gmail.com válido.");
@@ -463,11 +458,6 @@ function Login({ configured: ready }: { configured: boolean }) {
         }
         if (!departmentId) {
           toast.error("Selecione seu departamento.");
-          setMascotMood("error");
-          return;
-        }
-        if (!options?.roles.some((role) => role.code === roleCode)) {
-          toast.error("Selecione seu cargo.");
           setMascotMood("error");
           return;
         }
@@ -490,7 +480,6 @@ function Login({ configured: ready }: { configured: boolean }) {
               full_name: nameMatch.result.canonical_name || signupName.trim(),
               phone,
               requested_department_id: departmentId,
-              requested_role_code: roleCode,
             },
             emailRedirectTo: redirect,
           },
@@ -679,22 +668,23 @@ function Login({ configured: ready }: { configured: boolean }) {
                       </div>
                     ) : nameMatch.result?.suggestions?.length ? (
                       <div className="notice">
-                        <strong>Encontramos estes pré-cadastros:</strong>
-                        <div className="actions">
+                        <strong>Selecione seu cadastro:</strong>
+                        <select
+                          value=""
+                          aria-label="Cadastros encontrados"
+                          onChange={(event) => {
+                            if (!event.target.value) return;
+                            setSignupName(event.target.value);
+                            setMascotMood("idle");
+                          }}
+                        >
+                          <option value="">Escolher nome</option>
                           {nameMatch.result.suggestions.map((candidate) => (
-                            <button
-                              key={candidate}
-                              type="button"
-                              className="text-button"
-                              onClick={() => {
-                                setSignupName(candidate);
-                                setMascotMood("idle");
-                              }}
-                            >
+                            <option key={candidate} value={candidate}>
                               {candidate}
-                            </button>
+                            </option>
                           ))}
-                        </div>
+                        </select>
                       </div>
                     ) : signupName.trim().length >= 4 ? (
                       <span className="muted">
@@ -830,27 +820,8 @@ function Login({ configured: ready }: { configured: boolean }) {
                         ))}
                       </select>
                     </Field>
-                    <Field label="Cargo">
-                      <select
-                        name="role_code"
-                        required
-                        value={signupDraft.roleCode}
-                        onChange={(event) =>
-                          setSignupDraft((current) => ({
-                            ...current,
-                            roleCode: event.target.value,
-                          }))
-                        }
-                      >
-                        {options?.roles.map((role) => (
-                          <option key={role.code} value={role.code}>
-                            {role.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
                     <span className="muted">
-                      Cargos com acesso elevado só são liberados quando já estiverem autorizados no cadastro-base.
+                      Seu cargo será aplicado automaticamente conforme o cadastro-base do RH.
                     </span>
                     <div className="actions">
                       <button type="button" disabled={busy} onClick={() => setSignupStep(2)}>
@@ -1171,9 +1142,6 @@ function Onboarding({
   const [departmentId, setDepartmentId] = useState(
     user.profile.requested_department_id || "",
   );
-  const [roleCode, setRoleCode] = useState(
-    user.profile.requested_role_code || "COLLABORATOR",
-  );
   const options = useRegistrationOptions();
   const nameMatch = usePreRegistrationMatch(name);
 
@@ -1196,7 +1164,6 @@ function Onboarding({
           full_name: name,
           phone,
           department_id: departmentId,
-          role_code: roleCode,
           terms: form.get("terms") === "on",
         }),
       });
@@ -1256,9 +1223,28 @@ function Onboarding({
           <div className="notice">
             Cadastro reconhecido: <strong>{nameMatch.result.canonical_name}</strong>
           </div>
+        ) : nameMatch.result?.suggestions?.length ? (
+          <div className="notice">
+            <strong>Selecione seu cadastro:</strong>
+            <select
+              value=""
+              aria-label="Cadastros encontrados no primeiro acesso"
+              onChange={(event) => {
+                if (!event.target.value) return;
+                setName(event.target.value);
+              }}
+            >
+              <option value="">Escolher nome</option>
+              {nameMatch.result.suggestions.map((candidate) => (
+                <option key={candidate} value={candidate}>
+                  {candidate}
+                </option>
+              ))}
+            </select>
+          </div>
         ) : (
           <span className="muted">
-            O nome precisa ser o mesmo do cadastro já existente no RH.
+            Digite parte do seu nome para localizar e selecionar seu cadastro.
           </span>
         )}
 
@@ -1302,20 +1288,9 @@ function Onboarding({
           </select>
         </Field>
 
-        <Field label="Cargo">
-          <select
-            name="role_code"
-            required
-            value={roleCode}
-            onChange={(event) => setRoleCode(event.target.value)}
-          >
-            {options?.roles.map((role) => (
-              <option key={role.code} value={role.code}>
-                {role.name}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <span className="muted">
+          Seu cargo será definido automaticamente pelo cadastro-base do RH.
+        </span>
 
         <details className="privacy">
           <summary>Uso dos seus dados</summary>
