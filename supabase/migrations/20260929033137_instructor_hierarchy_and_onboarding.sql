@@ -509,4 +509,11 @@ from public,anon,authenticated;
 revoke all on function private.revoke_session(uuid)
 from public,anon,authenticated;
 
+grant execute on function private.manage_user(uuid,text,uuid[],text)
+to authenticated;
+grant execute on function private.my_sessions(uuid)
+to authenticated;
+grant execute on function private.revoke_session(uuid)
+to authenticated;
+
 notify pgrst, 'reload schema';
