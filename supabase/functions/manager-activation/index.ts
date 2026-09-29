@@ -55,10 +55,10 @@ function allowedOrigins() {
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin") || "";
   if (!allowedOrigins().has(origin)) return new Response(null, { status: 403 });
-  if (!isBrazilRequest(request))
-    return respond(origin, { error: "REGION_NOT_ALLOWED" }, 403);
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers: cors(origin) });
+  if (!isBrazilRequest(request))
+    return respond(origin, { error: "REGION_NOT_ALLOWED" }, 403);
   if (request.method !== "POST")
     return respond(origin, { error: "METHOD_NOT_ALLOWED" }, 405);
 
