@@ -664,6 +664,19 @@ function Login({ configured: ready }: { configured: boolean }) {
                       <div className="notice">
                         Cadastro localizado: <strong>{nameMatch.result.canonical_name}</strong>
                       </div>
+                    ) : nameMatch.result?.reason === "ALREADY_REGISTERED" ? (
+                      <div className="notice">
+                        <strong>Este cadastro já foi ativado.</strong>
+                        <div className="actions">
+                          <button
+                            type="button"
+                            className="text-button"
+                            onClick={() => changeMode("login")}
+                          >
+                            Ir para o login
+                          </button>
+                        </div>
+                      </div>
                     ) : nameMatch.result?.suggestions?.length ? (
                       <div className="notice">
                         <strong>Encontramos estes pré-cadastros:</strong>
