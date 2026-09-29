@@ -45,6 +45,8 @@ function secret(name: string) {
   return value && value.trim() ? value.trim() : null;
 }
 
+const DATASUL_REQUEST_TIMEOUT_MS = 30_000;
+
 function safePath(path: string) {
   const clean = path.trim();
   if (
@@ -128,17 +130,36 @@ async function datasulRequest(args: {
   }
 
   const started = Date.now();
-  const res = await fetch(url, init);
-  const raw = await res.text();
-  const data = parsePayload(raw);
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    DATASUL_REQUEST_TIMEOUT_MS,
+  );
 
-  return {
-    configured: true as const,
-    ok: res.ok,
-    status: res.status,
-    duration_ms: Date.now() - started,
-    data,
-  };
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    const raw = await res.text();
+    const data = parsePayload(raw);
+
+    return {
+      configured: true as const,
+      ok: res.ok,
+      status: res.status,
+      duration_ms: Date.now() - started,
+      data,
+    };
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(
+        ["GET", "HEAD"].includes(method)
+          ? "DATASUL_TIMEOUT"
+          : "DATASUL_TIMEOUT_UNKNOWN_RESULT",
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function extractRows(payload: unknown) {
@@ -218,13 +239,22 @@ Deno.serve(
     if (rawBody.length > 180000)
       return response(origin, { error: "REQUEST_TOO_LARGE" }, 413);
 
-    const body = JSON.parse(rawBody || "{}") as {
+    let body: {
       action?: string;
       method?: string;
       path?: string;
       payload?: unknown;
       query?: Record<string, string | number | boolean | null>;
     };
+    try {
+      const parsed = JSON.parse(rawBody || "{}");
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return response(origin, { error: "INVALID_JSON_OBJECT" }, 400);
+      }
+      body = parsed as typeof body;
+    } catch {
+      return response(origin, { error: "INVALID_JSON" }, 400);
+    }
     const action = body.action || "status";
 
     const { data: row, error: settingError } = await ctx.supabase
