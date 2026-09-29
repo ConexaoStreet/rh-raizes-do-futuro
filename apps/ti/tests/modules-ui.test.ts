@@ -30,7 +30,6 @@ describe("TI technical module redesign", () => {
       '"maintenance"',
       'invokeFunction("ti-admin-bridge"',
       'action: "inventory"',
-      'action: "request"',
       'action: "status"',
       'action: "storage_list"',
       'action: "storage_delete"',
@@ -41,19 +40,17 @@ describe("TI technical module redesign", () => {
       expect(app).toContain(contract);
     }
     expect(app).toMatch(/invokeFunction\(\s*"datasul-bridge"/s);
+    expect(app).toContain('action: "health"');
+    expect(app).toContain('action: "preview"');
     expect(app).toMatch(/invokeFunction\(\s*"platform-bridge"/s);
   });
 
   it("preserves destructive confirmations and technical state", () => {
     for (const contract of [
-      "Confirmar exclusão no Datasul? Esta ação pode ser irreversível.",
       "Ativar manutenção global do RH?",
       "Desativar manutenção e liberar o RH?",
       "Revogar esta sessão?",
       "Digite EXCLUIR para remover este arquivo:",
-      'const [requestMethod, setRequestMethod] = useState("GET")',
-      'const [requestPath, setRequestPath] = useState("")',
-      'const [requestBody, setRequestBody] = useState("{\\n\\n}")',
       "setBusy(key)",
       'setError("")',
       'setNotice("")',
@@ -62,6 +59,18 @@ describe("TI technical module redesign", () => {
     ]) {
       expect(app).toContain(contract);
     }
+    expect(app).not.toContain(
+      "Confirmar exclusão no Datasul? Esta ação pode ser irreversível.",
+    );
+    expect(app).not.toContain(
+      'const [requestMethod, setRequestMethod] = useState("GET")',
+    );
+    expect(app).not.toContain(
+      'const [requestPath, setRequestPath] = useState("")',
+    );
+    expect(app).not.toContain(
+      'const [requestBody, setRequestBody] = useState("{\\n\\n}")',
+    );
   });
 
   it("provides reusable technical primitives", () => {
