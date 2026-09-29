@@ -27,48 +27,76 @@ assert.match(
   /isBrazilRequest\(req\)/,
   "datasul-bridge must keep the Brazil request restriction",
 );
+assert.ok(
+  source.includes("ti.datasul.read") && source.includes("ti.datasul.sync"),
+  "datasul-bridge must enforce Datasul-specific permissions",
+);
+assert.match(
+  source,
+  /mode:\s*"internal"/,
+  "Datasul must be explicitly modeled as an internal RH module",
+);
+assert.match(
+  source,
+  /source:\s*"supabase"/,
+  "Datasul must use Supabase as its internal source of truth",
+);
 
-for (const permission of [
-  "ti.datasul.read",
-  "ti.datasul.sync",
-  "ti.datasul.write",
-  "ti.datasul.delete",
+for (const table of [
+  "employees",
+  "departments",
+  "job_positions",
+  "classes",
+  "attendance_sessions",
+  "feedbacks",
+  "performance_reviews",
 ]) {
   assert.ok(
-    source.includes(permission),
-    `datasul-bridge is missing permission guard ${permission}`,
+    source.includes(`from("${table}")`),
+    `Datasul internal health must cover ${table}`,
   );
 }
 
 assert.match(
   source,
-  /RECENT_VERIFICATION_REQUIRED/,
-  "Datasul writes and deletes must keep recent verification",
+  /action === "health"/,
+  "Datasul must expose an internal health diagnostic",
 );
 assert.match(
   source,
-  /DATASUL_REQUEST_TIMEOUT_MS\s*=\s*30_000/,
-  "Datasul calls must have a bounded request timeout",
+  /action === "preview"/,
+  "Datasul must expose a bounded internal data preview",
 );
 assert.match(
   source,
-  /new AbortController\(\)/,
-  "Datasul calls must be cancellable on timeout",
+  /\.limit\(25\)/,
+  "Datasul employee preview must stay bounded",
 );
 assert.match(
   source,
-  /DATASUL_TIMEOUT_UNKNOWN_RESULT/,
-  "Timed out writes must explicitly report an unknown remote result",
+  /ti_datasul_operations/,
+  "Datasul operations must remain audited",
 );
-assert.match(
+
+for (const forbidden of [
+  "DATASUL_BASE_URL",
+  "DATASUL_USERNAME",
+  "DATASUL_PASSWORD",
+  'Authorization: "Basic',
+  "companyId",
+  "health_path",
+  "employees_path",
+]) {
+  assert.ok(
+    !source.includes(forbidden),
+    `Datasul internal module must not depend on external ERP setting: ${forbidden}`,
+  );
+}
+
+assert.doesNotMatch(
   source,
-  /INVALID_JSON_OBJECT/,
-  "Datasul bridge must reject non-object JSON bodies",
-);
-assert.match(
-  source,
-  /INVALID_JSON/,
-  "Datasul bridge must reject malformed JSON with a client error",
+  /fetch\s*\(/,
+  "Datasul internal module must not call an external API",
 );
 assert.doesNotMatch(
   source,
@@ -76,4 +104,12 @@ assert.doesNotMatch(
   "Datasul bridge must never allow wildcard CORS",
 );
 
-console.log("Datasul bridge security/readiness guard passed.");
+const permissionGate = source.indexOf("if (!canRead)");
+const serviceRoleUse = source.indexOf("SUPABASE_SERVICE_ROLE_KEY");
+assert.ok(
+  permissionGate >= 0 &&
+    serviceRoleUse > permissionGate,
+  "service-role access must only be created after the user permission gate",
+);
+
+console.log("Datasul internal security/readiness guard passed.");
