@@ -123,9 +123,35 @@ function Shell() {
             <X size={20} />
           </button>
         </div>
-        <div className="workspace-label">
-          <span className="workspace-icon" aria-hidden="true">
-            <img src="/brand/raizes-logo-mark.png" alt="" width={25} height={25} />
+        <div
+          className="workspace-label"
+          style={{
+            overflow: "hidden",
+            background:
+              "radial-gradient(circle at 14% 50%, rgba(105,230,148,.14), transparent 30%), linear-gradient(115deg, rgba(20,58,43,.96), rgba(10,35,26,.97))",
+          }}
+        >
+          <span
+            className="workspace-icon"
+            aria-hidden="true"
+            style={{
+              overflow: "hidden",
+              borderColor: "rgba(173,235,190,.15)",
+              background:
+                "radial-gradient(circle, rgba(77,154,102,.32), rgba(17,61,43,.74) 70%)",
+              boxShadow: "inset 0 0 12px rgba(88,214,132,.09)",
+            }}
+          >
+            <img
+              src="/brand/raizes-logo-mark.png"
+              alt=""
+              width={28}
+              height={28}
+              style={{
+                filter: "brightness(2.05) contrast(1.12)",
+                opacity: 0.96,
+              }}
+            />
           </span>
           <div className="workspace-copy">
             <strong>Gestão de RH</strong>
@@ -210,7 +236,18 @@ function Shell() {
                 onClick={() => setAccount(!account)}
                 aria-expanded={account}
               >
-                <span className="avatar avatar-dark">
+                <span
+                  className="avatar avatar-dark"
+                  style={{
+                    overflow: "hidden",
+                    border: "1px solid rgba(154,232,177,.17)",
+                    borderRadius: 11,
+                    color: "#e9f8d5",
+                    background:
+                      "radial-gradient(circle, rgba(51,111,74,.92) 0 45%, transparent 46%), conic-gradient(from 205deg, #143c2b, #2a6848, #143c2b 68%)",
+                    boxShadow: "inset 0 0 10px rgba(88,214,132,.09)",
+                  }}
+                >
                   {user.profile.full_name
                     .split(" ")
                     .slice(0, 2)
