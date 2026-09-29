@@ -150,12 +150,14 @@ Deno.serve(
         ok: true,
         configured: true,
         state: {
-          ...saved,
           enabled: true,
           status: "connected",
           mode: "internal",
           source: "supabase",
           organization: "Raízes do Futuro",
+          last_check_at: saved.last_check_at || null,
+          last_sync_at: saved.last_sync_at || null,
+          last_error: saved.last_error || null,
         },
         capabilities: {
           read: true,
