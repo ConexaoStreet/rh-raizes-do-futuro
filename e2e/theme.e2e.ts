@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+const LAUNCH_SESSION_KEY = "raizes-inauguracao-2026-09-29";
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript((key) => {
+    window.sessionStorage.setItem(key, "1");
+  }, LAUNCH_SESSION_KEY);
+});
+
 test("theme follows system and persists user choice", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/", { waitUntil: "domcontentloaded" });
