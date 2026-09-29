@@ -144,7 +144,7 @@ Deno.serve(async (request) => {
     }
 
     if (body.action === "options") {
-      const [classResult, departmentResult] = await Promise.all([
+      const [classResult, departmentResult, registrationResult] = await Promise.all([
         withJwtSkewRetry(() =>
           admin
             .from("classes")
@@ -161,22 +161,37 @@ Deno.serve(async (request) => {
             .eq("active", true)
             .order("name"),
         ),
+        withJwtSkewRetry(() =>
+          admin
+            .from("employees")
+            .select("full_name")
+            .eq("status", "active")
+            .is("profile_id", null)
+            .order("full_name")
+            .limit(1000),
+        ),
       ]);
 
-      if (classResult.error || departmentResult.error) {
-        throw classResult.error || departmentResult.error;
+      if (classResult.error || departmentResult.error || registrationResult.error) {
+        throw classResult.error || departmentResult.error || registrationResult.error;
       }
+
+      const registrations = Array.from(
+        new Set((registrationResult.data || []).map((employee) => employee.full_name)),
+      ).map((full_name) => ({ full_name }));
 
       observe("registration_bootstrap.options", {
         outcome: "ok",
         status: 200,
         department_count: departmentResult.data?.length || 0,
+        registration_count: registrations.length,
         class_available: Boolean(classResult.data),
         latency_ms: Date.now() - startedAt,
       });
       return response(origin, {
         class: classResult.data,
         departments: departmentResult.data || [],
+        registrations,
         roles: [
           { code: "COLLABORATOR", name: "Colaborador" },
           { code: "MANAGER", name: "Gestor" },
