@@ -38,6 +38,7 @@ const Administration = lazy(() => import("./Administration"));
 const Calendar = lazy(() => import("./Calendar"));
 const EntitySettings = lazy(() => import("./EntitySettings"));
 const SupportTickets = lazy(() => import("./SupportTickets"));
+const InstructorHub = lazy(() => import("./InstructorHub"));
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{
@@ -224,12 +225,12 @@ function Shell() {
                       ? "Desenvolvedor"
                       : user.roles.includes("TI_ADMIN")
                         ? "Administrador T.I."
-                        : user.roles.includes("DIRECTOR")
-                          ? "Diretor"
-                          : user.roles.includes("MANAGER")
-                            ? "Gestor"
-                            : user.roles.includes("INSTRUCTOR")
-                              ? "Instrutor"
+                        : user.roles.includes("INSTRUCTOR")
+                          ? "Instrutor"
+                          : user.roles.includes("DIRECTOR")
+                            ? "Diretor"
+                            : user.roles.includes("MANAGER")
+                              ? "Gestor"
                               : "Colaborador"}
                   </small>
                 </span>
@@ -300,11 +301,21 @@ function Shell() {
               <Route
                 path="/"
                 element={
-                  can("dashboard.view") ? (
+                  user.roles.includes("INSTRUCTOR") && can("instructor.view") ? (
+                    <InstructorHub />
+                  ) : can("dashboard.view") ? (
                     <Dashboard />
                   ) : (
                     <People mode="profile" />
                   )
+                }
+              />
+              <Route
+                path="/instrutor"
+                element={
+                  <Guard permission="instructor.view">
+                    <InstructorHub />
+                  </Guard>
                 }
               />
               <Route
@@ -386,7 +397,7 @@ function Shell() {
                       permission={
                         [
                           "user.view",
-                          "role.manage",
+                          "role.view",
                           "audit.view",
                           "settings.manage",
                           "system.manage",
