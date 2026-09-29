@@ -7,6 +7,7 @@ import {
   Clock3,
   FileBarChart2,
   FileText,
+  GraduationCap,
   LayoutDashboard,
   LifeBuoy,
   MessageSquare,
@@ -32,6 +33,12 @@ export type RhNavGroup = {
 };
 
 export const rhNavGroups: RhNavGroup[] = [
+  {
+    label: "INSTRUTOR",
+    items: [
+      { path: "/instrutor", name: "Central do Instrutor", icon: GraduationCap, permission: "instructor.view" },
+    ],
+  },
   {
     label: "ACOMPANHAMENTO",
     items: [
@@ -66,7 +73,7 @@ export const rhNavGroups: RhNavGroup[] = [
       { path: "/relatorios", name: "Relatórios", icon: FileBarChart2, permission: "report.view" },
       { path: "/apresentacoes", name: "Apresentações", icon: Presentation, permission: "report.export" },
       { path: "/usuarios", name: "Usuários", icon: Users, permission: "user.view" },
-      { path: "/cargos", name: "Cargos e permissões", icon: Shield, permission: "role.manage" },
+      { path: "/cargos", name: "Cargos e permissões", icon: Shield, permission: "role.view" },
       { path: "/auditoria", name: "Logs e auditoria", icon: Activity, permission: "audit.view" },
       { path: "/configuracoes", name: "Configurações", icon: Settings, permission: "settings.manage" },
       { path: "/admin", name: "Administração total", icon: SlidersHorizontal, permission: "system.manage" },
