@@ -203,17 +203,34 @@ Deno.serve(async (request) => {
       const { data, error } = await withJwtSkewRetry(() =>
         admin
           .from("employees")
-          .select("full_name")
+          .select("full_name,profile_id")
           .eq("status", "active")
-          .is("profile_id", null)
           .limit(1000),
       );
       if (error) throw error;
 
-      const eligible = (data || []).map((employee) => ({
+      const records = (data || []).map((employee) => ({
         ...employee,
         normalized_name: normalizeName(employee.full_name),
       }));
+      const alreadyRegistered = records.find(
+        (employee) =>
+          Boolean(employee.profile_id) && employee.normalized_name === submitted,
+      );
+      if (alreadyRegistered) {
+        observe("registration_bootstrap.match", {
+          outcome: "already_registered",
+          status: 200,
+          latency_ms: Date.now() - startedAt,
+        });
+        return response(origin, {
+          matched: false,
+          reason: "ALREADY_REGISTERED",
+          canonical_name: alreadyRegistered.full_name,
+        });
+      }
+
+      const eligible = records.filter((employee) => !employee.profile_id);
       const matches = eligible.filter(
         (employee) => employee.normalized_name === submitted,
       );
