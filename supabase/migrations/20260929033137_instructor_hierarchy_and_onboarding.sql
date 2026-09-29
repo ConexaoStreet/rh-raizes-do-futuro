@@ -1,6 +1,3 @@
--- Instructor hierarchy and secure pre-registered onboarding.
--- No personal pre-registration data is stored in this public migration.
-
 insert into public.permissions(code,name,module)
 values
   ('instructor.view','Acessar central do instrutor','Instrutor'),
