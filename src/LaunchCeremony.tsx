@@ -52,8 +52,8 @@ export default function LaunchCeremony({
   const [theme] = useState(chooseTheme);
   const [leaving, setLeaving] = useState(false);
   const themeNumber = theme + 1;
-  const mobileSrc = `/launch/mobile-${themeNumber}.webp?v=4`;
-  const desktopSrc = `/launch/desktop-${themeNumber}.webp?v=4`;
+  const mobileSrc = `/launch/mobile-${themeNumber}.webp?v=5`;
+  const desktopSrc = `/launch/desktop-${themeNumber}.webp?v=5`;
 
   useEffect(() => {
     onEnterRef.current = onEnter;
