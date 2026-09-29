@@ -322,7 +322,7 @@ export default function App() {
   const [notificationBody, setNotificationBody] = useState("");
   const [notificationPath, setNotificationPath] = useState("/");
 
-  const datasul = useMemo(() => {
+  const datasul = useMemo<JsonObject>(() => {
     const stored = settings.ti_datasul || {};
     const internal = text(stored.mode) === "internal";
     return {
