@@ -72,6 +72,9 @@ Deno.serve(async (request) => {
     });
     return new Response(null, { status: 403 });
   }
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: cors(origin) });
+  }
   if (!isBrazilRequest(request)) {
     observe("registration_bootstrap.request", {
       outcome: "denied_country",
@@ -79,9 +82,6 @@ Deno.serve(async (request) => {
       latency_ms: Date.now() - startedAt,
     });
     return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
-  }
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: cors(origin) });
   }
   if (request.method !== "POST") {
     observe("registration_bootstrap.request", {
