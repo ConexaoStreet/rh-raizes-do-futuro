@@ -35,6 +35,7 @@ export type Bootstrap = {
   permissions: string[];
   privileged: boolean;
   mfa_verified: boolean;
+  mfa_required: boolean;
   recently_verified: boolean;
   ready: boolean;
   server_time: string;
@@ -158,10 +159,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         </button>
       </AuthFrame>
     );
-  if (
-    (user.roles.includes("SUPER_ADMIN") || user.roles.includes("TI_ADMIN")) &&
-    !user.mfa_verified
-  )
+  if (user.mfa_required && !user.mfa_verified)
     return <Verification onDone={refresh} />;
   if (!user.ready && user.maintenance.enabled)
     return (
@@ -253,70 +251,9 @@ function PasswordInput({
 type RegistrationOptions = {
   class: { id: string; name: string; code: string } | null;
   departments: { id: string; name: string }[];
+  registrations: { full_name: string }[];
   roles: { code: string; name: string }[];
 };
-type PreRegistrationMatch = {
-  matched: boolean;
-  canonical_name?: string;
-  suggestions?: string[];
-  reason?: string;
-};
-
-function useRegistrationOptions() {
-  const [options, setOptions] = useState<RegistrationOptions | null>(null);
-  useEffect(() => {
-    if (!configured) return;
-    let active = true;
-    void client()
-      .functions.invoke("registration-bootstrap", { body: { action: "options" } })
-      .then(({ data, error }) => {
-        if (error) throw error;
-        if (active) setOptions(data as RegistrationOptions);
-      })
-      .catch((error) => captureError("registration_options", error));
-    return () => {
-      active = false;
-    };
-  }, []);
-  return options;
-}
-
-function usePreRegistrationMatch(name: string) {
-  const [result, setResult] = useState<PreRegistrationMatch | null>(null);
-  const [checking, setChecking] = useState(false);
-  useEffect(() => {
-    const clean = name.trim();
-    setResult(null);
-    if (!configured) {
-      setChecking(false);
-      return;
-    }
-    if (clean.length < 4) {
-      setResult(null);
-      setChecking(false);
-      return;
-    }
-    setChecking(true);
-    const timer = window.setTimeout(() => {
-      void client()
-        .functions.invoke("registration-bootstrap", {
-          body: { action: "match", full_name: clean },
-        })
-        .then(({ data, error }) => {
-          if (error) throw error;
-          setResult(data as PreRegistrationMatch);
-        })
-        .catch((error) => {
-          captureError("pre_registration_match", error);
-          setResult(null);
-        })
-        .finally(() => setChecking(false));
-    }, 350);
-    return () => window.clearTimeout(timer);
-  }, [name]);
-  return { result, checking };
-}
-
 function Login({ configured: ready }: { configured: boolean }) {
   const [mode, setMode] = useState<"login" | "signup" | "recover" | "manager">("login");
   const [busy, setBusy] = useState(false);
@@ -330,11 +267,9 @@ function Login({ configured: ready }: { configured: boolean }) {
     password: "",
     confirmation: "",
     departmentId: "",
-    roleCode: "COLLABORATOR",
   });
   const [mascotMood, setMascotMood] = useState<MascotMood>("idle");
   const options = useRegistrationOptions();
-  const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
 
   function changeMode(next: "login" | "signup" | "recover") {
     setSent(false);
@@ -347,15 +282,14 @@ function Login({ configured: ready }: { configured: boolean }) {
       password: "",
       confirmation: "",
       departmentId: "",
-      roleCode: "COLLABORATOR",
-    });
+      });
     setMode(next);
   }
 
   function continueSignupIdentity() {
     const email = signupDraft.email.trim().toLowerCase();
-    if (!nameMatch.result?.matched) {
-      toast.error("Localize e selecione seu nome na lista de pré-cadastros.");
+    if (!signupName.trim()) {
+      toast.error("Selecione seu nome na lista de cadastros.");
       setMascotMood("error");
       return;
     }
@@ -444,15 +378,14 @@ function Login({ configured: ready }: { configured: boolean }) {
       if (mode === "signup") {
         const phone = signupDraft.phone.trim();
         const departmentId = signupDraft.departmentId.trim();
-        const roleCode = signupDraft.roleCode.trim().toUpperCase();
 
         if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
           toast.error("Use um endereço @gmail.com válido.");
           setMascotMood("error");
           return;
         }
-        if (!nameMatch.result?.matched) {
-          toast.error("Localize e selecione seu nome na lista de pré-cadastros.");
+        if (!signupName.trim()) {
+          toast.error("Selecione seu nome na lista de cadastros.");
           setMascotMood("error");
           return;
         }
@@ -463,11 +396,6 @@ function Login({ configured: ready }: { configured: boolean }) {
         }
         if (!departmentId) {
           toast.error("Selecione seu departamento.");
-          setMascotMood("error");
-          return;
-        }
-        if (!options?.roles.some((role) => role.code === roleCode)) {
-          toast.error("Selecione seu cargo.");
           setMascotMood("error");
           return;
         }
@@ -487,10 +415,9 @@ function Login({ configured: ready }: { configured: boolean }) {
           password,
           options: {
             data: {
-              full_name: nameMatch.result.canonical_name || signupName.trim(),
+              full_name: signupName.trim(),
               phone,
               requested_department_id: departmentId,
-              requested_role_code: roleCode,
             },
             emailRedirectTo: redirect,
           },
@@ -647,64 +574,28 @@ function Login({ configured: ready }: { configured: boolean }) {
 
                 {signupStep === 1 && (
                   <>
-                    <Field label="Nome completo">
-                      <input
+                    <Field label="Quem é você?">
+                      <select
                         name="full_name"
-                        autoComplete="name"
                         value={signupName}
-                        onChange={(event) => setSignupName(event.target.value)}
+                        onChange={(event) => {
+                          setSignupName(event.target.value);
+                          setMascotMood("idle");
+                        }}
                         required
-                        minLength={4}
                         autoFocus
-                      />
+                      >
+                        <option value="">Selecione seu nome</option>
+                        {options?.registrations.map((registration) => (
+                          <option key={registration.full_name} value={registration.full_name}>
+                            {registration.full_name}
+                          </option>
+                        ))}
+                      </select>
                     </Field>
-                    {nameMatch.checking ? (
-                      <span className="muted">Procurando seu cadastro...</span>
-                    ) : nameMatch.result?.matched ? (
-                      <div className="notice">
-                        Cadastro localizado: <strong>{nameMatch.result.canonical_name}</strong>
-                      </div>
-                    ) : nameMatch.result?.reason === "ALREADY_REGISTERED" ? (
-                      <div className="notice">
-                        <strong>Este cadastro já foi ativado.</strong>
-                        <div className="actions">
-                          <button
-                            type="button"
-                            className="text-button"
-                            onClick={() => changeMode("login")}
-                          >
-                            Ir para o login
-                          </button>
-                        </div>
-                      </div>
-                    ) : nameMatch.result?.suggestions?.length ? (
-                      <div className="notice">
-                        <strong>Encontramos estes pré-cadastros:</strong>
-                        <div className="actions">
-                          {nameMatch.result.suggestions.map((candidate) => (
-                            <button
-                              key={candidate}
-                              type="button"
-                              className="text-button"
-                              onClick={() => {
-                                setSignupName(candidate);
-                                setMascotMood("idle");
-                              }}
-                            >
-                              {candidate}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : signupName.trim().length >= 4 ? (
-                      <span className="muted">
-                        Nenhum pré-cadastro parecido foi encontrado.
-                      </span>
-                    ) : (
-                      <span className="muted">
-                        Digite pelo menos 4 letras do seu nome para localizar seu cadastro.
-                      </span>
-                    )}
+                    <span className="muted">
+                      A lista mostra apenas cadastros ativos que ainda não foram vinculados a uma conta.
+                    </span>
                     <Field label="Gmail">
                       <input
                         name="email"
@@ -742,7 +633,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                     <button
                       type="button"
                       className="primary large"
-                      disabled={nameMatch.checking || !ready}
+                      disabled={!ready || !options || !signupName}
                       onClick={continueSignupIdentity}
                     >
                       Continuar para credenciais
@@ -830,27 +721,8 @@ function Login({ configured: ready }: { configured: boolean }) {
                         ))}
                       </select>
                     </Field>
-                    <Field label="Cargo">
-                      <select
-                        name="role_code"
-                        required
-                        value={signupDraft.roleCode}
-                        onChange={(event) =>
-                          setSignupDraft((current) => ({
-                            ...current,
-                            roleCode: event.target.value,
-                          }))
-                        }
-                      >
-                        {options?.roles.map((role) => (
-                          <option key={role.code} value={role.code}>
-                            {role.name}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
                     <span className="muted">
-                      Cargos com acesso elevado só são liberados quando já estiverem autorizados no cadastro-base.
+                      Seu cargo será aplicado automaticamente conforme o cadastro-base do RH.
                     </span>
                     <div className="actions">
                       <button type="button" disabled={busy} onClick={() => setSignupStep(2)}>
@@ -862,7 +734,6 @@ function Login({ configured: ready }: { configured: boolean }) {
                           busy ||
                           !ready ||
                           !options ||
-                          !nameMatch.result?.matched ||
                           !signupDraft.departmentId
                         }
                       >
@@ -1171,16 +1042,12 @@ function Onboarding({
   const [departmentId, setDepartmentId] = useState(
     user.profile.requested_department_id || "",
   );
-  const [roleCode, setRoleCode] = useState(
-    user.profile.requested_role_code || "COLLABORATOR",
-  );
   const options = useRegistrationOptions();
-  const nameMatch = usePreRegistrationMatch(name);
 
   async function finish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!nameMatch.result?.matched) {
-      toast.error("O nome precisa corresponder a um cadastro pré-existente.");
+    if (!name.trim()) {
+      toast.error("Selecione seu nome na lista de cadastros.");
       return;
     }
     if (!departmentId) {
@@ -1196,7 +1063,6 @@ function Onboarding({
           full_name: name,
           phone,
           department_id: departmentId,
-          role_code: roleCode,
           terms: form.get("terms") === "on",
         }),
       });
@@ -1239,28 +1105,25 @@ function Onboarding({
       </div>
 
       <form className="form-stack" onSubmit={finish}>
-        <Field label="Nome completo">
-          <input
+        <Field label="Quem é você?">
+          <select
             name="full_name"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            autoComplete="name"
             required
-            minLength={4}
-          />
+          >
+            <option value="">Selecione seu nome</option>
+            {options?.registrations.map((registration) => (
+              <option key={registration.full_name} value={registration.full_name}>
+                {registration.full_name}
+              </option>
+            ))}
+          </select>
         </Field>
 
-        {nameMatch.checking ? (
-          <span className="muted">Localizando seu cadastro...</span>
-        ) : nameMatch.result?.matched ? (
-          <div className="notice">
-            Cadastro reconhecido: <strong>{nameMatch.result.canonical_name}</strong>
-          </div>
-        ) : (
-          <span className="muted">
-            O nome precisa ser o mesmo do cadastro já existente no RH.
-          </span>
-        )}
+        <span className="muted">
+          Selecione exatamente o seu cadastro. O cargo será definido automaticamente pela base do RH.
+        </span>
 
         <Field label="Gmail">
           <input value={user.profile.email} readOnly aria-readonly="true" />
@@ -1302,21 +1165,6 @@ function Onboarding({
           </select>
         </Field>
 
-        <Field label="Cargo">
-          <select
-            name="role_code"
-            required
-            value={roleCode}
-            onChange={(event) => setRoleCode(event.target.value)}
-          >
-            {options?.roles.map((role) => (
-              <option key={role.code} value={role.code}>
-                {role.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-
         <details className="privacy">
           <summary>Uso dos seus dados</summary>
           <p>
@@ -1338,7 +1186,7 @@ function Onboarding({
           disabled={
             busy ||
             !options ||
-            !nameMatch.result?.matched ||
+            !name.trim() ||
             phone.trim().length < 8 ||
             !departmentId
           }
