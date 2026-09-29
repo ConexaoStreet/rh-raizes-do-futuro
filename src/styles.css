@@ -4852,28 +4852,3 @@ html[data-theme="light"] .login-card .notice {
     animation: none !important;
   }
 }
-
-.workspace-label{
-  overflow:hidden;
-  background:radial-gradient(circle at 14% 50%,#69e69420,transparent 30%),linear-gradient(115deg,#143a2be8,#0a231af5)
-}
-.workspace-icon{
-  overflow:hidden;
-  border-color:#adebbe26;
-  background:radial-gradient(circle,#4d9a6652,#113d2bbd 70%);
-  box-shadow:inset 0 0 12px #58d68416
-}
-.workspace-icon img{
-  width:28px;
-  height:28px;
-  filter:brightness(2.05) contrast(1.12);
-  opacity:.96
-}
-.avatar-dark{
-  overflow:hidden;
-  border:1px solid #9ae8b12b;
-  border-radius:11px;
-  color:#e9f8d5;
-  background:radial-gradient(circle,#336f4aea 0 45%,transparent 46%),conic-gradient(from 205deg,#143c2b,#2a6848,#143c2b 68%);
-  box-shadow:inset 0 0 10px #58d68418
-}
