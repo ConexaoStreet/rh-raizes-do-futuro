@@ -360,6 +360,7 @@ function Login({ configured: ready }: { configured: boolean }) {
   const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
 
   function changeMode(next: "login" | "signup" | "recover") {
+    if (next === "signup") void import("./registration.css");
     setSent(false);
     setVerificationEmail("");
     setMascotMood("idle");
