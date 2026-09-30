@@ -294,12 +294,14 @@ const preRegistrationMatchCache = new Map<string, PreRegistrationMatch>();
 function usePreRegistrationMatch(name: string) {
   const [result, setResult] = useState<PreRegistrationMatch | null>(null);
   const [checking, setChecking] = useState(false);
+  const [failed, setFailed] = useState(false);
   const requestVersion = useRef(0);
 
   useEffect(() => {
     const clean = name.trim();
     const requestId = ++requestVersion.current;
     setResult(null);
+    setFailed(false);
 
     if (!configured || clean.length < 4) {
       setChecking(false);
@@ -324,11 +326,17 @@ function usePreRegistrationMatch(name: string) {
           if (error) throw error;
           const next = data as PreRegistrationMatch;
           preRegistrationMatchCache.set(cacheKey, next);
-          if (requestVersion.current === requestId) setResult(next);
+          if (requestVersion.current === requestId) {
+            setResult(next);
+            setFailed(false);
+          }
         })
         .catch((error) => {
           captureError("pre_registration_match", error);
-          if (requestVersion.current === requestId) setResult(null);
+          if (requestVersion.current === requestId) {
+            setResult(null);
+            setFailed(true);
+          }
         })
         .finally(() => {
           if (requestVersion.current === requestId) setChecking(false);
@@ -338,7 +346,7 @@ function usePreRegistrationMatch(name: string) {
     return () => window.clearTimeout(timer);
   }, [name]);
 
-  return { result, checking };
+  return { result, checking, failed };
 }
 
 function Login({ configured: ready }: { configured: boolean }) {
@@ -378,7 +386,9 @@ function Login({ configured: ready }: { configured: boolean }) {
   function continueSignupIdentity() {
     if (!nameMatch.result?.matched) {
       toast.error(
-        nameMatch.result?.suggestions?.length
+        nameMatch.failed
+          ? "Não foi possível consultar os pré-cadastros agora. Tente novamente."
+          : nameMatch.result?.suggestions?.length
           ? "Escolha seu nome em um dos resultados encontrados."
           : "Digite seu nome como aparece no pré-cadastro do RH.",
       );
@@ -687,6 +697,11 @@ function Login({ configured: ready }: { configured: boolean }) {
                       {nameMatch.checking ? (
                         <div className="registration-match-status muted">
                           Procurando seu cadastro...
+                        </div>
+                      ) : nameMatch.failed ? (
+                        <div className="registration-empty" role="alert">
+                          Não foi possível consultar os pré-cadastros. Atualize a página
+                          e tente novamente.
                         </div>
                       ) : nameMatch.result?.matched ? (
                         <div className="registration-selected" role="status">
