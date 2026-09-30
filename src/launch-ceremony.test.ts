@@ -25,12 +25,10 @@ describe("presentation launch ceremony", () => {
     expect(gate).toContain("if (now >= END_AT) return");
   });
 
-  it("mounts before authentication and stays lazy", () => {
+  it("keeps the ceremony archived but removes it from the live app after launch day", () => {
     expect(gate).toContain('lazy(() => import("./LaunchCeremony"))');
-    expect(app).toContain("<PresentationGate>");
-    expect(app.indexOf("<PresentationGate>")).toBeLessThan(
-      app.indexOf("<AuthBoundary>"),
-    );
+    expect(app).not.toContain("PresentationGate");
+    expect(app).toContain("<AuthBoundary>");
   });
 
   it("assigns a stable theme and renders responsive artwork as image content", () => {
