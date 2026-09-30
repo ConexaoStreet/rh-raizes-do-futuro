@@ -44,7 +44,7 @@
     "vitest": "4.1.11",
     "@electric-sql/pglite": "0.3.10",
     "@playwright/test": "1.55.1",
-    "eslint": "9.36.0",
+    "eslint": "10.11.0",
     "typescript-eslint": "8.44.1",
     "eslint-plugin-react-hooks": "5.2.0",
     "globals": "16.4.0",
