@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 const main = readFileSync("src/main.tsx", "utf8");
 const components = readFileSync("src/components.tsx", "utf8");
 const styles = readFileSync("src/styles/rh-redesign.css", "utf8");
-const shell = readFileSync("src/App.tsx", "utf8");
+const shell = readFileSync("src/Shell.tsx", "utf8");
 const navigation = readFileSync("src/layout/RhNavigation.ts", "utf8");
 const legacyStyles = readFileSync("src/styles.css", "utf8");
 

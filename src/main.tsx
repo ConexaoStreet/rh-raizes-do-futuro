@@ -51,10 +51,12 @@ window.addEventListener("load", () => {
       });
     }
 
-    void navigator.serviceWorker
-      .register("/sw.js", { updateViaCache: "none" })
-      .then((registration) => registration.update())
-      .catch((error) => captureError("service_worker", error));
+    window.setTimeout(() => {
+      void navigator.serviceWorker
+        .register("/sw.js", { updateViaCache: "none" })
+        .then((registration) => registration.update())
+        .catch((error) => captureError("service_worker", error));
+    }, 500);
   }
 });
 

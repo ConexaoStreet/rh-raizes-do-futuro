@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const performance = readFileSync(new URL("./Performance.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
-const app = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
+const shell = readFileSync(new URL("./Shell.tsx", import.meta.url), "utf8");
 const migration = readFileSync(
   new URL("../supabase/migrations/20260928152231_rh_personalized_notifications.sql", import.meta.url),
   "utf8",
@@ -22,8 +22,8 @@ describe("RH gradebook and personalized notifications", () => {
   });
 
   it("replaces the generic RH workspace tile with the official mark", () => {
-    expect(app).toContain('/brand/raizes-logo-mark.png');
-    expect(app).not.toContain('<span className="workspace-icon">RH</span>');
+    expect(shell).toContain('/brand/raizes-logo-mark.png');
+    expect(shell).not.toContain('<span className="workspace-icon">RH</span>');
   });
 
   it("routes only RH-scoped notifications to personalized delivery", () => {
