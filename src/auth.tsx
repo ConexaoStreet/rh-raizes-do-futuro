@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ChangeEventHandler,
   type FormEvent,
   type ReactNode,
@@ -109,10 +110,17 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
       if (event === "PASSWORD_RECOVERY") setRecovery(true);
       setTimeout(() => void refresh(), 0);
     });
-    const timer = setInterval(() => void refresh(), 30000);
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const timer = window.setInterval(refreshWhenVisible, 30000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
     return () => {
       subscription.unsubscribe();
-      clearInterval(timer);
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [refresh]);
   if (loading)
@@ -260,10 +268,10 @@ type PreRegistrationMatch = {
   reason?: string;
 };
 
-function useRegistrationOptions() {
+function useRegistrationOptions(enabled = true) {
   const [options, setOptions] = useState<RegistrationOptions | null>(null);
   useEffect(() => {
-    if (!configured) return;
+    if (!configured || !enabled || options) return;
     let active = true;
     void client()
       .functions.invoke("registration-bootstrap", { body: { action: "options" } })
@@ -275,25 +283,35 @@ function useRegistrationOptions() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [enabled, options]);
   return options;
 }
+
+const preRegistrationMatchCache = new Map<string, PreRegistrationMatch>();
 
 function usePreRegistrationMatch(name: string) {
   const [result, setResult] = useState<PreRegistrationMatch | null>(null);
   const [checking, setChecking] = useState(false);
+  const requestVersion = useRef(0);
+
   useEffect(() => {
     const clean = name.trim();
+    const requestId = ++requestVersion.current;
     setResult(null);
-    if (!configured) {
+
+    if (!configured || clean.length < 4) {
       setChecking(false);
       return;
     }
-    if (clean.length < 4) {
-      setResult(null);
+
+    const cacheKey = clean.toLocaleLowerCase("pt-BR");
+    const cached = preRegistrationMatchCache.get(cacheKey);
+    if (cached) {
+      setResult(cached);
       setChecking(false);
       return;
     }
+
     setChecking(true);
     const timer = window.setTimeout(() => {
       void client()
@@ -302,16 +320,22 @@ function usePreRegistrationMatch(name: string) {
         })
         .then(({ data, error }) => {
           if (error) throw error;
-          setResult(data as PreRegistrationMatch);
+          const next = data as PreRegistrationMatch;
+          preRegistrationMatchCache.set(cacheKey, next);
+          if (requestVersion.current === requestId) setResult(next);
         })
         .catch((error) => {
           captureError("pre_registration_match", error);
-          setResult(null);
+          if (requestVersion.current === requestId) setResult(null);
         })
-        .finally(() => setChecking(false));
-    }, 350);
+        .finally(() => {
+          if (requestVersion.current === requestId) setChecking(false);
+        });
+    }, 300);
+
     return () => window.clearTimeout(timer);
   }, [name]);
+
   return { result, checking };
 }
 
@@ -330,7 +354,7 @@ function Login({ configured: ready }: { configured: boolean }) {
     departmentId: "",
   });
   const [mascotMood, setMascotMood] = useState<MascotMood>("idle");
-  const options = useRegistrationOptions();
+  const options = useRegistrationOptions(mode === "signup");
   const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
 
   function changeMode(next: "login" | "signup" | "recover") {
