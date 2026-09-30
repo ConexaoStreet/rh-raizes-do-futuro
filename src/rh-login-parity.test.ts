@@ -11,7 +11,8 @@ describe("RH login parity with Central T.I.", () => {
     expect(auth).toContain("login-page-signup");
     expect(auth).toContain('className="login-brand"');
     expect(auth).toContain('className="login-panel"');
-    expect(auth).toContain('className="login-stage"');
+    expect(auth).toContain("login-stage");
+    expect(auth).toContain("login-stage-signup");
     expect(auth).toContain("login-card");
     expect(auth).toContain("Ativar cadastro");
     expect(auth).toContain("Esqueci minha senha");
