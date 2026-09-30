@@ -61,6 +61,55 @@ function normalizeName(value: string) {
     .trim();
 }
 
+function editDistance(left: string, right: string) {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= left.length; i += 1) {
+    let diagonal = previous[0];
+    previous[0] = i;
+    for (let j = 1; j <= right.length; j += 1) {
+      const above = previous[j];
+      previous[j] = Math.min(
+        previous[j] + 1,
+        previous[j - 1] + 1,
+        diagonal + (left[i - 1] === right[j - 1] ? 0 : 1),
+      );
+      diagonal = above;
+    }
+  }
+  return previous[right.length];
+}
+
+function nameSuggestionScore(candidate: string, submitted: string) {
+  if (candidate === submitted) return 1000;
+  if (candidate.startsWith(submitted)) return 940;
+
+  const candidateTokens = candidate.split(" ").filter(Boolean);
+  const submittedTokens = submitted.split(" ").filter(Boolean);
+
+  if (
+    submittedTokens.length > 1 &&
+    submittedTokens.every((token) =>
+      candidateTokens.some((candidateToken) => candidateToken.startsWith(token))
+    )
+  ) {
+    return 900;
+  }
+
+  if (candidateTokens.some((token) => token.startsWith(submitted))) return 860;
+  if (candidate.includes(submitted)) return 820;
+
+  if (submitted.length >= 5) {
+    const tolerance = submitted.length >= 9 ? 2 : 1;
+    const closest = candidateTokens.reduce(
+      (best, token) => Math.min(best, editDistance(token, submitted)),
+      Number.POSITIVE_INFINITY,
+    );
+    if (closest <= tolerance) return 760 - closest * 20;
+  }
+
+  return 0;
+}
+
 Deno.serve(async (request) => {
   const startedAt = Date.now();
   const origin = request.headers.get("origin") || PROD_ORIGIN;
@@ -258,24 +307,23 @@ Deno.serve(async (request) => {
         });
       }
       const suggestions = Array.from(
-        new Set(
+        new Map(
           eligible
-            .filter(
-              (employee) =>
-                employee.normalized_name.startsWith(submitted) ||
-                employee.normalized_name.includes(` ${submitted}`),
+            .map((employee) => ({
+              full_name: employee.full_name,
+              score: nameSuggestionScore(employee.normalized_name, submitted),
+            }))
+            .filter((employee) => employee.score > 0)
+            .sort(
+              (left, right) =>
+                right.score - left.score ||
+                left.full_name.localeCompare(right.full_name, "pt-BR"),
             )
-            .sort((left, right) => {
-              const leftStarts = left.normalized_name.startsWith(submitted) ? 0 : 1;
-              const rightStarts = right.normalized_name.startsWith(submitted) ? 0 : 1;
-              return (
-                leftStarts - rightStarts ||
-                left.full_name.localeCompare(right.full_name, "pt-BR")
-              );
-            })
-            .map((employee) => employee.full_name),
-        ),
-      ).slice(0, 5);
+            .map((employee) => [employee.full_name, employee] as const),
+        ).values(),
+      )
+        .slice(0, 6)
+        .map((employee) => employee.full_name);
 
       observe("registration_bootstrap.match", {
         outcome: suggestions.length ? "suggestions" : "not_found",

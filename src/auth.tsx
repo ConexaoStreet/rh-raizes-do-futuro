@@ -19,6 +19,8 @@ import {
   LogOut,
   Sparkles,
   KeyRound,
+  Search,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { client, configured, rpc, json, runAction, supabase } from "./api";
@@ -358,6 +360,7 @@ function Login({ configured: ready }: { configured: boolean }) {
   const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
 
   function changeMode(next: "login" | "signup" | "recover") {
+    if (next === "signup") void import("./registration.css");
     setSent(false);
     setVerificationEmail("");
     setMascotMood("idle");
@@ -373,12 +376,21 @@ function Login({ configured: ready }: { configured: boolean }) {
   }
 
   function continueSignupIdentity() {
-    const email = signupDraft.email.trim().toLowerCase();
     if (!nameMatch.result?.matched) {
-      toast.error("Localize e selecione seu nome na lista de pré-cadastros.");
+      toast.error(
+        nameMatch.result?.suggestions?.length
+          ? "Escolha seu nome em um dos resultados encontrados."
+          : "Digite seu nome como aparece no pré-cadastro do RH.",
+      );
       setMascotMood("error");
       return;
     }
+    setMascotMood("idle");
+    setSignupStep(2);
+  }
+
+  function continueSignupCredentials() {
+    const email = signupDraft.email.trim().toLowerCase();
     if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
       toast.error("Use um endereço @gmail.com válido.");
       setMascotMood("error");
@@ -389,11 +401,6 @@ function Login({ configured: ready }: { configured: boolean }) {
       setMascotMood("error");
       return;
     }
-    setMascotMood("idle");
-    setSignupStep(2);
-  }
-
-  function continueSignupCredentials() {
     if (!strongPassword(signupDraft.password)) {
       toast.error(PASSWORD_POLICY_MESSAGE);
       setMascotMood("error");
@@ -471,7 +478,7 @@ function Login({ configured: ready }: { configured: boolean }) {
           return;
         }
         if (!nameMatch.result?.matched) {
-          toast.error("Localize e selecione seu nome na lista de pré-cadastros.");
+          toast.error("Selecione seu nome no pré-cadastro antes de ativar.");
           setMascotMood("error");
           return;
         }
@@ -554,19 +561,19 @@ function Login({ configured: ready }: { configured: boolean }) {
         : "ACESSO AO RH";
   const heading =
     mode === "signup"
-      ? "Ativar meu cadastro"
+      ? "Ative seu acesso"
       : mode === "recover"
         ? "Recuperar acesso"
         : "Entrar no RH";
   const description =
     mode === "signup"
-      ? "Confirme seu cadastro pré-existente para liberar seu acesso."
+      ? "Encontre seu nome no pré-cadastro e conclua o primeiro acesso em 3 passos."
       : mode === "recover"
         ? "Informe seu e-mail para receber um link seguro de redefinição."
         : "Use seu e-mail e senha para acessar o ambiente de gestão de RH.";
 
   return (
-    <div className="login-page">
+    <div className={`login-page ${mode === "signup" ? "login-page-signup" : ""}`}>
       <div className="login-theme-control">
         <ThemeToggle compact />
       </div>
@@ -585,7 +592,7 @@ function Login({ configured: ready }: { configured: boolean }) {
       </section>
 
       <section className="login-panel">
-        <div className="login-stage">
+        <div className={`login-stage ${mode === "signup" ? "login-stage-signup" : ""}`}>
           <LoginMascot
             mood={mascotMood}
             placement="login"
@@ -651,7 +658,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                     1. Identidade
                   </span>
                   <span className={signupStep === 2 ? "active" : signupStep > 2 ? "done" : ""}>
-                    2. Credenciais
+                    2. Acesso
                   </span>
                   <span className={signupStep === 3 ? "active" : ""}>
                     3. Vínculo
@@ -660,65 +667,103 @@ function Login({ configured: ready }: { configured: boolean }) {
 
                 {signupStep === 1 && (
                   <>
-                    <Field label="Nome completo">
-                      <input
-                        name="full_name"
-                        autoComplete="name"
-                        value={signupName}
-                        onChange={(event) => setSignupName(event.target.value)}
-                        required
-                        minLength={4}
-                        autoFocus
-                      />
-                    </Field>
-                    {nameMatch.checking ? (
-                      <span className="muted">Procurando seu cadastro...</span>
-                    ) : nameMatch.result?.matched ? (
-                      <div className="notice">
-                        Cadastro localizado: <strong>{nameMatch.result.canonical_name}</strong>
-                      </div>
-                    ) : nameMatch.result?.reason === "ALREADY_REGISTERED" ? (
-                      <div className="notice">
-                        <strong>Este cadastro já foi ativado.</strong>
-                        <div className="actions">
-                          <button
-                            type="button"
-                            className="text-button"
-                            onClick={() => changeMode("login")}
-                          >
-                            Ir para o login
-                          </button>
+                    <div className="registration-search">
+                      <Field label="Seu nome no pré-cadastro">
+                        <div className="registration-search-input">
+                          <Search size={18} aria-hidden="true" />
+                          <input
+                            name="full_name"
+                            autoComplete="name"
+                            value={signupName}
+                            onChange={(event) => setSignupName(event.target.value)}
+                            placeholder="Digite seu primeiro nome ou sobrenome"
+                            required
+                            minLength={4}
+                            autoFocus
+                          />
                         </div>
-                      </div>
-                    ) : nameMatch.result?.suggestions?.length ? (
-                      <div className="notice">
-                        <strong>Selecione seu cadastro:</strong>
-                        <select
-                          value=""
+                      </Field>
+
+                      {nameMatch.checking ? (
+                        <div className="registration-match-status muted">
+                          Procurando seu cadastro...
+                        </div>
+                      ) : nameMatch.result?.matched ? (
+                        <div className="registration-selected" role="status">
+                          <CheckCircle2 size={18} aria-hidden="true" />
+                          <span>
+                            Encontrado: <strong>{nameMatch.result.canonical_name}</strong>
+                          </span>
+                        </div>
+                      ) : nameMatch.result?.reason === "ALREADY_REGISTERED" ? (
+                        <div className="registration-selected registration-already">
+                          <CheckCircle2 size={18} aria-hidden="true" />
+                          <div>
+                            <strong>Esse cadastro já foi ativado.</strong>
+                            <button
+                              type="button"
+                              className="text-button"
+                              onClick={() => changeMode("login")}
+                            >
+                              Ir para entrar
+                            </button>
+                          </div>
+                        </div>
+                      ) : nameMatch.result?.suggestions?.length ? (
+                        <div
+                          className="registration-match-list"
+                          role="listbox"
                           aria-label="Cadastros encontrados"
-                          onChange={(event) => {
-                            if (!event.target.value) return;
-                            setSignupName(event.target.value);
-                            setMascotMood("idle");
-                          }}
                         >
-                          <option value="">Escolher nome</option>
+                          <span className="registration-match-title">
+                            Toque no seu nome
+                          </span>
                           {nameMatch.result.suggestions.map((candidate) => (
-                            <option key={candidate} value={candidate}>
-                              {candidate}
-                            </option>
+                            <button
+                              key={candidate}
+                              type="button"
+                              role="option"
+                              aria-selected={false}
+                              className="registration-match-option"
+                              onClick={() => {
+                                setSignupName(candidate);
+                                setMascotMood("idle");
+                              }}
+                            >
+                              <span>{candidate}</span>
+                              <ArrowRight size={16} aria-hidden="true" />
+                            </button>
                           ))}
-                        </select>
-                      </div>
-                    ) : signupName.trim().length >= 4 ? (
-                      <span className="muted">
-                        Nenhum pré-cadastro parecido foi encontrado.
-                      </span>
-                    ) : (
-                      <span className="muted">
-                        Digite pelo menos 4 letras do seu nome para localizar seu cadastro.
-                      </span>
-                    )}
+                        </div>
+                      ) : signupName.trim().length >= 4 ? (
+                        <div className="registration-empty">
+                          Não encontrei um pré-cadastro com esse texto. Tente seu primeiro
+                          nome, sobrenome ou o nome completo usado pelo RH.
+                        </div>
+                      ) : (
+                        <div className="registration-match-status muted">
+                          Digite pelo menos 4 letras. A busca aceita partes do nome.
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="primary large signup-next"
+                      disabled={nameMatch.checking || !ready || !nameMatch.result?.matched}
+                      onClick={continueSignupIdentity}
+                    >
+                      Continuar
+                      <ArrowRight size={18} />
+                    </button>
+                  </>
+                )}
+
+                {signupStep === 2 && (
+                  <>
+                    <span className="muted">
+                      Confirme seus contatos e crie uma senha exclusiva para o RH.
+                    </span>
                     <Field label="Gmail">
                       <input
                         name="email"
@@ -742,6 +787,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                         type="tel"
                         autoComplete="tel"
                         inputMode="tel"
+                        placeholder="(11) 99999-9999"
                         value={signupDraft.phone}
                         onChange={(event) =>
                           setSignupDraft((current) => ({
@@ -753,23 +799,6 @@ function Login({ configured: ready }: { configured: boolean }) {
                         minLength={8}
                       />
                     </Field>
-                    <button
-                      type="button"
-                      className="primary large"
-                      disabled={nameMatch.checking || !ready}
-                      onClick={continueSignupIdentity}
-                    >
-                      Continuar para credenciais
-                      <ArrowRight size={18} />
-                    </button>
-                  </>
-                )}
-
-                {signupStep === 2 && (
-                  <>
-                    <span className="muted">
-                      Crie uma senha exclusiva para seu acesso ao RH.
-                    </span>
                     <Field label="Senha">
                       <PasswordInput
                         autoComplete="new-password"

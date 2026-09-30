@@ -12,7 +12,7 @@ describe("RH first-access redesign", () => {
   it("presents signup in three focused steps", () => {
     expect(auth).toContain("const [signupStep, setSignupStep] = useState<1 | 2 | 3>(1)");
     expect(auth).toContain("1. Identidade");
-    expect(auth).toContain("2. Credenciais");
+    expect(auth).toContain("2. Acesso");
     expect(auth).toContain("3. Vínculo");
     expect(auth).toContain("continueSignupIdentity");
     expect(auth).toContain("continueSignupCredentials");
@@ -28,14 +28,15 @@ describe("RH first-access redesign", () => {
 
   it("shows partial pre-registered matches in a selectable list", () => {
     expect(auth).toContain("suggestions?: string[]");
-    expect(auth).toContain("Selecione seu cadastro:");
+    expect(auth).toContain("Toque no seu nome");
     expect(auth).toContain('aria-label="Cadastros encontrados"');
-    expect(auth).toContain("setSignupName(event.target.value)");
+    expect(auth).toContain("setSignupName(candidate)");
     expect(auth).toContain("nameMatch.result?.matched");
-    expect(registrationBootstrap).toContain("employee.normalized_name.startsWith(submitted)");
-    expect(registrationBootstrap).toContain("employee.normalized_name.includes(\` \${submitted}\`)");
+    expect(registrationBootstrap).toContain("nameSuggestionScore");
+    expect(registrationBootstrap).toContain("candidateTokens.some");
+    expect(registrationBootstrap).toContain("editDistance");
     expect(registrationBootstrap).toContain("suggestions.length ? \"SUGGESTIONS\" : \"NOT_FOUND\"");
-    expect(registrationBootstrap).toContain(").slice(0, 5)");
+    expect(registrationBootstrap).toContain(".slice(0, 6)");
   });
 
   it("preserves signup metadata and redirect behavior", () => {
@@ -50,9 +51,9 @@ describe("RH first-access redesign", () => {
 
   it("keeps first access covered by browser tests", () => {
     expect(e2e).toContain('page.getByText("1. Identidade")');
-    expect(e2e).toContain('page.getByText("2. Credenciais")');
+    expect(e2e).toContain('page.getByText("2. Acesso")');
     expect(e2e).toContain('page.getByText("3. Vínculo")');
-    expect(e2e).toContain('name: "Continuar para credenciais"');
-    expect(e2e).toContain("test.user.e2e@gmail.com");
+    expect(e2e).toContain('name: "Continuar"');
+    expect(e2e).toContain("Digite seu primeiro nome ou sobrenome");
   });
 });

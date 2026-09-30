@@ -7,10 +7,12 @@ const styles = readFileSync("src/styles.css", "utf8");
 
 describe("RH login parity with Central T.I.", () => {
   it("uses the same responsive editorial shell without removing RH flows", () => {
-    expect(auth).toContain('className="login-page"');
+    expect(auth).toContain("login-page");
+    expect(auth).toContain("login-page-signup");
     expect(auth).toContain('className="login-brand"');
     expect(auth).toContain('className="login-panel"');
-    expect(auth).toContain('className="login-stage"');
+    expect(auth).toContain("login-stage");
+    expect(auth).toContain("login-stage-signup");
     expect(auth).toContain("login-card");
     expect(auth).toContain("Ativar cadastro");
     expect(auth).toContain("Esqueci minha senha");
