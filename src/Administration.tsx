@@ -310,6 +310,33 @@ function ManageUser({
       assigned: assigned.data,
     };
   }, [profile.id]);
+
+  const availableRoles = data.data?.roles || [];
+  const assignedRoles = availableRoles.filter((role) =>
+    data.data?.assigned.some((assignment) => assignment.role_id === role.id),
+  );
+  const actorIsSuper = user.roles.includes("SUPER_ADMIN");
+  const actorLevel = Math.max(
+    0,
+    ...availableRoles
+      .filter((role) => user.roles.includes(role.code))
+      .map((role) => role.level),
+  );
+  const targetLevel = Math.max(0, ...assignedRoles.map((role) => role.level));
+  const targetReserved = assignedRoles.some((role) =>
+    ["SUPER_ADMIN", "TI_ADMIN"].includes(role.code),
+  );
+  const mayManageTarget =
+    profile.status === "pending" ||
+    actorIsSuper ||
+    (!targetReserved && targetLevel < actorLevel);
+  const assignableRoles = availableRoles.filter(
+    (role) =>
+      actorIsSuper ||
+      (role.level < actorLevel &&
+        !["SUPER_ADMIN", "TI_ADMIN"].includes(role.code)),
+  );
+
   return (
     <Modal title={profile.full_name} open onClose={onClose}>
       <p>{profile.email}</p>
@@ -318,13 +345,19 @@ function ManageUser({
           O cadastro precisa ser concluído pelo usuário.
         </div>
       )}
+      {!data.loading && !mayManageTarget && profile.status !== "pending" && (
+        <div className="notice">
+          Esta conta está em um nível protegido. O Instrutor não pode alterar
+          Desenvolvedor, Administração T.I. nem outra conta de Instrutor.
+        </div>
+      )}
       {data.loading ? (
         <Loading />
       ) : (
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            if (profile.id === user.profile.id) return;
+            if (profile.id === user.profile.id || !mayManageTarget) return;
             const f = new FormData(e.currentTarget);
             setBusy(true);
             const ok = await runAction(() =>
@@ -373,7 +406,7 @@ function ManageUser({
                 </Field>
                 <h3>Cargos</h3>
                 {can("user.manage") &&
-                  data.data?.roles.map((r) => (
+                  assignableRoles.map((r) => (
                     <label className="check" key={r.id}>
                       <input
                         name="role"
@@ -397,6 +430,7 @@ function ManageUser({
               className="primary"
               disabled={
                 busy ||
+                !mayManageTarget ||
                 profile.id === user.profile.id ||
                 (profile.status === "pending" && !profile.onboarded_at)
               }
@@ -410,6 +444,7 @@ function ManageUser({
   );
 }
 function RolesPage() {
+  const { can } = useAuth();
   const [selected, setSelected] = useState<Row<"roles"> | null | undefined>();
   const [duplicate, setDuplicate] = useState(false);
   const [historyId, setHistoryId] = useState("");
@@ -432,16 +467,18 @@ function RolesPage() {
   return (
     <>
       <Heading title="Cargos e permissões" eyebrow="ADMINISTRAÇÃO">
-        <button
-          className="primary"
-          onClick={() => {
-            setDuplicate(false);
-            setSelected(null);
-          }}
-        >
-          <Plus size={18} />
-          Novo cargo
-        </button>
+        {can("role.manage") && (
+          <button
+            className="primary"
+            onClick={() => {
+              setDuplicate(false);
+              setSelected(null);
+            }}
+          >
+            <Plus size={18} />
+            Novo cargo
+          </button>
+        )}
       </Heading>
       {data.loading ? (
         <Loading />
@@ -468,7 +505,7 @@ function RolesPage() {
                     {role.privileged && <span>Acesso elevado</span>}
                   </div>
                   <div className="actions">
-                    {role.code !== "SUPER_ADMIN" && (
+                    {can("role.manage") && role.code !== "SUPER_ADMIN" && (
                       <button
                         onClick={() => {
                           setDuplicate(false);
@@ -478,16 +515,18 @@ function RolesPage() {
                         Editar
                       </button>
                     )}
-                    <button
-                      className="icon-button"
-                      aria-label={`Duplicar ${role.name}`}
-                      onClick={() => {
-                        setDuplicate(true);
-                        setSelected(role);
-                      }}
-                    >
-                      <Copy size={17} />
-                    </button>
+                    {can("role.manage") && (
+                      <button
+                        className="icon-button"
+                        aria-label={`Duplicar ${role.name}`}
+                        onClick={() => {
+                          setDuplicate(true);
+                          setSelected(role);
+                        }}
+                      >
+                        <Copy size={17} />
+                      </button>
+                    )}
                     <button
                       className="icon-button"
                       aria-label={`Histórico de ${role.name}`}
@@ -558,7 +597,7 @@ function RolesPage() {
                 </table>
               </div>
             </section>
-            {selected !== undefined && (
+            {can("role.manage") && selected !== undefined && (
               <RoleForm
                 role={selected}
                 duplicate={duplicate}
@@ -753,6 +792,7 @@ type RoleAssignmentHistory = Row<"user_role_history"> & {
 };
 
 function RoleHistory({ id, onSaved }: { id: string; onSaved: () => void }) {
+  const { can } = useAuth();
   const data = useAsync(async () => {
     const [changes, assignments] = await Promise.all([
       client()
@@ -795,7 +835,8 @@ function RoleHistory({ id, onSaved }: { id: string; onSaved: () => void }) {
                   <summary>Antes e depois</summary>
                   <JsonDiff before={row.old_values} after={row.new_values} />
                 </details>
-                {row.action === "save_role" &&
+                {can("role.manage") &&
+                  row.action === "save_role" &&
                   row.old_values &&
                   typeof row.context === "object" &&
                   row.context &&

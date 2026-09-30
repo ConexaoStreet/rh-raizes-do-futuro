@@ -12,6 +12,9 @@ const users = {
   second: uid(5),
   pending: uid(6),
   nomfa: uid(7),
+  instructor: uid(8),
+  tiadmin: uid(9),
+  lower: uid(10),
 };
 const sessions = Object.fromEntries(
   Object.entries(users).map(([name], i) => [name, uid(100 + i)]),
@@ -71,15 +74,19 @@ for (const [name, id] of Object.entries(users)) {
   const code =
     name === "admin"
       ? "SUPER_ADMIN"
-      : ["rafaella", "nicolas", "nomfa"].includes(name)
-        ? "MANAGER"
-        : "COLLABORATOR";
+      : name === "instructor"
+        ? "INSTRUCTOR"
+        : name === "tiadmin"
+          ? "TI_ADMIN"
+          : ["rafaella", "nicolas", "nomfa"].includes(name)
+            ? "MANAGER"
+            : "COLLABORATOR";
   if (name !== "pending")
     await root(
       "insert into public.user_roles select $1,id from public.roles where code=$2",
       [id, code],
     );
-  if (["admin", "rafaella", "nicolas"].includes(name))
+  if (["admin", "rafaella", "nicolas", "instructor", "tiadmin"].includes(name))
     await root(
       "insert into private.session_security(session_id,user_id,verified_at,verified_until) values($1,$2,now(),now()+interval '8 hours')",
       [sessions[name], id],
@@ -170,6 +177,124 @@ await test("Diretor e instrutor mantêm permissão de lançamento de notas", asy
     rows.rows.map((row) => row.code),
     ["DIRECTOR", "INSTRUCTOR", "MANAGER", "SUPER_ADMIN"],
   );
+});
+
+await test("Instrutor fica abaixo apenas do Desenvolvedor na hierarquia do RH", async () => {
+  const rows = (
+    await root(
+      "select code,level,privileged from public.roles where code in ('SUPER_ADMIN','TI_ADMIN','DIRECTOR','MANAGER','INSTRUCTOR','COLLABORATOR') order by level desc",
+    )
+  ).rows;
+  const byCode = Object.fromEntries(rows.map((row) => [row.code, row]));
+  assert.equal(byCode.INSTRUCTOR.level, 95);
+  assert.equal(byCode.INSTRUCTOR.privileged, true);
+  assert.ok(byCode.SUPER_ADMIN.level > byCode.INSTRUCTOR.level);
+  assert.ok(byCode.INSTRUCTOR.level > byCode.TI_ADMIN.level);
+  assert.ok(byCode.INSTRUCTOR.level > byCode.DIRECTOR.level);
+  assert.ok(byCode.INSTRUCTOR.level > byCode.MANAGER.level);
+  assert.ok(byCode.INSTRUCTOR.level > byCode.COLLABORATOR.level);
+});
+
+await test("Instrutor recebe gestão ampla do RH sem permissão técnica", async () => {
+  const required = [
+    "attendance.maintenance",
+    "attendance.manage",
+    "attendance.view",
+    "audit.view",
+    "calendar.manage",
+    "dashboard.view",
+    "employee.manage",
+    "employee.view",
+    "feedback.manage",
+    "feedback.view",
+    "files.manage",
+    "instructor.view",
+    "justification.manage",
+    "justification.view",
+    "performance.grade",
+    "performance.manage",
+    "performance.view",
+    "report.export",
+    "report.view",
+    "review.manage",
+    "review.results",
+    "role.view",
+    "settings.manage",
+    "user.approve",
+    "user.manage",
+    "user.view",
+  ];
+  const rows = (
+    await root(
+      "select p.code from public.roles r join public.role_permissions rp on rp.role_id=r.id join public.permissions p on p.id=rp.permission_id where r.code='INSTRUCTOR' order by p.code",
+    )
+  ).rows.map((row) => row.code);
+  for (const permission of required) assert.ok(rows.includes(permission), permission);
+  assert.equal(rows.some((permission) => permission.startsWith("ti.")), false);
+  assert.equal(rows.includes("system.manage"), false);
+  assert.equal(rows.includes("audit.security"), false);
+  assert.equal(rows.includes("role.manage"), false);
+});
+
+await test("Instrutor visualiza equipe do RH e integrantes da turma", async () => {
+  const visible = await as(
+    "instructor",
+    "select registration,member_group from public.employees where registration like 'TEST-%' order by registration",
+  );
+  assert.equal(visible.rows.length, 57);
+  assert.ok(visible.rows.some((row) => row.member_group === "rh"));
+  assert.ok(visible.rows.some((row) => row.member_group === "class"));
+});
+
+await test("Instrutor não administra nem inspeciona sessões de Desenvolvedor ou T.I.", async () => {
+  await blocked(
+    as(
+      "instructor",
+      "select public.manage_user($1,'active',array[(select id from public.roles where code='COLLABORATOR')],$2)",
+      [users.admin, "Tentativa contra Desenvolvedor"],
+    ),
+  );
+  await blocked(
+    as(
+      "instructor",
+      "select public.manage_user($1,'active',array[(select id from public.roles where code='COLLABORATOR')],$2)",
+      [users.tiadmin, "Tentativa contra T.I."],
+    ),
+  );
+  await blocked(
+    as("instructor", "select public.my_sessions($1)", [users.admin]),
+  );
+  await blocked(
+    as("instructor", "select public.revoke_session($1)", [sessions.tiadmin]),
+  );
+});
+
+await test("Instrutor administra papéis inferiores com verificação recente", async () => {
+  await as(
+    "instructor",
+    "select public.manage_user($1,'active',array[(select id from public.roles where code='MANAGER')],$2)",
+    [users.lower, "Promoção autorizada pelo Instrutor"],
+  );
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from public.user_roles ur join public.roles r on r.id=ur.role_id where ur.user_id=$1 and r.code='MANAGER'",
+        [users.lower],
+      ),
+    ),
+    1,
+  );
+});
+
+await test("Onboarding preserva e-mail corporativo somente quando pré-autorizado", async () => {
+  const definition = await value(
+    await root(
+      "select pg_get_functiondef(p.oid) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.proname='complete_profile' limit 1",
+    ),
+  );
+  assert.match(definition, /PRE_REGISTERED_EMAIL_REQUIRED/);
+  assert.match(definition, /employee_row\.email/);
+  assert.match(definition, /gmail/);
 });
 await test("Tabelas sensíveis não concedem privilégios ao papel anon", async () => {
   for (const table of [

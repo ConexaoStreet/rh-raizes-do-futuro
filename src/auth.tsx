@@ -355,8 +355,8 @@ function Login({ configured: ready }: { configured: boolean }) {
       setMascotMood("error");
       return;
     }
-    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-      toast.error("Use um endereço @gmail.com válido.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(email)) {
+      toast.error("Use um endereço de e-mail válido.");
       setMascotMood("error");
       return;
     }
@@ -441,8 +441,8 @@ function Login({ configured: ready }: { configured: boolean }) {
         const phone = signupDraft.phone.trim();
         const departmentId = signupDraft.departmentId.trim();
 
-        if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-          toast.error("Use um endereço @gmail.com válido.");
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(email)) {
+          toast.error("Use um endereço de e-mail válido.");
           setMascotMood("error");
           return;
         }
@@ -605,7 +605,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                 <div className="notice">
                   {mode === "recover"
                     ? "Confira seu e-mail para redefinir a senha."
-                    : "Confira seu Gmail e abra o link de verificação. Depois entre com seu e-mail e senha."}
+                    : "Confira seu e-mail e abra o link de verificação. Depois entre com seu e-mail e senha."}
                 </div>
                 {verificationEmail && mode !== "recover" && (
                   <button type="button" disabled={busy} onClick={() => void resendVerification()}>
@@ -695,13 +695,13 @@ function Login({ configured: ready }: { configured: boolean }) {
                         Digite pelo menos 4 letras do seu nome para localizar seu cadastro.
                       </span>
                     )}
-                    <Field label="Gmail">
+                    <Field label="E-mail">
                       <input
                         name="email"
                         type="email"
                         autoComplete="email"
                         inputMode="email"
-                        placeholder="seunome@gmail.com"
+                        placeholder="seu@email.com"
                         value={signupDraft.email}
                         onChange={(event) =>
                           setSignupDraft((current) => ({
@@ -837,7 +837,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                           !signupDraft.departmentId
                         }
                       >
-                        {busy ? "Aguarde..." : "Verificar Gmail e ativar"}
+                        {busy ? "Aguarde..." : "Verificar e-mail e ativar"}
                         <ArrowRight size={18} />
                       </button>
                     </div>
@@ -1178,7 +1178,9 @@ function Onboarding({
       else if (message.includes("PRE_REGISTRATION_ALREADY_LINKED"))
         toast.error("Esse cadastro já está vinculado a outra conta.");
       else if (message.includes("EMAIL_NOT_VERIFIED"))
-        toast.error("Verifique seu Gmail antes de concluir.");
+        toast.error("Verifique seu e-mail antes de concluir.");
+      else if (message.includes("PRE_REGISTERED_EMAIL_REQUIRED"))
+        toast.error("Use exatamente o e-mail autorizado no seu pré-cadastro.");
       else if (message.includes("INVALID_DEPARTMENT"))
         toast.error("Selecione um departamento válido.");
       else if (message.includes("INVALID_PHONE"))
@@ -1200,7 +1202,7 @@ function Onboarding({
       <div className="eyebrow">PRIMEIRO ACESSO</div>
       <h1>Confirme seus dados</h1>
       <div className="steps">
-        <span className="done">1. Gmail verificado</span>
+        <span className="done">1. E-mail verificado</span>
         <span className="active">2. Identificação</span>
         <span>3. Acesso</span>
       </div>
@@ -1248,7 +1250,7 @@ function Onboarding({
           </span>
         )}
 
-        <Field label="Gmail">
+        <Field label="E-mail">
           <input value={user.profile.email} readOnly aria-readonly="true" />
         </Field>
 

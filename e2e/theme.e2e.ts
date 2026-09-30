@@ -246,7 +246,7 @@ test("first access uses the pre-registered onboarding flow", async ({ page }) =>
   await expect(page.getByText("2. Credenciais")).toBeVisible();
   await expect(page.getByText("3. Vínculo")).toBeVisible();
   await expect(page.getByLabel("Nome completo")).toBeVisible();
-  await expect(page.getByLabel("Gmail")).toBeVisible();
+  await expect(page.getByLabel("E-mail")).toBeVisible();
   await expect(page.getByLabel("Telefone")).toBeVisible();
   await expect(page.getByLabel("Senha", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Turma")).toHaveCount(0);
@@ -258,15 +258,22 @@ test("first access uses the pre-registered onboarding flow", async ({ page }) =>
   ).toHaveCount(0);
 });
 
-test("valid Gmail passes native browser validation in first access", async ({ page }) => {
+test("valid e-mail domains pass native browser validation in first access", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Ativar cadastro" }).click();
 
   const email = page.locator('input[name="email"]');
   await email.fill("test.user.e2e@gmail.com");
+  expect(
+    await email.evaluate(
+      (element) => (element as HTMLInputElement).checkValidity(),
+    ),
+  ).toBe(true);
 
-  const valid = await email.evaluate(
-    (element) => (element as HTMLInputElement).checkValidity(),
-  );
-  expect(valid).toBe(true);
+  await email.fill("instructor.e2e@espro.org.br");
+  expect(
+    await email.evaluate(
+      (element) => (element as HTMLInputElement).checkValidity(),
+    ),
+  ).toBe(true);
 });
