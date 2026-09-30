@@ -79,6 +79,18 @@ function editDistance(left: string, right: string) {
   return previous[right.length];
 }
 
+function routedFromProductionSite(request: Request, origin: string) {
+  if (origin !== PROD_ORIGIN) return false;
+  const referer = request.headers.get("referer") || "";
+  const fetchSite = (request.headers.get("sec-fetch-site") || "").toLowerCase();
+  const fetchMode = (request.headers.get("sec-fetch-mode") || "").toLowerCase();
+  return (
+    referer.startsWith(PROD_ORIGIN) &&
+    fetchSite === "cross-site" &&
+    fetchMode === "cors"
+  );
+}
+
 function nameSuggestionScore(candidate: string, submitted: string) {
   if (candidate === submitted) return 1000;
   if (candidate.startsWith(submitted)) return 940;
@@ -112,7 +124,7 @@ function nameSuggestionScore(candidate: string, submitted: string) {
 
 Deno.serve(async (request) => {
   const startedAt = Date.now();
-  const origin = request.headers.get("origin") || PROD_ORIGIN;
+  const origin = request.headers.get("origin") || "";
   if (!allowedOrigins().has(origin)) {
     observe("registration_bootstrap.request", {
       outcome: "denied_origin",
@@ -124,7 +136,7 @@ Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: cors(origin) });
   }
-  if (!isBrazilRequest(request)) {
+  if (!isBrazilRequest(request) && !routedFromProductionSite(request, origin)) {
     observe("registration_bootstrap.request", {
       outcome: "denied_country",
       status: 403,
