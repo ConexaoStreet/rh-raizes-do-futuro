@@ -26,17 +26,15 @@ describe("RH first-access redesign", () => {
     expect(auth).toContain("signupDraft.phone.trim().length < 8");
   });
 
-  it("shows partial pre-registered matches in a selectable list", () => {
-    expect(auth).toContain("suggestions?: string[]");
-    expect(auth).toContain("Toque no seu nome");
-    expect(auth).toContain('aria-label="Cadastros encontrados"');
+  it("loads a searchable directory of unclaimed pre-registrations", () => {
+    expect(auth).toContain("registrations: string[]");
+    expect(auth).toContain("visibleRegistrations");
+    expect(auth).toContain('aria-label="Pré-cadastros disponíveis"');
     expect(auth).toContain("setSignupName(candidate)");
     expect(auth).toContain("nameMatch.result?.matched");
-    expect(registrationBootstrap).toContain("nameSuggestionScore");
-    expect(registrationBootstrap).toContain("candidateTokens.some");
-    expect(registrationBootstrap).toContain("editDistance");
-    expect(registrationBootstrap).toContain("suggestions.length ? \"SUGGESTIONS\" : \"NOT_FOUND\"");
-    expect(registrationBootstrap).toContain(".slice(0, 6)");
+    expect(registrationBootstrap).toContain('.is("profile_id", null)');
+    expect(registrationBootstrap).toContain("registration_count");
+    expect(registrationBootstrap).toContain("registrations,");
   });
 
   it("preserves signup metadata and redirect behavior", () => {
@@ -54,6 +52,6 @@ describe("RH first-access redesign", () => {
     expect(e2e).toContain('page.getByText("2. Acesso")');
     expect(e2e).toContain('page.getByText("3. Vínculo")');
     expect(e2e).toContain('name: "Continuar"');
-    expect(e2e).toContain("Digite seu primeiro nome ou sobrenome");
+    expect(e2e).toContain("Pesquise seu nome");
   });
 });
