@@ -315,15 +315,6 @@ export default function App() {
   const [storageItems, setStorageItems] = useState<StorageItem[]>([]);
   const [datasulResult, setDatasulResult] = useState<unknown>(null);
   const [platformResult, setPlatformResult] = useState<unknown>(null);
-  const [companyId, setCompanyId] = useState("");
-  const [healthPath, setHealthPath] = useState("");
-  const [employeesPath, setEmployeesPath] = useState("");
-  const [departmentsPath, setDepartmentsPath] = useState("");
-  const [positionsPath, setPositionsPath] = useState("");
-  const [attendancePath, setAttendancePath] = useState("");
-  const [requestMethod, setRequestMethod] = useState("GET");
-  const [requestPath, setRequestPath] = useState("");
-  const [requestBody, setRequestBody] = useState("{\n\n}");
   const [maintenanceTitle, setMaintenanceTitle] = useState("");
   const [maintenanceMessage, setMaintenanceMessage] = useState("");
   const [notificationTarget, setNotificationTarget] = useState("");
@@ -331,10 +322,18 @@ export default function App() {
   const [notificationBody, setNotificationBody] = useState("");
   const [notificationPath, setNotificationPath] = useState("/");
 
-  const datasul = useMemo(
-    () => settings.ti_datasul || {},
-    [settings.ti_datasul],
-  );
+  const datasul = useMemo<JsonObject>(() => {
+    const stored = settings.ti_datasul || {};
+    const internal = text(stored.mode) === "internal";
+    return {
+      ...stored,
+      enabled: true,
+      status: internal ? text(stored.status, "connected") : "connected",
+      mode: "internal",
+      source: "supabase",
+      organization: "Raízes do Futuro",
+    };
+  }, [settings.ti_datasul]);
   const github = useMemo(
     () => settings.ti_github || {},
     [settings.ti_github],
@@ -585,12 +584,6 @@ export default function App() {
   }, [reload]);
 
   useEffect(() => {
-    setCompanyId(text(datasul.company_id));
-    setHealthPath(text(datasul.health_path, "/api/btb/v1/companies"));
-    setEmployeesPath(text(datasul.employees_path));
-    setDepartmentsPath(text(datasul.departments_path));
-    setPositionsPath(text(datasul.positions_path));
-    setAttendancePath(text(datasul.attendance_path));
     setMaintenanceTitle(
       text(site.maintenance_title, "Sistema em manutenção"),
     );
@@ -600,7 +593,7 @@ export default function App() {
         "Alguns recursos podem ficar temporariamente indisponíveis.",
       ),
     );
-  }, [datasul, site]);
+  }, [site]);
 
   const filteredProfiles = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -630,19 +623,6 @@ export default function App() {
     );
   }, [employees, search]);
 
-  async function saveDatasulSettings() {
-    await updateSetting("ti_datasul", {
-      ...datasul,
-      company_id: companyId || null,
-      health_path: healthPath || "/api/btb/v1/companies",
-      employees_path: employeesPath || null,
-      departments_path: departmentsPath || null,
-      positions_path: positionsPath || null,
-      attendance_path: attendancePath || null,
-    });
-    await reload();
-  }
-
   async function invokeDatasul(body: JsonObject) {
     const data = (await invokeFunction(
       "datasul-bridge",
@@ -651,31 +631,6 @@ export default function App() {
     setDatasulResult(data);
     await reload();
     return data;
-  }
-
-  async function runDatasulRequest() {
-    let payload: unknown = undefined;
-    if (requestMethod !== "GET") {
-      try {
-        payload = requestBody.trim() ? JSON.parse(requestBody) : null;
-      } catch {
-        throw new Error("O corpo precisa ser JSON válido.");
-      }
-    }
-    if (
-      requestMethod === "DELETE" &&
-      !window.confirm(
-        "Confirmar exclusão no Datasul? Esta ação pode ser irreversível.",
-      )
-    )
-      return;
-
-    await invokeDatasul({
-      action: "request",
-      method: requestMethod,
-      path: requestPath,
-      payload,
-    });
   }
 
   async function invokePlatform() {
@@ -1085,49 +1040,50 @@ export default function App() {
                       />
                     </div>
                     <div className="datasul-command-copy">
-                      <span className="eyebrow">OPERAÇÃO · DATASUL</span>
-                      <h2>Conexão, diagnóstico e API em uma única superfície.</h2>
+                      <span className="eyebrow">OPERAÇÃO · DATASUL INTERNO</span>
+                      <h2>Centro de dados do RH da Raízes do Futuro.</h2>
                       <p>
-                        Um console operacional para trabalhar com endpoints reais,
-                        acompanhar resposta, auditar requisições e entender o estado
-                        da integração sem perder contexto.
+                        O Datasul consolida e diagnostica a base interna do RH
+                        usando o próprio Supabase do projeto. Não existe ERP,
+                        endpoint ou credencial externa para configurar.
                       </p>
                     </div>
                     <div className="datasul-command-status">
-                      <span>ESTADO DA INTEGRAÇÃO</span>
+                      <span>ESTADO DO MÓDULO</span>
                       <strong className={toneFor(datasul.status)}>
                         {labelStatus(datasul.status)}
                       </strong>
                       <small>
                         {text(datasul.last_check_at)
                           ? "Última verificação " + formatDate(text(datasul.last_check_at))
-                          : "Ainda não verificado nesta sessão"}
+                          : "Base interna pronta para verificação"}
                       </small>
                     </div>
                   </section>
 
                   <div className="datasul-pulse-grid">
                     <div className="datasul-pulse-card">
-                      <span>OPERAÇÕES · 24H</span>
-                      <strong>{numberValue(snapshot.datasul_operations_24h)}</strong>
-                      <small>requisições registradas</small>
+                      <span>COLABORADORES</span>
+                      <strong>{employees.length}</strong>
+                      <small>registros carregados no RH</small>
                     </div>
                     <div className="datasul-pulse-card">
-                      <span>FALHAS · 24H</span>
-                      <strong>{numberValue(snapshot.datasul_failures_24h)}</strong>
-                      <small>eventos que pedem atenção</small>
+                      <span>DEPARTAMENTOS</span>
+                      <strong>{departments.length}</strong>
+                      <small>estruturas ativas</small>
                     </div>
                     <div className="datasul-pulse-card">
-                      <span>COMPANY ID</span>
-                      <strong>{companyId || "-"}</strong>
-                      <small>empresa em contexto</small>
+                      <span>CARGOS</span>
+                      <strong>{positions.length}</strong>
+                      <small>cargos internos ativos</small>
                     </div>
                     <div className="datasul-pulse-card">
-                      <span>HEALTH PATH</span>
-                      <strong className="mono-value">{healthPath || "-"}</strong>
-                      <small>endpoint de verificação</small>
+                      <span>TURMAS</span>
+                      <strong>{classes.length}</strong>
+                      <small>turmas ativas</small>
                     </div>
                   </div>
+
                   {flag(maintenance.enabled) && (
                     <section className="datasul-maintenance-banner" role="status" aria-live="polite">
                       <div className="datasul-maintenance-icon">
@@ -1151,7 +1107,8 @@ export default function App() {
                           )}
                         </p>
                         <small>
-                          O RH está bloqueado para usuários comuns. A Central T.I. e este console Datasul continuam ativos para diagnóstico e correção; qualquer operação aqui continua afetando dados reais.
+                          O RH está bloqueado para usuários comuns. A Central T.I.
+                          e o Datasul interno continuam disponíveis para diagnóstico.
                         </small>
                       </div>
                       <button
@@ -1163,101 +1120,114 @@ export default function App() {
                       </button>
                     </section>
                   )}
+
                   <div className="two-columns datasul-primary-grid">
-                    <Panel title="Conexão Datasul RH" kicker="CONFIGURAÇÃO" icon={<Database />}>
-                      <div className="form-grid">
-                        <Field label="Company ID">
-                          <input value={companyId} onChange={(event) => setCompanyId(event.target.value)} />
-                        </Field>
-                        <Field label="Health endpoint">
-                          <input value={healthPath} onChange={(event) => setHealthPath(event.target.value)} />
-                        </Field>
-                        <Field label="Colaboradores" wide>
-                          <input value={employeesPath} onChange={(event) => setEmployeesPath(event.target.value)} placeholder="/api/rh/v1/employees" />
-                        </Field>
-                        <Field label="Departamentos">
-                          <input value={departmentsPath} onChange={(event) => setDepartmentsPath(event.target.value)} />
-                        </Field>
-                        <Field label="Cargos">
-                          <input value={positionsPath} onChange={(event) => setPositionsPath(event.target.value)} />
-                        </Field>
-                        <Field label="Frequência" wide>
-                          <input value={attendancePath} onChange={(event) => setAttendancePath(event.target.value)} />
-                        </Field>
-                      </div>
+                    <Panel title="Base oficial do Datasul" kicker="SUPABASE · RH" icon={<Database />}>
+                      <p className="panel-copy">
+                        Fonte única: banco Supabase do Raízes do Futuro. O módulo
+                        consulta colaboradores, departamentos, cargos, turmas,
+                        frequência, feedbacks e avaliações sem depender de sistema externo.
+                      </p>
                       <div className="actions">
-                        <button onClick={() => void run("datasul-save", saveDatasulSettings, "Configuração salva.")}>
-                          <Save size={16} /> Salvar endpoints
+                        <button
+                          className="primary-button"
+                          onClick={() =>
+                            void run("datasul-health", async () => {
+                              await invokeDatasul({ action: "health" });
+                            }, "Datasul interno verificado.")
+                          }
+                        >
+                          <RefreshCw size={16} /> Verificar módulo
                         </button>
-                        <button className="primary-button" onClick={() => void run("datasul-health", async () => { await invokeDatasul({ action: "health" }); })}>
-                          <RefreshCw size={16} /> Testar conexão
+                        <button
+                          onClick={() =>
+                            void run("datasul-preview", async () => {
+                              await invokeDatasul({ action: "preview" });
+                            })
+                          }
+                        >
+                          <Users size={16} /> Prévia da base
                         </button>
-                        <button onClick={() => void run("datasul-preview", async () => { await invokeDatasul({ action: "preview" }); })} disabled={!employeesPath}>
-                          <Users size={16} /> Prévia de colaboradores
+                        <button onClick={() => setView("rh")}>
+                          <UserCog size={16} /> Gerenciar dados do RH
                         </button>
                       </div>
                       <Notice>
-                        Credenciais permanecem apenas nos Secrets do Supabase.
-                        O navegador nunca recebe usuário ou senha do Datasul.
+                        O Datasul é interno ao RH da ONG. Não usa URL, Company ID,
+                        usuário, senha ou API de ERP externo.
                       </Notice>
                     </Panel>
 
-                    <Panel title="Console de API" kicker="OPERAÇÃO TOTAL" icon={<KeyRound />}>
-                      <div className="request-grid">
-                        <TechnicalField label="Método" mono>
-                          <select value={requestMethod} onChange={(event) => setRequestMethod(event.target.value)}>
-                            {["GET", "POST", "PUT", "PATCH", "DELETE"].map((method) => <option key={method}>{method}</option>)}
-                          </select>
-                        </TechnicalField>
-                        <TechnicalField label="Endpoint" wide mono>
-                          <input value={requestPath} onChange={(event) => setRequestPath(event.target.value)} placeholder="/api/..." />
-                        </TechnicalField>
+                    <Panel title="Governança do módulo" kicker="SEGURANÇA" icon={<ShieldCheck />}>
+                      <div className="datasul-pulse-grid">
+                        <div className="datasul-pulse-card">
+                          <span>FONTE</span>
+                          <strong>Supabase</strong>
+                          <small>banco oficial do projeto</small>
+                        </div>
+                        <div className="datasul-pulse-card">
+                          <span>ACESSO</span>
+                          <strong>JWT + RBAC</strong>
+                          <small>permissão ti.datasul.read</small>
+                        </div>
+                        <div className="datasul-pulse-card">
+                          <span>OPERAÇÕES · 24H</span>
+                          <strong>{numberValue(snapshot.datasul_operations_24h)}</strong>
+                          <small>consultas auditadas</small>
+                        </div>
+                        <div className="datasul-pulse-card">
+                          <span>FALHAS · 24H</span>
+                          <strong>{numberValue(snapshot.datasul_failures_24h)}</strong>
+                          <small>eventos que pedem atenção</small>
+                        </div>
                       </div>
-                      {requestMethod !== "GET" && (
-                        <TechnicalField label="JSON" mono hint="Corpo enviado ao Datasul; credenciais continuam somente no servidor.">
-                          <textarea rows={10} value={requestBody} onChange={(event) => setRequestBody(event.target.value)} spellCheck={false} />
-                        </TechnicalField>
-                      )}
-                      <button
-                        className={requestMethod === "DELETE" ? "danger-button" : "primary-button"}
-                        onClick={() => void run("datasul-request", runDatasulRequest)}
-                        disabled={!requestPath || busy !== ""}
-                      >
-                        <Send size={16} />
-                        Executar {requestMethod}
-                      </button>
                       <p className="panel-copy">
-                        Escritas e exclusões exigem MFA recente e entram no
-                        histórico técnico.
+                        Este console é de diagnóstico e leitura. Alterações cadastrais
+                        continuam no módulo Dados do RH, que preserva as regras de
+                        negócio, concorrência, permissões e auditoria existentes.
                       </p>
                     </Panel>
                   </div>
+
                   {datasulResult !== null && (
-                    <Panel title="Resposta do Datasul" kicker="RESULTADO" icon={<Activity />}>
-                      <CodeSurface label="Resposta JSON do Datasul" value={datasulResult} />
+                    <Panel title="Diagnóstico do Datasul" kicker="RESULTADO INTERNO" icon={<Activity />}>
+                      <CodeSurface label="Resposta do módulo interno" value={datasulResult} />
                     </Panel>
                   )}
+
                   <div className="datasul-history-shell">
-                  <Panel title="Histórico Datasul" kicker="AUDITORIA DE API" icon={<FileClock />}>
-                    <TechnicalTable label="Histórico de operações Datasul">
-                      <table>
-                        <thead><tr><th>Data</th><th>Operador</th><th>Método</th><th>Endpoint</th><th>HTTP</th><th>Duração</th><th>Status</th></tr></thead>
-                        <tbody>
-                          {datasulOps.map((row) => (
-                            <tr key={row.id}>
-                              <td>{formatDate(row.created_at)}</td>
-                              <td>{row.actor_name || "Sistema"}</td>
-                              <td><code>{row.method}</code></td>
-                              <td><code>{row.path}</code></td>
-                              <td>{row.response_status || "-"}</td>
-                              <td>{row.duration_ms} ms</td>
-                              <td><Badge tone={row.success ? "ok" : "error"}>{row.success ? "OK" : row.error_message || "Falha"}</Badge></td>
+                    <Panel title="Histórico Datasul" kicker="AUDITORIA INTERNA" icon={<FileClock />}>
+                      <TechnicalTable label="Histórico de operações Datasul">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Data</th>
+                              <th>Operador</th>
+                              <th>Ação</th>
+                              <th>Recurso</th>
+                              <th>Duração</th>
+                              <th>Status</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </TechnicalTable>
-                  </Panel>
+                          </thead>
+                          <tbody>
+                            {datasulOps.map((row) => (
+                              <tr key={row.id}>
+                                <td>{formatDate(row.created_at)}</td>
+                                <td>{row.actor_name || "Sistema"}</td>
+                                <td><code>{row.method}</code></td>
+                                <td><code>{row.path}</code></td>
+                                <td>{row.duration_ms} ms</td>
+                                <td>
+                                  <Badge tone={row.success ? "ok" : "error"}>
+                                    {row.success ? "OK" : row.error_message || "Falha"}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </TechnicalTable>
+                    </Panel>
                   </div>
                 </div>
               )}
