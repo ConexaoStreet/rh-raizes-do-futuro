@@ -375,7 +375,6 @@ function Login({ configured: ready }: { configured: boolean }) {
   }
 
   function continueSignupIdentity() {
-    const email = signupDraft.email.trim().toLowerCase();
     if (!nameMatch.result?.matched) {
       toast.error(
         nameMatch.result?.suggestions?.length
@@ -573,7 +572,7 @@ function Login({ configured: ready }: { configured: boolean }) {
         : "Use seu e-mail e senha para acessar o ambiente de gestão de RH.";
 
   return (
-    <div className="login-page">
+    <div className={`login-page ${mode === "signup" ? "login-page-signup" : ""}`}>
       <div className="login-theme-control">
         <ThemeToggle compact />
       </div>
