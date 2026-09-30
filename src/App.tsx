@@ -21,7 +21,6 @@ import {
   ChevronsUpDown,
 } from "lucide-react";
 import { AuthBoundary, useAuth } from "./auth";
-import { PresentationGate } from "./PresentationGate";
 import { client, rpc, runAction, useAsync, useDebounce } from "./api";
 import { Brand, Loading, Modal } from "./components";
 import { captureNavigation } from "./telemetry";
@@ -48,11 +47,9 @@ type InstallPromptEvent = Event & {
 
 export default function App() {
   return (
-    <PresentationGate>
-      <AuthBoundary>
-        <Shell />
-      </AuthBoundary>
-    </PresentationGate>
+    <AuthBoundary>
+      <Shell />
+    </AuthBoundary>
   );
 }
 function Guard({
