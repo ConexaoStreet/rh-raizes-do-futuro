@@ -235,38 +235,35 @@ test("PWA assets stay available", async ({ request }) => {
 });
 
 
-test("first access uses the pre-registered onboarding flow", async ({ page }) => {
+test("first access starts with searchable preregistration identity", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Ativar cadastro" }).click();
 
   await expect(
-    page.getByRole("heading", { name: "Ativar meu cadastro" }),
+    page.getByRole("heading", { name: "Ative seu acesso" }),
   ).toBeVisible();
   await expect(page.getByText("1. Identidade")).toBeVisible();
-  await expect(page.getByText("2. Credenciais")).toBeVisible();
+  await expect(page.getByText("2. Acesso")).toBeVisible();
   await expect(page.getByText("3. Vínculo")).toBeVisible();
-  await expect(page.getByLabel("Nome completo")).toBeVisible();
-  await expect(page.getByLabel("Gmail")).toBeVisible();
-  await expect(page.getByLabel("Telefone")).toBeVisible();
+  await expect(page.getByLabel("Seu nome no pré-cadastro")).toBeVisible();
+  await expect(
+    page.getByPlaceholder("Digite seu primeiro nome ou sobrenome"),
+  ).toBeVisible();
+  await expect(page.getByLabel("Gmail")).toHaveCount(0);
+  await expect(page.getByLabel("Telefone")).toHaveCount(0);
   await expect(page.getByLabel("Senha", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Turma")).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "Continuar para credenciais" }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continuar" })).toBeDisabled();
   await expect(
     page.getByRole("button", { name: "Ativar acesso de gestor" }),
   ).toHaveCount(0);
 });
 
-test("valid Gmail passes native browser validation in first access", async ({ page }) => {
+test("first access keeps contact fields out of identity step", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Ativar cadastro" }).click();
 
-  const email = page.locator('input[name="email"]');
-  await email.fill("test.user.e2e@gmail.com");
-
-  const valid = await email.evaluate(
-    (element) => (element as HTMLInputElement).checkValidity(),
-  );
-  expect(valid).toBe(true);
+  await expect(page.locator('input[name="email"]')).toHaveCount(0);
+  await expect(page.locator('input[name="phone"]')).toHaveCount(0);
+  await expect(page.getByText("Digite pelo menos 4 letras. A busca aceita partes do nome.")).toBeVisible();
 });
