@@ -261,6 +261,7 @@ function PasswordInput({
 type RegistrationOptions = {
   class: { id: string; name: string; code: string } | null;
   departments: { id: string; name: string }[];
+  registrations: string[];
   roles: { code: string; name: string }[];
 };
 type PreRegistrationMatch = {
@@ -347,6 +348,7 @@ function Login({ configured: ready }: { configured: boolean }) {
   const [sent, setSent] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [signupName, setSignupName] = useState("");
+  const [registrationQuery, setRegistrationQuery] = useState("");
   const [signupStep, setSignupStep] = useState<1 | 2 | 3>(1);
   const [signupDraft, setSignupDraft] = useState({
     email: "",
@@ -358,12 +360,30 @@ function Login({ configured: ready }: { configured: boolean }) {
   const [mascotMood, setMascotMood] = useState<MascotMood>("idle");
   const options = useRegistrationOptions(mode === "signup");
   const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
+  const normalizedRegistrationQuery = registrationQuery
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+  const visibleRegistrations = (options?.registrations || []).filter((candidate) => {
+    if (!normalizedRegistrationQuery) return true;
+    const normalizedCandidate = candidate
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR");
+    return normalizedRegistrationQuery
+      .split(/\s+/)
+      .filter(Boolean)
+      .every((term) => normalizedCandidate.includes(term));
+  });
 
   function changeMode(next: "login" | "signup" | "recover") {
     if (next === "signup") void import("./registration.css");
     setSent(false);
     setVerificationEmail("");
     setMascotMood("idle");
+    setSignupName("");
+    setRegistrationQuery("");
     setSignupStep(1);
     setSignupDraft({
       email: "",
@@ -377,11 +397,7 @@ function Login({ configured: ready }: { configured: boolean }) {
 
   function continueSignupIdentity() {
     if (!nameMatch.result?.matched) {
-      toast.error(
-        nameMatch.result?.suggestions?.length
-          ? "Escolha seu nome em um dos resultados encontrados."
-          : "Digite seu nome como aparece no pré-cadastro do RH.",
-      );
+      toast.error("Selecione seu nome na lista de pré-cadastros disponíveis.");
       setMascotMood("error");
       return;
     }
@@ -668,81 +684,81 @@ function Login({ configured: ready }: { configured: boolean }) {
                 {signupStep === 1 && (
                   <>
                     <div className="registration-search">
-                      <Field label="Seu nome no pré-cadastro">
+                      <Field label="Quem é você?">
                         <div className="registration-search-input">
                           <Search size={18} aria-hidden="true" />
                           <input
-                            name="full_name"
-                            autoComplete="name"
-                            value={signupName}
-                            onChange={(event) => setSignupName(event.target.value)}
-                            placeholder="Digite seu primeiro nome ou sobrenome"
-                            required
-                            minLength={4}
+                            name="registration_search"
+                            autoComplete="off"
+                            value={registrationQuery}
+                            onChange={(event) => {
+                              setRegistrationQuery(event.target.value);
+                              if (event.target.value !== signupName) setSignupName("");
+                            }}
+                            placeholder="Pesquise seu nome"
                             autoFocus
                           />
                         </div>
                       </Field>
 
-                      {nameMatch.checking ? (
-                        <div className="registration-match-status muted">
-                          Procurando seu cadastro...
-                        </div>
-                      ) : nameMatch.result?.matched ? (
+                      {signupName && nameMatch.result?.matched ? (
                         <div className="registration-selected" role="status">
                           <CheckCircle2 size={18} aria-hidden="true" />
-                          <span>
-                            Encontrado: <strong>{nameMatch.result.canonical_name}</strong>
-                          </span>
-                        </div>
-                      ) : nameMatch.result?.reason === "ALREADY_REGISTERED" ? (
-                        <div className="registration-selected registration-already">
-                          <CheckCircle2 size={18} aria-hidden="true" />
-                          <div>
-                            <strong>Esse cadastro já foi ativado.</strong>
-                            <button
-                              type="button"
-                              className="text-button"
-                              onClick={() => changeMode("login")}
-                            >
-                              Ir para entrar
-                            </button>
+                          <div className="registration-selected-copy">
+                            <span>Cadastro selecionado</span>
+                            <strong>{nameMatch.result.canonical_name || signupName}</strong>
                           </div>
-                        </div>
-                      ) : nameMatch.result?.suggestions?.length ? (
-                        <div
-                          className="registration-match-list"
-                          role="listbox"
-                          aria-label="Cadastros encontrados"
-                        >
-                          <span className="registration-match-title">
-                            Toque no seu nome
-                          </span>
-                          {nameMatch.result.suggestions.map((candidate) => (
-                            <button
-                              key={candidate}
-                              type="button"
-                              role="option"
-                              aria-selected={false}
-                              className="registration-match-option"
-                              onClick={() => {
-                                setSignupName(candidate);
-                                setMascotMood("idle");
-                              }}
-                            >
-                              <span>{candidate}</span>
-                              <ArrowRight size={16} aria-hidden="true" />
-                            </button>
-                          ))}
-                        </div>
-                      ) : signupName.trim().length >= 4 ? (
-                        <div className="registration-empty">
-                          Não encontrei um pré-cadastro com esse texto. Tente seu primeiro
-                          nome, sobrenome ou o nome completo usado pelo RH.
+                          <button
+                            type="button"
+                            className="text-button registration-change"
+                            onClick={() => {
+                              setSignupName("");
+                              setRegistrationQuery("");
+                            }}
+                          >
+                            Trocar
+                          </button>
                         </div>
                       ) : (
-                        <div className="registration-match-status muted">
-                          Digite pelo menos 4 letras. A busca aceita partes do nome.
+                        <div className="registration-directory">
+                          <div className="registration-directory-head">
+                            <strong>Selecione seu nome</strong>
+                            <span>{visibleRegistrations.length} disponível(is)</span>
+                          </div>
+
+                          {!options ? (
+                            <div className="registration-match-status muted">
+                              Carregando pré-cadastros...
+                            </div>
+                          ) : visibleRegistrations.length ? (
+                            <div
+                              className="registration-directory-list"
+                              role="listbox"
+                              aria-label="Pré-cadastros disponíveis"
+                            >
+                              {visibleRegistrations.map((candidate) => (
+                                <button
+                                  key={candidate}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={signupName === candidate}
+                                  className="registration-match-option"
+                                  onClick={() => {
+                                    setSignupName(candidate);
+                                    setRegistrationQuery(candidate);
+                                    setMascotMood("idle");
+                                  }}
+                                >
+                                  <span>{candidate}</span>
+                                  <ArrowRight size={16} aria-hidden="true" />
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="registration-empty">
+                              Nenhum pré-cadastro disponível com esse filtro.
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -750,7 +766,12 @@ function Login({ configured: ready }: { configured: boolean }) {
                     <button
                       type="button"
                       className="primary large signup-next"
-                      disabled={nameMatch.checking || !ready || !nameMatch.result?.matched}
+                      disabled={
+                        !ready ||
+                        !signupName ||
+                        nameMatch.checking ||
+                        !nameMatch.result?.matched
+                      }
                       onClick={continueSignupIdentity}
                     >
                       Continuar

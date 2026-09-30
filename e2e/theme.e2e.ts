@@ -245,10 +245,9 @@ test("first access starts with searchable preregistration identity", async ({ pa
   await expect(page.getByText("1. Identidade")).toBeVisible();
   await expect(page.getByText("2. Acesso")).toBeVisible();
   await expect(page.getByText("3. Vínculo")).toBeVisible();
-  await expect(page.getByLabel("Seu nome no pré-cadastro")).toBeVisible();
-  await expect(
-    page.getByPlaceholder("Digite seu primeiro nome ou sobrenome"),
-  ).toBeVisible();
+  await expect(page.getByLabel("Quem é você?")).toBeVisible();
+  await expect(page.getByPlaceholder("Pesquise seu nome")).toBeVisible();
+  await expect(page.getByText("Selecione seu nome")).toBeVisible();
   await expect(page.getByLabel("Gmail")).toHaveCount(0);
   await expect(page.getByLabel("Telefone")).toHaveCount(0);
   await expect(page.getByLabel("Senha", { exact: true })).toHaveCount(0);
@@ -265,5 +264,5 @@ test("first access keeps contact fields out of identity step", async ({ page }) 
 
   await expect(page.locator('input[name="email"]')).toHaveCount(0);
   await expect(page.locator('input[name="phone"]')).toHaveCount(0);
-  await expect(page.getByText("Digite pelo menos 4 letras. A busca aceita partes do nome.")).toBeVisible();
+  await expect(page.getByPlaceholder("Pesquise seu nome")).toBeVisible();
 });
