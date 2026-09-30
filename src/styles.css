@@ -4854,7 +4854,6 @@ html[data-theme="light"] .login-card .notice {
 }
 
 
-/* First-access refresh: searchable preregistration and compact mobile layout. */
 .registration-search {
   display: grid;
   gap: 10px;
