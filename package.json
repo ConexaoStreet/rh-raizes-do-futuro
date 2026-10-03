@@ -20,7 +20,7 @@
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-router-dom": "7.18.3",
-    "lucide-react": "0.544.0",
+    "lucide-react": "1.47.0",
     "recharts": "3.2.1",
     "zod": "4.1.11",
     "react-hook-form": "7.63.0",
