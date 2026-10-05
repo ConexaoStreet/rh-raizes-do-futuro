@@ -10,7 +10,7 @@ export default function DeveloperAvailabilityNotice() {
         !
       </span>
       <div>
-        <strong>AVISO IMPORTANTE — GESTÃO TEMPORARIAMENTE INDISPONÍVEL</strong>
+        <strong>AVISO IMPORTANTE - GESTÃO TEMPORARIAMENTE INDISPONÍVEL</strong>
         <p>
           O desenvolvedor do projeto foi assaltado. Por esse motivo, não há
           gestão técnica do projeto no momento. Solicitações, ajustes,
