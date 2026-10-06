@@ -49,7 +49,7 @@ const rhNotify = fs.readFileSync(
 assert.match(rhNotify, /RESEND_DOMAIN_REQUIRED/);
 assert.match(rhNotify, /complete\("skipped"/);
 assert.match(rhNotify, /email_domain_required/);
-assert.match(rhNotify, /response\.status\s*===\s*403/);
+assert.match(rhNotify, /response\?\.status\s*===\s*403/);
 assert.match(rhNotify, /validation_error/);
 
 console.log("Observability privacy checks passed.");
