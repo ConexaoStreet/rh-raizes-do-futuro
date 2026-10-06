@@ -7,6 +7,12 @@ const pendingWords = new RegExp(
   "\\b(" + ["TO" + "DO", "FIX" + "ME"].join("|") + ")\\b",
 );
 const failures = [];
+const nonBreakingSpace = String.fromCharCode(160);
+const encodedNonBreakingSpaces = [
+  "&" + "#x" + "A0;",
+  "&" + "#160;",
+  "&" + "nbsp;",
+];
 
 function scan(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -74,8 +80,10 @@ function scanTypography(directory) {
     const source = fs.readFileSync(filename, "utf8");
     if (source.includes("\u2014"))
       failures.push(filename + ": caractere tipográfico proibido");
-    if (source.includes("\u00a0"))
+    if (source.includes(nonBreakingSpace))
       failures.push(filename + ": espaço não separável proibido");
+    if (encodedNonBreakingSpaces.some((value) => source.includes(value)))
+      failures.push(filename + ": entidade de espaço não separável proibida");
   }
 }
 
