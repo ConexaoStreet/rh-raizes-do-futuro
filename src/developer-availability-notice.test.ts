@@ -13,7 +13,7 @@ describe("developer availability notice", () => {
     expect(notice).toContain('role="alert"');
     expect(notice).toContain('aria-live="assertive"');
     expect(auth).toContain("<DeveloperAvailabilityNotice />");
-    expect(shell).toContain("<DeveloperAvailabilityNotice />");
+    expect(shell).toContain('<DeveloperAvailabilityNotice placement="shell" />');
   });
 
   it("keeps the notice visually prominent and responsive", () => {
