@@ -1,0 +1,18 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const notice = readFileSync("src/DeveloperAvailabilityNotice.tsx", "utf8");
+const auth = readFileSync("src/auth.tsx", "utf8");
+const shell = readFileSync("src/Shell.tsx", "utf8");
+
+describe("developer availability notice", () => {
+  it("shows the robbery notice in login and authenticated areas", () => {
+    expect(notice).toContain("O desenvolvedor do projeto foi assaltado");
+    expect(notice).toContain("GESTÃO TEMPORARIAMENTE INDISPONÍVEL");
+    expect(notice).toContain('role="alert"');
+    expect(notice).toContain('aria-live="assertive"');
+    expect(notice).toContain('placement?: "login" | "shell"');
+    expect(auth).toContain("<DeveloperAvailabilityNotice />");
+    expect(shell).toContain('<DeveloperAvailabilityNotice placement="shell" />');
+  });
+});

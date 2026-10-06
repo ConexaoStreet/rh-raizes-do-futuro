@@ -74,6 +74,8 @@ function scanTypography(directory) {
     const source = fs.readFileSync(filename, "utf8");
     if (source.includes("\u2014"))
       failures.push(filename + ": caractere tipográfico proibido");
+    if (source.includes("\u00a0"))
+      failures.push(filename + ": espaço não separável proibido");
   }
 }
 
