@@ -189,7 +189,7 @@ export default function Shell() {
         </nav>
       </aside>
       <div className="main-column">
-        <DeveloperAvailabilityNotice />
+        <DeveloperAvailabilityNotice placement="shell" />
         <header className="topbar">
           <div className="topbar-left">
             <button
