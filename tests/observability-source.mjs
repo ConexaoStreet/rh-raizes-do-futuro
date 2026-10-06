@@ -42,4 +42,14 @@ assert.match(tiLogin, /outcome:\s*"rate_limited"/);
 assert.match(tiLogin, /outcome:\s*"invalid_code"/);
 assert.match(tiLogin, /ti_code_login\.confirm/);
 
+const rhNotify = fs.readFileSync(
+  "supabase/functions/rh-notify/index.ts",
+  "utf8",
+);
+assert.match(rhNotify, /RESEND_DOMAIN_REQUIRED/);
+assert.match(rhNotify, /complete\("skipped"/);
+assert.match(rhNotify, /email_domain_required/);
+assert.match(rhNotify, /response\?\.status\s*===\s*403/);
+assert.match(rhNotify, /validation_error/);
+
 console.log("Observability privacy checks passed.");

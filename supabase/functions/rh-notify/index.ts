@@ -172,6 +172,39 @@ Deno.serve(async (request) => {
     }
 
     if (!response?.ok) {
+      let providerErrorName = "";
+      let providerErrorMessage = "";
+      try {
+        const providerError = (await response?.json()) as {
+          name?: string;
+          message?: string;
+        };
+        providerErrorName = providerError?.name || "";
+        providerErrorMessage = providerError?.message || "";
+      } catch {
+        providerErrorName = "";
+        providerErrorMessage = "";
+      }
+
+      const domainRequired =
+        response?.status === 403 &&
+        providerErrorName === "validation_error" &&
+        /only send testing emails|verify a domain/i.test(providerErrorMessage);
+
+      if (domainRequired) {
+        await complete("skipped", null, "RESEND_DOMAIN_REQUIRED");
+        observe("rh_notify.email", {
+          outcome: "configuration_required",
+          status: 403,
+          latency_ms: Date.now() - startedAt,
+        });
+        return respond({
+          ok: true,
+          skipped: true,
+          reason: "email_domain_required",
+        });
+      }
+
       const errorCode = `RESEND_HTTP_${response?.status || 503}`;
       await complete("failed", null, errorCode);
       observe("rh_notify.email", {
