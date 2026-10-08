@@ -31,6 +31,7 @@ export function TiShell({
 }: TiShellProps) {
   return (
     <div className="app-shell ti-shell">
+      <a className="ti-skip-link" href="#ti-main-content" onClick={(event) => { event.preventDefault(); document.getElementById("ti-main-content")?.focus(); }}>Pular para o conteúdo</a>
       <aside className="sidebar ti-sidebar">
         <Brand />
         <div className="environment" aria-label="Ambiente de produção">
@@ -86,7 +87,7 @@ export function TiShell({
         </div>
       </aside>
 
-      <main id="ti-main-content">
+      <main id="ti-main-content" tabIndex={-1}>
         <header className="topbar ti-topbar">
           <div className="ti-topbar-context">
             <span className="eyebrow">CENTRAL TÉCNICA · PRODUÇÃO</span>
