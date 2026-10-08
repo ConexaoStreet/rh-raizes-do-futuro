@@ -95,7 +95,16 @@ export default function Shell() {
   }, []);
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#main-content">Pular para o conteúdo</a>
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById("main-content")?.focus();
+        }}
+      >
+        Pular para o conteúdo
+      </a>
       {mobile && (
         <button
           className="sidebar-scrim"
@@ -323,7 +332,7 @@ export default function Shell() {
             </div>
           </div>
         </header>
-        <main id="main-content" className="page-content">
+        <main id="main-content" className="page-content" tabIndex={-1}>
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route
