@@ -13,7 +13,19 @@ if (!scriptMatch || !styleMatch) {
 const size = (asset) =>
   gzipSync(readFileSync(resolve("dist", asset.replace(/^\//, "")))).byteLength;
 
-const js = size(scriptMatch[1]);
+const initialScripts = new Set([
+  scriptMatch[1],
+  ...Array.from(
+    html.matchAll(
+      /<link[^>]+rel="modulepreload"[^>]+href="([^"]*\/assets\/[^"]+\.js)"/g,
+    ),
+    (match) => match[1],
+  ),
+]);
+const js = Array.from(initialScripts).reduce(
+  (total, asset) => total + size(asset),
+  0,
+);
 const css = size(styleMatch[1]);
 const jsLimit = 200 * 1024;
 const cssLimit = 16 * 1024;

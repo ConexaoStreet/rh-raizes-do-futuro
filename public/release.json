@@ -1,5 +1,5 @@
 {
-  "release": "registration-selector-phase",
-  "source_commit": "c32f6963a43ab49a73d98fb6a399eb9df9ff85de",
+  "release": "raizes-evolution-2026-10-09",
+  "base_commit": "524316bba0b338b0545893f09b0cc069fdacf311",
   "purpose": "deployment verification"
 }
