@@ -32,6 +32,9 @@ import { ThemeToggle } from "./theme";
 import { LoginMascot, type MascotMood } from "./LoginMascot";
 import { PASSWORD_POLICY_MESSAGE, strongPassword } from "./password-policy";
 import type { Row } from "./database.types";
+import { Link } from "react-router-dom";
+import { useSiteStatus } from "./site-status";
+import MaintenanceNotice from "./MaintenanceNotice";
 export type Bootstrap = {
   profile: Row<"profiles">;
   roles: string[];
@@ -63,6 +66,7 @@ export function useAuth() {
   return value;
 }
 export function AuthBoundary({ children }: { children: ReactNode }) {
+  const siteStatus = useSiteStatus();
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(configured);
@@ -137,7 +141,15 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         <Loading />
       </div>
     );
-  if (!session) return <Login configured={configured} />;
+  if (!session)
+    return (
+      <>
+        {siteStatus.data && (
+          <MaintenanceNotice maintenance={siteStatus.data.maintenance} />
+        )}
+        <Login configured={configured} />
+      </>
+    );
   if (failed)
     return (
       <AuthFrame>
@@ -186,6 +198,9 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
           {user.maintenance.message ||
             "Estamos realizando ajustes no sistema. O acesso será liberado novamente assim que a manutenção for concluída."}
         </p>
+        <Link className="button primary" to="/ao-vivo">
+          Acompanhar ao vivo
+        </Link>
         <button onClick={() => void client().auth.signOut()}>Sair</button>
       </AuthFrame>
     );
@@ -621,7 +636,7 @@ function Login({ configured: ready }: { configured: boolean }) {
     <div
       className={`login-page ${mode === "signup" ? "login-page-signup" : ""}`}
     >
-      <div className="login-theme-control">
+      <div className="login-theme-control" style={{ position: "absolute" }}>
         <ThemeToggle compact />
       </div>
 
@@ -973,7 +988,9 @@ function Login({ configured: ready }: { configured: boolean }) {
                       </select>
                     </Field>
                     <span className="muted">
-                      {"Seu cargo será aplicado automaticamente conforme o cadastro-base do RH."}
+                      {
+                        "Seu cargo será aplicado automaticamente conforme o cadastro-base do RH."
+                      }
                     </span>
                     <div className="actions">
                       <button

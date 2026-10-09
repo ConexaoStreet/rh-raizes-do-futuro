@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build && node scripts/protect-build.mjs",
     "lint": "eslint . && node scripts/check-source.mjs",
     "test": "vitest run",
-    "test:database": "node tests/database.mjs",
+    "test:database": "node tests/database.mjs && node tests/site-live.mjs",
     "test:e2e": "playwright test",
     "verify": "npm run lint && npm run check:privacy && npm run test && npm run test:database && npm run build && npm run check:bundle",
     "check:bundle": "node scripts/check-bundle-budget.mjs",

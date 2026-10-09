@@ -1,5 +1,5 @@
 {
-  "release": "raizes-evolution-2026-10-09-notice-removed",
-  "base_commit": "c74e745be77565b5fb1e92b356b4ea097a531a3d",
+  "release": "raizes-live-maintenance-pack-1",
+  "base_commit": "5e1cefe0eb4b92191862728c31927dbd8b3ee9d7",
   "purpose": "deployment verification"
 }

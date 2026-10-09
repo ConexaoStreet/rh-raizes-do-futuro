@@ -125,7 +125,9 @@ test("RH desktop login keeps brand and form in the same row", async ({ page }) =
       brandBottom: brandRect.bottom,
       panelBottom: panelRect.bottom,
       viewportHeight: window.innerHeight,
-      themePosition: getComputedStyle(theme).position,
+      themeTop: theme.getBoundingClientRect().top,
+      themeRight: theme.getBoundingClientRect().right,
+      viewportWidth: window.innerWidth,
     };
   });
 
@@ -133,7 +135,10 @@ test("RH desktop login keeps brand and form in the same row", async ({ page }) =
   expect(Math.abs(layout.brandRight - layout.panelLeft)).toBeLessThan(2);
   expect(layout.brandBottom).toBeGreaterThanOrEqual(layout.viewportHeight - 2);
   expect(layout.panelBottom).toBeGreaterThanOrEqual(layout.viewportHeight - 2);
-  expect(layout.themePosition).toBe("fixed");
+  expect(layout.themeTop).toBeGreaterThanOrEqual(layout.panelTop);
+  expect(layout.themeTop).toBeLessThan(layout.panelTop + 64);
+  expect(layout.themeRight).toBeGreaterThan(layout.viewportWidth - 64);
+  expect(layout.themeRight).toBeLessThanOrEqual(layout.viewportWidth);
 
   await expect(page.getByText("Acesso protegido")).toHaveCount(0);
   await expect(page.getByText("Ações auditadas")).toHaveCount(0);
