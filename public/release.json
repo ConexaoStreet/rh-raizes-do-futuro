@@ -1,5 +1,5 @@
 {
-  "release": "raizes-evolution-2026-10-09",
-  "base_commit": "524316bba0b338b0545893f09b0cc069fdacf311",
+  "release": "raizes-evolution-2026-10-09-notice-removed",
+  "base_commit": "c74e745be77565b5fb1e92b356b4ea097a531a3d",
   "purpose": "deployment verification"
 }

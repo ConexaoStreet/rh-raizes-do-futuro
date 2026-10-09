@@ -27,7 +27,6 @@ import { captureNavigation } from "./telemetry";
 import { ThemeToggle } from "./theme";
 import { enablePushNotifications, pushSupported } from "./push";
 import { rhNavGroups } from "./layout/RhNavigation";
-import DeveloperAvailabilityNotice from "./DeveloperAvailabilityNotice";
 import { watchNotifications } from "./notifications";
 const Dashboard = lazy(() => import("./Dashboard"));
 const Attendance = lazy(() => import("./Attendance"));
@@ -236,7 +235,6 @@ export default function Shell() {
         </nav>
       </aside>
       <div className="main-column">
-        <DeveloperAvailabilityNotice placement="shell" />
         <header className="topbar">
           <div className="topbar-left">
             <button
