@@ -31,7 +31,6 @@ import { shouldRefreshExpiredJwt } from "./auth-errors";
 import { ThemeToggle } from "./theme";
 import { LoginMascot, type MascotMood } from "./LoginMascot";
 import { PASSWORD_POLICY_MESSAGE, strongPassword } from "./password-policy";
-import DeveloperAvailabilityNotice from "./DeveloperAvailabilityNotice";
 import type { Row } from "./database.types";
 export type Bootstrap = {
   profile: Row<"profiles">;
@@ -668,7 +667,6 @@ function Login({ configured: ready }: { configured: boolean }) {
           <div
             className={`login-card ${mode === "signup" ? "login-card-wide" : ""}`}
           >
-            <DeveloperAvailabilityNotice />
             <span className="eyebrow">{eyebrow}</span>
             <h2>{mode === "login" ? "Bom ter você aqui." : heading}</h2>
             <p>{description}</p>
