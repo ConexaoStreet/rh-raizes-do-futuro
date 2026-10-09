@@ -149,6 +149,7 @@
 }
 .login-page {
   grid-template-columns: minmax(0, 1.08fr) minmax(430px, 0.92fr);
+  grid-template-areas: "brand panel";
   background: var(--evo-canvas);
 }
 .login-brand {
@@ -293,6 +294,7 @@ html[data-theme="dark"] .dashboard-priority-band {
 @media (max-width: 760px) {
   .login-page {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "brand" "panel";
   }
   .login-brand {
     padding: 30px 24px 38px;

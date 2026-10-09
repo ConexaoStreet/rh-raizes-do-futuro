@@ -1,6 +1,6 @@
 {
   "engine": "PostgreSQL 17 via PGlite",
-  "generated_at": "2026-10-09T16:51:07.056Z",
+  "generated_at": "2026-10-09T17:03:51.514Z",
   "results": [
     {
       "name": "Equipe de RH e turma ficam separadas sem aceitar grupo inválido",

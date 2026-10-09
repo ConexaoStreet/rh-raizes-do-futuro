@@ -120,8 +120,12 @@ export default function Shell() {
       .eq("scope", "rh")
       .is("read_at", null);
     if (error) throw error;
-    return count || 0;
+    return { owner: user.profile.id, count: count || 0 };
   }, [user.profile.id]);
+  const unreadCount =
+    notifications.data?.owner === user.profile.id
+      ? notifications.data.count
+      : 0;
   useEffect(
     () => watchNotifications(client(), user.profile.id, notifications.reload),
     [user.profile.id, notifications.reload],
@@ -264,16 +268,14 @@ export default function Shell() {
               to="/notificacoes"
               className="icon-button notification-bell"
               aria-label={
-                notifications.data
-                  ? `Notificações: ${notifications.data} não lidas`
+                unreadCount
+                  ? `Notificações: ${unreadCount} não lidas`
                   : "Notificações"
               }
             >
               <Bell size={19} />
-              {Boolean(notifications.data) && (
-                <span>
-                  {notifications.data! > 99 ? "99+" : notifications.data}
-                </span>
+              {Boolean(unreadCount) && (
+                <span>{unreadCount > 99 ? "99+" : unreadCount}</span>
               )}
             </Link>
             <div className="account-wrapper">

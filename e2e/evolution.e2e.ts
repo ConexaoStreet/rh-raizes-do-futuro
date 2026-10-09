@@ -45,7 +45,11 @@ const metrics = {
   feedback_count: 2,
 };
 
-async function setup(page: Page, authenticated = false) {
+async function setup(
+  page: Page,
+  authenticated = false,
+  account = { id: owner, fullName: "Pessoa de Teste" },
+) {
   await page.addInitScript(
     ({ authenticated, owner }) => {
       sessionStorage.setItem("raizes-inauguracao-2026-09-29", "1");
@@ -86,8 +90,8 @@ async function setup(page: Page, authenticated = false) {
     if (path.endsWith("/rpc/bootstrap"))
       response = {
         profile: {
-          id: owner,
-          full_name: "Pessoa de Teste",
+          id: account.id,
+          full_name: account.fullName,
           status: "active",
           onboarded_at: "2026-10-01",
           photo_path: null,
@@ -187,7 +191,11 @@ async function setup(page: Page, authenticated = false) {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      headers: { "Content-Range": "0-0/1", "Access-Control-Allow-Origin": "*" },
+      headers: {
+        "Content-Range": "0-0/1",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Expose-Headers": "Content-Range",
+      },
       body: JSON.stringify(response),
     });
   });
@@ -252,6 +260,37 @@ test("dashboard gives page context and a keyboard search shortcut", async ({
   await expect(page.getByRole("textbox", { name: "Pesquisar" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("login keeps brand and form aligned on tablets and desktops", async ({
+  page,
+}) => {
+  await setup(page);
+  for (const width of [768, 1024, 1100, 1440, 1920]) {
+    await page.setViewportSize({ width, height: 1100 });
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { name: "Bom ter você aqui." }),
+    ).toBeVisible();
+    const layout = await page.evaluate(() => {
+      const brand = document
+        .querySelector(".login-brand")!
+        .getBoundingClientRect();
+      const panel = document
+        .querySelector(".login-panel")!
+        .getBoundingClientRect();
+      return {
+        brandTop: brand.top,
+        panelTop: panel.top,
+        brandRight: brand.right,
+        panelLeft: panel.left,
+        panelRight: panel.right,
+      };
+    });
+    expect(Math.abs(layout.brandTop - layout.panelTop)).toBeLessThan(1);
+    expect(Math.abs(layout.brandRight - layout.panelLeft)).toBeLessThan(1);
+    expect(Math.abs(layout.panelRight - width)).toBeLessThan(1);
+  }
 });
 
 test("mobile gradebook changes periods and preserves zero scores", async ({
@@ -371,4 +410,189 @@ test("global search distinguishes a connection error and can retry", async ({
       .getByRole("dialog")
       .getByRole("button", { name: "Pessoa de Teste Colaborador" }),
   ).toBeVisible();
+});
+
+test("notification badge drops the previous owner while the next query is pending", async ({
+  page,
+}) => {
+  const account = { id: owner, fullName: "Pessoa de Teste" };
+  const nextOwner = "00000000-0000-4000-8000-000000000003";
+  await setup(page, true, account);
+  let release = () => {};
+  let acknowledge = () => {};
+  const blocked = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const queried = new Promise<void>((resolve) => {
+    acknowledge = resolve;
+  });
+  await page.route(
+    "http://127.0.0.1:54321/rest/v1/notifications**",
+    async (route) => {
+      const next =
+        new URL(route.request().url()).searchParams.get("user_id") ===
+        `eq.${nextOwner}`;
+      if (next) {
+        acknowledge();
+        await blocked;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: {
+          "Content-Range": `0-0/${next ? 0 : 3}`,
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Expose-Headers": "Content-Range",
+        },
+        body: "[]",
+      });
+    },
+  );
+  await page.route("http://127.0.0.1:54321/auth/v1/user", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: nextOwner,
+        aud: "authenticated",
+        role: "authenticated",
+        email: "next@example.test",
+        app_metadata: {},
+        user_metadata: {},
+        created_at: "2026-10-01T00:00:00Z",
+      }),
+    });
+  });
+  await page.goto("/");
+  await expect(page.locator(".notification-bell")).toHaveAttribute(
+    "aria-label",
+    "Notificações: 3 não lidas",
+  );
+  account.id = nextOwner;
+  account.fullName = "ContaB";
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  const encode = (value: unknown) =>
+    Buffer.from(JSON.stringify(value)).toString("base64url");
+  const accessToken = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: nextOwner, aud: "authenticated", role: "authenticated", exp })}.c2lnbmF0dXJl`;
+  await page.evaluate(
+    async ({ accessToken }) => {
+      const modulePath = "/src/api.ts";
+      const { supabase } = await import(modulePath);
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: "next-test-refresh-token",
+      });
+      if (error) throw error;
+    },
+    { accessToken },
+  );
+  try {
+    await expect(page.locator(".account-trigger")).toContainText("ContaB");
+    await queried;
+    await expect(page.locator(".notification-bell")).toHaveAttribute(
+      "aria-label",
+      "Notificações",
+    );
+    await expect(page.locator(".notification-bell > span")).toHaveCount(0);
+  } finally {
+    release();
+  }
+});
+
+test("switching students hides the previous grades during loading", async ({
+  page,
+}) => {
+  await setup(page, true);
+  const nextEmployee = "00000000-0000-4000-8000-000000000004";
+  let release = () => {};
+  const blocked = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(
+    "http://127.0.0.1:54321/rest/v1/employees**",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            id: employee,
+            full_name: "Pessoa de Teste",
+            registration: "TEST-001",
+            status: "active",
+          },
+          {
+            id: nextEmployee,
+            full_name: "Outra Pessoa",
+            registration: "TEST-002",
+            status: "active",
+          },
+        ]),
+      });
+    },
+  );
+  await page.route(
+    "http://127.0.0.1:54321/rest/v1/performance_reviews**",
+    async (route) => {
+      if (
+        new URL(route.request().url()).searchParams.get("employee_id") !==
+        `eq.${nextEmployee}`
+      )
+        return route.fallback();
+      await blocked;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      });
+    },
+  );
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await page.goto("/#/notas");
+  await expect(page.locator(".mobile-grade-card").first()).toContainText("0,0");
+  await page
+    .getByLabel("Selecionar aluno do boletim")
+    .selectOption(nextEmployee);
+  try {
+    await expect(
+      page.getByRole("heading", { name: "Outra Pessoa", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".mobile-grade-card")).toHaveCount(0);
+  } finally {
+    release();
+  }
+  await expect(page.locator(".mobile-grade-list")).toContainText(
+    "Nota ainda não lançada",
+  );
+  await expect(page.locator(".mobile-grade-list")).not.toContainText("0,0");
+  await expect(page.locator(".mobile-grade-list")).not.toContainText("9,0");
+});
+
+test("mobile menu exposes its state and releases scroll after navigation", async ({
+  page,
+}) => {
+  await setup(page, true);
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await page.goto("/");
+  const toggle = page.getByRole("button", { name: "Abrir menu", exact: true });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect
+    .poll(() => page.evaluate(() => document.body.style.overflow))
+    .toBe("hidden");
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "Boletim", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Boletim e notas" }),
+  ).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect
+    .poll(() => page.evaluate(() => document.body.style.overflow))
+    .toBe("");
+  await toggle.click();
+  await page.keyboard.press("Escape");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
 });
