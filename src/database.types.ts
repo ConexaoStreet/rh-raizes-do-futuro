@@ -846,6 +846,9 @@ export type Database = {
       };
       notifications: {
         Row: {
+          scope: "rh" | "ti" | "system";
+          event_type: string | null;
+          event_key: string | null;
           id: string;
           user_id: string;
           title: string;
@@ -855,6 +858,9 @@ export type Database = {
           created_at: string;
         };
         Insert: {
+          scope?: "rh" | "ti" | "system";
+          event_type?: string | null;
+          event_key?: string | null;
           id?: string;
           user_id: string;
           title: string;
@@ -1345,7 +1351,9 @@ export type Database = {
           source?: string;
           created_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["user_role_history"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["user_role_history"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "user_role_history_user_id_fkey";

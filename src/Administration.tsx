@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Copy,
@@ -7,6 +7,9 @@ import {
   Plus,
   Search,
   ShieldCheck,
+  Bell,
+  Check,
+  RefreshCw,
 } from "lucide-react";
 import { client, json, rpc, runAction, useAsync, useDebounce } from "./api";
 import { useAuth } from "./auth";
@@ -23,6 +26,8 @@ import {
 } from "./components";
 import { dateLabel, label } from "./domain";
 import type { Json, Row } from "./database.types";
+import { watchNotifications } from "./notifications";
+import "./styles/notifications.css";
 export default function Administration({ mode }: { mode: string }) {
   if (mode === "notifications") return <Notifications />;
   if (mode === "sessions") return <Sessions />;
@@ -33,32 +38,99 @@ export default function Administration({ mode }: { mode: string }) {
   return <SettingsPage />;
 }
 function Notifications() {
+  const { user } = useAuth();
   const [page, setPage] = useState(0);
+  const [unread, setUnread] = useState(false);
+  const [marking, setMarking] = useState<string | null>(null);
   const data = useAsync(async () => {
-    const { data, error, count } = await client()
+    let query = client()
       .from("notifications")
       .select("*", { count: "exact" })
+      .eq("user_id", user.profile.id)
+      .eq("scope", "rh")
       .order("created_at", { ascending: false })
       .range(page * 25, page * 25 + 24);
+    if (unread) query = query.is("read_at", null);
+    const { data, error, count } = await query;
     if (error) throw error;
-    return { rows: data, total: count || 0 };
-  }, [page]);
+    return {
+      rows: data,
+      total: count || 0,
+      page,
+      unread,
+      owner: user.profile.id,
+    };
+  }, [page, unread, user.profile.id]);
+  useEffect(
+    () => watchNotifications(client(), user.profile.id, data.reload),
+    [user.profile.id, data.reload],
+  );
+  const current =
+    data.data?.page === page &&
+    data.data.unread === unread &&
+    data.data.owner === user.profile.id
+      ? data.data
+      : null;
+  useEffect(() => {
+    if (current && page > 0 && page * 25 >= current.total)
+      setPage(Math.max(0, Math.ceil(current.total / 25) - 1));
+  }, [current, page]);
   return (
     <>
-      <Heading title="Notificações" className="operational-heading" />
-      <section className="panel">
-        {data.loading ? (
+      <Heading
+        title="Notificações"
+        eyebrow="SEU ACOMPANHAMENTO"
+        className="operational-heading"
+      >
+        <button onClick={data.reload} disabled={data.loading}>
+          <RefreshCw size={16} className={data.loading ? "spin" : ""} />
+          Atualizar
+        </button>
+      </Heading>
+      <div className="notification-toolbar">
+        <p>As novidades da sua jornada, em um só lugar.</p>
+        <div
+          className="segmented-control"
+          role="group"
+          aria-label="Filtrar notificações"
+        >
+          {[false, true].map((value) => (
+            <button
+              key={String(value)}
+              aria-pressed={unread === value}
+              className={unread === value ? "active" : ""}
+              onClick={() => {
+                setUnread(value);
+                setPage(0);
+              }}
+            >
+              {value ? "Não lidas" : "Todas"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <section className="panel notification-center" aria-busy={data.loading}>
+        {data.loading && !current ? (
           <Loading />
         ) : data.error ? (
           <ErrorState retry={data.reload} />
-        ) : !data.data?.rows.length ? (
-          <Empty text="Nenhuma notificação." />
+        ) : !current?.rows.length ? (
+          <Empty
+            text={
+              unread
+                ? "Tudo em dia. Você leu todas as notificações."
+                : "As novidades do RH aparecerão aqui."
+            }
+          />
         ) : (
-          data.data.rows.map((n) => (
-            <div
+          current.rows.map((n) => (
+            <article
               className={`notification-row ${!n.read_at ? "unread" : ""}`}
               key={n.id}
             >
+              <span className="notification-symbol" aria-hidden="true">
+                {n.read_at ? <Check size={18} /> : <Bell size={18} />}
+              </span>
               <div>
                 <Link to={n.path}>{n.title}</Link>
                 <p>{n.body}</p>
@@ -66,22 +138,27 @@ function Notifications() {
               </div>
               {!n.read_at && (
                 <button
+                  disabled={marking === n.id}
                   onClick={() =>
-                    void runAction(async () => {
-                      await rpc("mark_notification", { identifier: n.id });
-                      data.reload();
-                    }, "")
+                    void (async () => {
+                      setMarking(n.id);
+                      const saved = await runAction(async () => {
+                        await rpc("mark_notification", { identifier: n.id });
+                      }, "");
+                      setMarking(null);
+                      if (saved) data.reload();
+                    })()
                   }
                 >
                   Marcar como lida
                 </button>
               )}
-            </div>
+            </article>
           ))
         )}
         <Pagination
           page={page}
-          total={data.data?.total || 0}
+          total={current?.total || 0}
           onChange={setPage}
         />
       </section>
@@ -105,7 +182,10 @@ function Sessions({ target }: { target?: string }) {
   );
   return (
     <>
-      <Heading title={target ? "Sessões do usuário" : "Minhas sessões"} className="operational-heading" />
+      <Heading
+        title={target ? "Sessões do usuário" : "Minhas sessões"}
+        className="operational-heading"
+      />
       <section className="panel">
         {data.loading ? (
           <Loading />
@@ -168,7 +248,11 @@ function UsersPage() {
   }, [search, status, page]);
   return (
     <>
-      <Heading title="Usuários" eyebrow="ACESSOS INDIVIDUAIS" className="operational-heading" />
+      <Heading
+        title="Usuários"
+        eyebrow="ACESSOS INDIVIDUAIS"
+        className="operational-heading"
+      />
       <section className="panel">
         <div className="table-toolbar">
           <div className="search-input">
@@ -232,7 +316,9 @@ function UsersPage() {
                     </td>
                     <td className="row-actions">
                       {p.status === "pending" ? (
-                        <span className="muted">Aguardando primeiro acesso</span>
+                        <span className="muted">
+                          Aguardando primeiro acesso
+                        </span>
                       ) : (
                         can("user.manage") && (
                           <button onClick={() => setSelected(p)}>
@@ -739,7 +825,9 @@ function RoleAssignmentsHistory({ id }: { id: string }) {
         data.data.map((row) => (
           <div className="timeline-item" key={row.id}>
             <strong>{row.profiles?.full_name || "Usuário"}</strong>
-            <span>{row.action === "assigned" ? "Cargo atribuído" : "Cargo removido"}</span>
+            <span>
+              {row.action === "assigned" ? "Cargo atribuído" : "Cargo removido"}
+            </span>
             <small>{dateLabel(row.created_at, true)}</small>
           </div>
         ))
@@ -842,7 +930,9 @@ function RoleHistory({ id, onSaved }: { id: string; onSaved: () => void }) {
               <div className="timeline-item" key={row.id}>
                 <strong>{row.profiles?.full_name || "Usuário"}</strong>
                 <span>
-                  {row.action === "assigned" ? "Cargo atribuído" : "Cargo removido"}
+                  {row.action === "assigned"
+                    ? "Cargo atribuído"
+                    : "Cargo removido"}
                 </span>
                 <small>
                   {dateLabel(row.created_at, true)}
@@ -1151,7 +1241,9 @@ function SettingsPage() {
               <strong>{title}</strong>
               <small>{description}</small>
             </span>
-            <span className="setting-link-arrow" aria-hidden="true">→</span>
+            <span className="setting-link-arrow" aria-hidden="true">
+              →
+            </span>
           </Link>
         ))}
         <button
@@ -1163,7 +1255,9 @@ function SettingsPage() {
             <strong>Limites de atraso</strong>
             <small>Escolha quando o atraso fica leve ou moderado.</small>
           </span>
-          <span className="setting-link-arrow" aria-hidden="true">→</span>
+          <span className="setting-link-arrow" aria-hidden="true">
+            →
+          </span>
         </button>
       </div>
       {row && (

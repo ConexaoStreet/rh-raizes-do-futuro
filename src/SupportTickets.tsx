@@ -19,8 +19,15 @@ import { useAuth } from "./auth";
 import { Heading } from "./components";
 import { dateLabel } from "./domain";
 import { capture, captureError } from "./telemetry";
+import "./styles/support.css";
 
-type Category = "bug" | "error" | "access" | "question" | "suggestion" | "other";
+type Category =
+  | "bug"
+  | "error"
+  | "access"
+  | "question"
+  | "suggestion"
+  | "other";
 
 const categoryOptions: {
   value: Category;
@@ -94,7 +101,11 @@ const pageOptions = [
 function pageLabel(path: string) {
   if (path.startsWith("/colaboradores/")) return "Perfil de colaborador";
   if (path.startsWith("/configuracoes/")) return "Configurações";
-  return pageOptions.find(([value]) => value === path)?.[1] || path || "Página não identificada";
+  return (
+    pageOptions.find(([value]) => value === path)?.[1] ||
+    path ||
+    "Página não identificada"
+  );
 }
 
 function safeFileName(value: string) {
@@ -113,7 +124,8 @@ function safeFileName(value: string) {
 function shortBrowser(userAgent: string) {
   if (/Edg\//.test(userAgent)) return "Microsoft Edge";
   if (/Chrome\//.test(userAgent)) return "Google Chrome";
-  if (/Safari\//.test(userAgent) && !/Chrome\//.test(userAgent)) return "Safari";
+  if (/Safari\//.test(userAgent) && !/Chrome\//.test(userAgent))
+    return "Safari";
   if (/Firefox\//.test(userAgent)) return "Firefox";
   return "Navegador não identificado";
 }
@@ -122,7 +134,8 @@ export default function SupportTickets() {
   const { user, session } = useAuth();
   const location = useLocation();
   const sourcePath =
-    (location.state as { reportPath?: string } | null)?.reportPath || "/suporte-ti";
+    (location.state as { reportPath?: string } | null)?.reportPath ||
+    "/suporte-ti";
 
   const [category, setCategory] = useState<Category>("bug");
   const [subject, setSubject] = useState("");
@@ -149,7 +162,12 @@ export default function SupportTickets() {
       return;
     }
 
-    const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/pdf",
+    ];
     if (attachment && !allowed.includes(attachment.type)) {
       toast.error("Envie uma imagem PNG/JPG/WebP ou um PDF.");
       return;
@@ -274,8 +292,9 @@ export default function SupportTickets() {
         <div>
           <h2>Precisa de ajuda com o sistema?</h2>
           <p>
-            Relate um erro, bug, problema de acesso ou dúvida. O sistema registra
-            o chamado e prepara uma mensagem completa para o WhatsApp da T.I.
+            Relate um erro, bug, problema de acesso ou dúvida. O sistema
+            registra o chamado e prepara uma mensagem completa para o WhatsApp
+            da T.I.
           </p>
         </div>
       </section>
@@ -338,7 +357,9 @@ export default function SupportTickets() {
               <span>2</span>
               <div>
                 <h2>Conte o que aconteceu</h2>
-                <p>Quanto mais claro o relato, mais rápido fica o atendimento.</p>
+                <p>
+                  Quanto mais claro o relato, mais rápido fica o atendimento.
+                </p>
               </div>
             </div>
           </div>
@@ -367,7 +388,9 @@ export default function SupportTickets() {
                 placeholder="Explique o que você estava fazendo, o que aconteceu e o que esperava que acontecesse."
                 required
               />
-              <small className="muted">{description.length}/1800 caracteres</small>
+              <small className="muted">
+                {description.length}/1800 caracteres
+              </small>
             </label>
 
             <label>
@@ -392,8 +415,8 @@ export default function SupportTickets() {
               <div>
                 <strong>Contexto automático do chamado</strong>
                 <span>
-                  Vamos incluir a página, data/hora, navegador e tamanho da tela.
-                  Parâmetros sensíveis da URL não são enviados.
+                  Vamos incluir a página, data/hora, navegador e tamanho da
+                  tela. Parâmetros sensíveis da URL não são enviados.
                 </span>
               </div>
             </div>
@@ -415,7 +438,9 @@ export default function SupportTickets() {
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp,application/pdf"
-              onChange={(event) => setAttachment(event.target.files?.[0] || null)}
+              onChange={(event) =>
+                setAttachment(event.target.files?.[0] || null)
+              }
             />
             <ImagePlus size={24} />
             <div>
@@ -446,8 +471,8 @@ export default function SupportTickets() {
             <div>
               <strong>Enviar chamado para a T.I.</strong>
               <span>
-                O protocolo fica salvo no sistema e o WhatsApp abre com a mensagem
-                pronta para envio.
+                O protocolo fica salvo no sistema e o WhatsApp abre com a
+                mensagem pronta para envio.
               </span>
             </div>
           </div>

@@ -22,6 +22,8 @@ import {
 } from "./components";
 import { dateLabel, number, weightedAverage } from "./domain";
 import type { Row } from "./database.types";
+import GradebookMobile from "./GradebookMobile";
+import "./styles/gradebook.css";
 
 type Review = Row<"performance_reviews"> & {
   employees: { full_name: string; registration: string };
@@ -129,30 +131,31 @@ export default function Performance() {
       reviews.some((review) => review.cycle_id === cycle.id),
   );
 
-  const criteriaRows =
-    criteria.data?.length
-      ? criteria.data
-      : Array.from(
-          new Map(
-            reviews
-              .flatMap((review) => review.performance_scores)
-              .map((score) => [
-                score.criterion_id,
-                {
-                  id: score.criterion_id,
-                  name: score.criterion_name,
-                  weight: score.weight,
-                },
-              ]),
-          ).values(),
-        );
+  const criteriaRows = criteria.data?.length
+    ? criteria.data
+    : Array.from(
+        new Map(
+          reviews
+            .flatMap((review) => review.performance_scores)
+            .map((score) => [
+              score.criterion_id,
+              {
+                id: score.criterion_id,
+                name: score.criterion_name,
+                weight: score.weight,
+              },
+            ]),
+        ).values(),
+      );
 
   const totalCriterionWeight = criteriaRows.reduce(
     (sum, criterion) => sum + Number(criterion.weight || 0),
     0,
   );
 
-  const reviewByCycle = new Map(reviews.map((review) => [review.cycle_id, review]));
+  const reviewByCycle = new Map(
+    reviews.map((review) => [review.cycle_id, review]),
+  );
   const cycleAverages = visibleCycles.map((cycle) =>
     weightedAverage(reviewByCycle.get(cycle.id)?.performance_scores || []),
   );
@@ -166,7 +169,11 @@ export default function Performance() {
 
   return (
     <>
-      <Heading title="Boletim e notas" eyebrow="DESENVOLVIMENTO" className="operational-heading">
+      <Heading
+        title="Boletim e notas"
+        eyebrow="DESENVOLVIMENTO"
+        className="operational-heading"
+      >
         {can("performance.manage") && (
           <Link className="button" to="/configuracoes/ciclos">
             <Settings2 size={17} />
@@ -220,15 +227,20 @@ export default function Performance() {
         )}
       </section>
 
-      {employees.loading || cycles.loading || criteria.loading || data.loading ? (
+      {employees.loading ||
+      cycles.loading ||
+      criteria.loading ||
+      data.loading ? (
         <Loading />
       ) : data.error || employees.error || cycles.error || criteria.error ? (
-        <ErrorState retry={() => {
-          employees.reload();
-          cycles.reload();
-          criteria.reload();
-          data.reload();
-        }} />
+        <ErrorState
+          retry={() => {
+            employees.reload();
+            cycles.reload();
+            criteria.reload();
+            data.reload();
+          }}
+        />
       ) : !employeeId ? (
         <Empty text="Selecione um aluno para abrir o boletim." />
       ) : (
@@ -251,7 +263,9 @@ export default function Performance() {
             </article>
             <article>
               <span>Liberados</span>
-              <strong>{reviews.filter((review) => review.released).length}</strong>
+              <strong>
+                {reviews.filter((review) => review.released).length}
+              </strong>
               <small>Visíveis para o aluno</small>
             </article>
           </section>
@@ -281,92 +295,105 @@ export default function Performance() {
             {!visibleCycles.length ? (
               <Empty text="Ainda não existem períodos disponíveis para este boletim." />
             ) : (
-              <div className="table-scroll gradebook-scroll">
-                <table className="gradebook-table">
-                  <thead>
-                    <tr>
-                      <th>Competência</th>
-                      {visibleCycles.map((cycle) => (
-                        <th key={cycle.id}>
-                          <span>{cycle.title}</span>
-                          <small>{dateLabel(cycle.end_date)}</small>
-                        </th>
-                      ))}
-                      <th>Média</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {criteriaRows.map((criterion) => {
-                      const scores = visibleCycles.map((cycle) =>
-                        reviewByCycle
-                          .get(cycle.id)
-                          ?.performance_scores.find(
-                            (score) => score.criterion_id === criterion.id,
-                          )?.score,
-                      );
-                      return (
-                        <tr key={criterion.id}>
-                          <td data-label="Competência">
-                            <strong>{criterion.name}</strong>
-                            <span className="badge grade-weight">
-                              Peso {number(criterion.weight, 1)}
-                              {totalCriterionWeight > 0
-                                ? ` · ${number((Number(criterion.weight) / totalCriterionWeight) * 100, 0)}% da média`
-                                : ""}
-                            </span>
-                          </td>
-                          {scores.map((score, index) => (
-                            <td
-                              key={visibleCycles[index].id}
-                              data-label={visibleCycles[index].title}
-                            >
-                              <span className={score == null ? "grade-empty" : "grade-score"}>
-                                {number(score, 1)}
+              <>
+                <GradebookMobile
+                  criteria={criteriaRows}
+                  cycles={visibleCycles}
+                  reviews={reviews}
+                />
+                <div className="table-scroll gradebook-scroll gradebook-desktop">
+                  <table className="gradebook-table">
+                    <thead>
+                      <tr>
+                        <th>Competência</th>
+                        {visibleCycles.map((cycle) => (
+                          <th key={cycle.id}>
+                            <span>{cycle.title}</span>
+                            <small>{dateLabel(cycle.end_date)}</small>
+                          </th>
+                        ))}
+                        <th>Média</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {criteriaRows.map((criterion) => {
+                        const scores = visibleCycles.map(
+                          (cycle) =>
+                            reviewByCycle
+                              .get(cycle.id)
+                              ?.performance_scores.find(
+                                (score) => score.criterion_id === criterion.id,
+                              )?.score,
+                        );
+                        return (
+                          <tr key={criterion.id}>
+                            <td data-label="Competência">
+                              <strong>{criterion.name}</strong>
+                              <span className="badge grade-weight">
+                                Peso {number(criterion.weight, 1)}
+                                {totalCriterionWeight > 0
+                                  ? ` · ${number((Number(criterion.weight) / totalCriterionWeight) * 100, 0)}% da média`
+                                  : ""}
                               </span>
                             </td>
-                          ))}
-                          <td data-label="Média">
-                            <strong className="grade-average">
-                              {number(average(scores), 1)}
+                            {scores.map((score, index) => (
+                              <td
+                                key={visibleCycles[index].id}
+                                data-label={visibleCycles[index].title}
+                              >
+                                <span
+                                  className={
+                                    score == null
+                                      ? "grade-empty"
+                                      : "grade-score"
+                                  }
+                                >
+                                  {number(score, 1)}
+                                </span>
+                              </td>
+                            ))}
+                            <td data-label="Média">
+                              <strong className="grade-average">
+                                {number(average(scores), 1)}
+                              </strong>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      <tr className="gradebook-final-row">
+                        <td>
+                          <strong>Média do período</strong>
+                        </td>
+                        {visibleCycles.map((cycle) => (
+                          <td key={cycle.id} data-label={cycle.title}>
+                            <strong>
+                              {number(
+                                weightedAverage(
+                                  reviewByCycle.get(cycle.id)
+                                    ?.performance_scores || [],
+                                ),
+                                1,
+                              )}
                             </strong>
                           </td>
-                        </tr>
-                      );
-                    })}
-                    <tr className="gradebook-final-row">
-                      <td>
-                        <strong>Média do período</strong>
-                      </td>
-                      {visibleCycles.map((cycle) => (
-                        <td key={cycle.id} data-label={cycle.title}>
-                          <strong>
-                            {number(
-                              weightedAverage(
-                                reviewByCycle.get(cycle.id)?.performance_scores || [],
-                              ),
-                              1,
-                            )}
-                          </strong>
+                        ))}
+                        <td data-label="Média geral">
+                          <strong>{number(overallAverage, 1)}</strong>
                         </td>
-                      ))}
-                      <td data-label="Média geral">
-                        <strong>{number(overallAverage, 1)}</strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </section>
 
-          <section className="panel">
+          <section className="panel gradebook-history">
             <div className="gradebook-section-heading">
               <div>
                 <div>
                   <h2>Lançamentos por período</h2>
-                  <p>
-                    Histórico das avaliações usadas para montar o boletim.
-                  </p>
+                  <p>Histórico das avaliações usadas para montar o boletim.</p>
                 </div>
               </div>
             </div>
@@ -392,7 +419,10 @@ export default function Performance() {
                         </td>
                         <td data-label="Média">
                           <strong className="grade-number">
-                            {number(weightedAverage(review.performance_scores), 1)}
+                            {number(
+                              weightedAverage(review.performance_scores),
+                              1,
+                            )}
                           </strong>
                         </td>
                         <td data-label="Visibilidade">
@@ -565,7 +595,9 @@ function ReviewForm({
               <div className="criterion-row" key={criterion.id}>
                 <label htmlFor={criterion.id}>
                   {criterion.name}
-                  <small className="badge grade-weight">Peso {number(criterion.weight, 1)}</small>
+                  <small className="badge grade-weight">
+                    Peso {number(criterion.weight, 1)}
+                  </small>
                 </label>
                 <input
                   id={criterion.id}
