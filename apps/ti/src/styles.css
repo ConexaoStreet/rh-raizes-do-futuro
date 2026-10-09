@@ -19,6 +19,22 @@
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
 }
 
+.ti-skip-link {
+  position: fixed;
+  top: -80px;
+  left: 16px;
+  z-index: 10000;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--green-strong);
+  color: #08110e;
+  font-weight: 700;
+}
+
+.ti-skip-link:focus {
+  top: max(16px, env(safe-area-inset-top));
+}
+
 * {
   box-sizing: border-box;
 }

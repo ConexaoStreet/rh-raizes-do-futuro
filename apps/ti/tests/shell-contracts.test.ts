@@ -59,6 +59,15 @@ describe("TI shell redesign", () => {
     expect(shell).toContain('aria-label="Ambiente de produção"');
   });
 
+  it("lets keyboard users skip navigation without changing the current view", () => {
+    expect(shell).toContain('className="ti-skip-link"');
+    expect(shell).toContain('href="#ti-main-content"');
+    expect(shell).toContain("event.preventDefault()");
+    expect(shell).toContain('document.getElementById("ti-main-content")?.focus()');
+    expect(shell).toContain('<main id="ti-main-content" tabIndex={-1}>');
+    expect(styles).toContain(".ti-skip-link:focus");
+  });
+
   it("keeps mobile navigation controlled and touch targets usable", () => {
     expect(styles).toContain(".ti-nav-group-label");
     expect(styles).toContain("min-height: 44px");
