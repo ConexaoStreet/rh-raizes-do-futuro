@@ -22,11 +22,23 @@ export default defineConfig(({ mode }) => {
           ascii_only: true,
         },
       },
-      rolldownOptions: {
+      rollupOptions: {
         output: {
           entryFileNames: "assets/[hash].js",
           chunkFileNames: "assets/[hash].js",
           assetFileNames: "assets/[hash][extname]",
+          onlyExplicitManualChunks: true,
+          manualChunks(id) {
+            if (
+              id.includes("node_modules/recharts") ||
+              id.includes("node_modules/d3-") ||
+              id.includes("node_modules/victory-vendor")
+            )
+              return "charts";
+            if (id.includes("node_modules/exceljs")) return "excel-export";
+            if (id.includes("node_modules/pptxgenjs")) return "slides-export";
+            if (id.includes("node_modules/jspdf")) return "pdf-export";
+          },
         },
       },
     },

@@ -38,7 +38,7 @@ test("login surface renders without uncaught browser errors", async ({ page }) =
   page.on("pageerror", (error) => errors.push(error.name));
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Entrar" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bom ter você aqui." })).toBeVisible();
   await expect(page.getByRole("button", { name: /Tema atual:/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -178,7 +178,7 @@ test("RH login remains stable across breakpoint matrix", async ({ page }) => {
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Entrar" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bom ter você aqui." })).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(

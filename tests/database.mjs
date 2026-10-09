@@ -177,7 +177,13 @@ await test("Tabelas sensíveis não concedem privilégios ao papel anon", async 
     "public.ti_support_tickets",
     "public.user_role_history",
   ]) {
-    for (const privilege of ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]) {
+    for (const privilege of [
+      "SELECT",
+      "INSERT",
+      "UPDATE",
+      "DELETE",
+      "TRUNCATE",
+    ]) {
       assert.equal(
         await value(
           await root("select has_table_privilege('anon',$1,$2)", [
@@ -190,6 +196,62 @@ await test("Tabelas sensíveis não concedem privilégios ao papel anon", async 
       );
     }
   }
+});
+await test("Notificações do RH respeitam usuário e escopo", async () => {
+  const notices = (
+    await root(
+      "insert into public.notifications(user_id,title,body,path,scope) values($1,'Aviso RH','Atualização','/notas','rh'),($1,'Aviso TI','Atualização','/suporte-ti','ti'),($2,'Outro usuário','Atualização','/notas','rh') returning id,user_id,scope",
+      [users.collaborator, users.second],
+    )
+  ).rows;
+  const ids = notices.map((row) => row.id);
+  const expected = notices
+    .filter((row) => row.user_id === users.collaborator && row.scope === "rh")
+    .map((row) => row.id);
+  const visible = await as(
+    "collaborator",
+    "select id from public.notifications where scope='rh' and id=any($1::uuid[])",
+    [ids],
+  );
+  assert.deepEqual(
+    visible.rows.map((row) => row.id),
+    expected,
+  );
+  const pending = await as(
+    "pending",
+    "select id from public.notifications where id=any($1::uuid[])",
+    [ids],
+  );
+  assert.equal(pending.rows.length, 0);
+});
+await test("Realtime de notificações é aditivo e pode ser aplicado duas vezes", async () => {
+  await root("select 1");
+  await db.exec("create publication supabase_realtime");
+  const filename = (await fs.readdir("supabase/migrations")).find((file) =>
+    file.endsWith("_notification_realtime.sql"),
+  );
+  const migration = await fs.readFile(
+    `supabase/migrations/${filename}`,
+    "utf8",
+  );
+  await db.exec(migration);
+  await db.exec(migration);
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='notifications'",
+      ),
+    ),
+    1,
+  );
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from pg_index where indexrelid='public.notifications_rh_unread_owner'::regclass and indisvalid",
+      ),
+    ),
+    1,
+  );
 });
 await test("Colaborador só lê seu próprio cadastro", async () => {
   const rows = await as("collaborator", "select id from public.employees");
@@ -216,11 +278,14 @@ await test("Colaborador não chama endpoint administrativo", async () =>
   ));
 await test("Colaborador não consegue lançar ou editar notas", async () =>
   blocked(
-    as(
-      "collaborator",
-      "select public.save_performance($1,$2,$3,$4,$5,$6)",
-      [employeeId, uid(999), JSON.stringify([]), "", false, null],
-    ),
+    as("collaborator", "select public.save_performance($1,$2,$3,$4,$5,$6)", [
+      employeeId,
+      uid(999),
+      JSON.stringify([]),
+      "",
+      false,
+      null,
+    ]),
   ));
 await test("Gestor não promove a si mesmo", async () =>
   blocked(
