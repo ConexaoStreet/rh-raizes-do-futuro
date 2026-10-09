@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import { createDatabase } from "./setup-database.mjs";
+
+const db = await createDatabase();
+await db.exec("set role anon");
+const initial = (await db.query("select public.site_status() as status")).rows[0].status;
+assert.equal(initial.maintenance.enabled, false);
+assert.ok(Array.isArray(initial.updates));
+assert.ok(!JSON.stringify(initial).includes("registration_access_window"));
+await assert.rejects(db.exec("insert into public.site_updates(pack,title,body) values(1,'Fake','Fake')"), /permission denied/);
+await db.exec("reset role");
+await db.exec("update public.settings set value=value || '{\"enabled\":true,\"title\":\"O site está em manutenção\"}'::jsonb where key='maintenance'");
+await db.exec("insert into public.site_updates(pack,title,body) values(1,'Começamos a revisão','Estamos conferindo o RH.'); insert into public.site_updates(pack,title,body,status) values(1,'Acompanhamento pronto','O histórico está disponível.','published')");
+await db.exec("set role anon");
+const current = (await db.query("select public.site_status() as status")).rows[0].status;
+assert.equal(current.maintenance.enabled, true);
+assert.equal(current.maintenance.title, "O site está em manutenção");
+assert.equal(current.updates.length, 2);
+assert.ok(current.updates[0].sequence > current.updates[1].sequence);
+assert.equal(current.updates[0].status, "published");
+await assert.rejects(db.query("select * from public.settings"), /permission denied/);
+await db.exec("reset role");
+await db.close();
+process.stdout.write("6 verificações de manutenção pública aprovadas.\n");

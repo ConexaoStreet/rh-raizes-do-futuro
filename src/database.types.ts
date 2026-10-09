@@ -1401,6 +1401,7 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      site_status: { Args: Record<PropertyKey, never>; Returns: Json };
       approve_user: {
         Args: {
           user_identifier: string | null;

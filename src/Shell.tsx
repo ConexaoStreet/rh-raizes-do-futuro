@@ -28,6 +28,8 @@ import { ThemeToggle } from "./theme";
 import { enablePushNotifications, pushSupported } from "./push";
 import { rhNavGroups } from "./layout/RhNavigation";
 import { watchNotifications } from "./notifications";
+import { useSiteStatus } from "./site-status";
+import MaintenanceNotice from "./MaintenanceNotice";
 const Dashboard = lazy(() => import("./Dashboard"));
 const Attendance = lazy(() => import("./Attendance"));
 const People = lazy(() => import("./People"));
@@ -66,6 +68,7 @@ function Guard({
 }
 export default function Shell() {
   const { user, can } = useAuth();
+  const siteStatus = useSiteStatus();
   const location = useLocation();
   useEffect(() => {
     captureNavigation(location.pathname);
@@ -235,6 +238,15 @@ export default function Shell() {
         </nav>
       </aside>
       <div className="main-column">
+        <MaintenanceNotice
+          maintenance={
+            siteStatus.data?.maintenance || {
+              enabled: Boolean(user.maintenance.enabled),
+              title: user.maintenance.title,
+              message: user.maintenance.message,
+            }
+          }
+        />
         <header className="topbar">
           <div className="topbar-left">
             <button
