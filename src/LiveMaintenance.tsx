@@ -27,6 +27,35 @@ function time(value: string) {
     timeZone: "America/Sao_Paulo",
   }).format(new Date(value));
 }
+function simpleText(value: string) {
+  const phrases = [
+    [
+      "O pacote está pronto; falta liberar a atualização do banco",
+      "A melhoria está pronta; falta preparar os dados do site",
+    ],
+    [
+      "A atualização do banco foi concluída",
+      "Os dados do site foram preparados",
+    ],
+    ["Os checks completos", "As verificações"],
+    ["Os checks do GitHub", "As verificações"],
+    ["O código está salvo no GitHub", "As alterações já estão salvas"],
+    [
+      "Os testes de banco também passaram",
+      "A conferência dos dados também passou",
+    ],
+    ["testes unitários", "verificações das funções"],
+    ["testes de navegador", "conferências de uso do site"],
+    ["conexão com o banco", "conexão com os dados do site"],
+    ["atualização do banco", "preparação dos dados do site"],
+    ["já estão preparados no banco", "já estão preparados para o site"],
+    ["sincronizando o pacote final", "reunindo as alterações finais"],
+    ["o pacote foi integrado", "as alterações foram reunidas"],
+  ];
+  for (const [previous, next] of phrases)
+    value = value.replaceAll(previous, next);
+  return value;
+}
 export default function LiveMaintenance() {
   const { data, loading, error, reload } = useSiteStatus();
   const [filter, setFilter] = useState<"all" | "release">("all");
@@ -153,13 +182,12 @@ export default function LiveMaintenance() {
                     </time>
                   </div>
                   <span className="live-status">{labels[update.status]}</span>
-                  <h3>{update.title}</h3>
-                  <p>{update.body}</p>
-                  {update.release_tag && (
-                    <span className="live-release-tag">
-                      Versão {update.release_tag}
-                    </span>
-                  )}
+                  <h3>
+                    {update.kind === "release"
+                      ? "Uma nova versão está disponível"
+                      : simpleText(update.title)}
+                  </h3>
+                  <p>{simpleText(update.body)}</p>
                 </li>
               ))}
             </ol>

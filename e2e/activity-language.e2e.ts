@@ -298,3 +298,57 @@ test("TI explains site activity and Datasul responses in ordinary language", asy
       .toBe(true);
   }
 });
+
+test("public update history uses a simple number and ordinary descriptions", async ({
+  page,
+}) => {
+  const when = "2026-10-10T12:00:00Z";
+  await page.route("**/rest/v1/rpc/site_status", (route) =>
+    route.fulfill({
+      json: {
+        maintenance: { enabled: false },
+        server_time: when,
+        updates: [
+          {
+            sequence: 124,
+            pack: 2,
+            kind: "release",
+            status: "published",
+            title: "Versão 2.0.20261010120000-abcdef0 publicada",
+            release_tag: "2.0.20261010120000-abcdef0",
+            body: "Os registros agora explicam quem fez cada ação e seu resultado.",
+            created_at: when,
+            updated_at: when,
+          },
+          {
+            sequence: 123,
+            pack: 2,
+            kind: "progress",
+            status: "verifying",
+            title: "A atualização do banco foi concluída",
+            release_tag: null,
+            body: "Os checks do GitHub passaram. O código está salvo no GitHub.",
+            created_at: when,
+            updated_at: when,
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto("/#/ao-vivo");
+  const history = page.locator(".live-timeline");
+  await expect(history).toContainText("Atualização #124");
+  await expect(history).toContainText("Uma nova versão está disponível");
+  await expect(history).toContainText("Os dados do site foram preparados");
+  await expect(history).toContainText(
+    "As verificações passaram. As alterações já estão salvas.",
+  );
+  await expect(history).not.toContainText(
+    /abcdef0|20261010120000|checks|GitHub|banco/,
+  );
+  await page
+    .getByRole("button", { name: "Versões publicadas", exact: true })
+    .click();
+  await expect(history.locator("li")).toHaveCount(1);
+  await expect(history).toContainText("Atualização #124");
+});
