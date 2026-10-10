@@ -19,6 +19,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "paths": {
+      "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime"]
+    },
     "types": [
       "vite/client"
     ]

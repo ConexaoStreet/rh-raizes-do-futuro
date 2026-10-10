@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { readActivityNames } from "./activity-api";
+import { describeActivity } from "../shared/activity-language";
+import { ActivityDetails } from "../shared/ActivityDetails";
 import { Link, useParams } from "react-router-dom";
 import { Camera, CheckCircle2, Download, FileUp, Paperclip, Plus, TriangleAlert, Upload, XCircle } from "lucide-react";
 import {
@@ -769,20 +772,26 @@ function EmployeeHistory({ id }: { id: string }) {
       .order("created_at", { ascending: false })
       .limit(100);
     if (error) throw error;
-    return data;
+    return { rows: data, names: await readActivityNames(data) };
   }, [id]);
   return (
     <section className="panel padded">
       {data.loading ? (
         <Loading />
       ) : (
-        data.data?.map((log) => (
+        data.data?.rows.map((log) => (
           <div className="timeline-item" key={log.id}>
-            <strong>{log.actor_name || "Sistema"}</strong>
-            <span>
-              {log.action} · {log.module}
-            </span>
+            <strong>{describeActivity(log, data.data?.names).title}</strong>
+            <span>{describeActivity(log, data.data?.names).description}</span>
             <small>{dateLabel(log.created_at, true)}</small>
+            <details>
+              <summary>Ver detalhes</summary>
+              <ActivityDetails
+                entry={log}
+                names={data.data?.names}
+                when={dateLabel(log.created_at, true)}
+              />
+            </details>
           </div>
         ))
       )}

@@ -92,7 +92,7 @@ const pageOptions = [
   ["/sessoes", "Minhas sessões"],
   ["/usuarios", "Usuários"],
   ["/cargos", "Cargos e permissões"],
-  ["/auditoria", "Logs e auditoria"],
+  ["/auditoria", "Histórico de atividades"],
   ["/configuracoes", "Configurações"],
   ["/admin", "Administração total"],
   ["/suporte-ti", "Chamado T.I."],

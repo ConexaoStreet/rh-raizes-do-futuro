@@ -29,7 +29,6 @@ import {
   UserCog,
   Users,
   Wrench,
-  XCircle,
 } from "lucide-react";
 import { client, rpc, updateSetting } from "./api";
 import { useAuth } from "./auth";
@@ -43,6 +42,8 @@ import { TechnicalField } from "./components/TechnicalField";
 import { CodeSurface } from "./components/CodeSurface";
 import { IntegrationCard } from "./components/IntegrationCard";
 import type { TiView } from "./navigation";
+import { describeActivity, describeDatasulActivity, resolveActivityNames, activityReferenceName, type ActivityNames } from "../../../shared/activity-language";
+import { ActivityDetails } from "../../../shared/ActivityDetails";
 
 type JsonObject = Record<string, unknown>;
 type SettingRow = { key: string; value: unknown };
@@ -92,6 +93,10 @@ type AuditRow = {
   event_type: string;
   severity: string;
   success: boolean;
+  entity_id?: string | null;
+  old_values?: unknown;
+  new_values?: unknown;
+  context?: unknown;
 };
 type DatasulOperation = {
   id: string;
@@ -291,6 +296,7 @@ export default function App() {
   const [positions, setPositions] = useState<NamedRow[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [auditNames, setAuditNames] = useState<ActivityNames>(new Map());
   const [datasulOps, setDatasulOps] = useState<DatasulOperation[]>([]);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [moduleErrors, setModuleErrors] = useState<Record<string, string>>({});
@@ -424,15 +430,30 @@ export default function App() {
         },
       },
       {
-        key: "auditoria",
+        key: "histórico de atividades",
         run: async () => {
           const result = await client()
             .from("audit_logs")
-            .select("id,created_at,actor_name,action,module,event_type,severity,success")
+            .select("id,created_at,actor_name,action,module,event_type,severity,success,entity_id,old_values,new_values,context")
             .order("created_at", { ascending: false })
             .limit(80);
           if (result.error) throw result.error;
-          setAudit((result.data || []) as AuditRow[]);
+          const rows = (result.data || []) as AuditRow[];
+          const names = await resolveActivityNames(rows, async (request) => {
+            const reference = await client()
+              .from(request.table)
+              .select("id," + request.field + (request.table === "permissions" ? ",code" : ""))
+              .in("id", request.ids);
+            if (reference.error) return [];
+            return (reference.data as unknown as Record<string, unknown>[]).map(
+              (row) => ({
+                id: String(row.id),
+                name: activityReferenceName(request, row),
+              }),
+            );
+          });
+          setAudit(rows);
+          setAuditNames(names);
         },
       },
       {
@@ -1042,7 +1063,7 @@ export default function App() {
                     <StatusTile label="Sessões Auth" value={numberValue(snapshot.auth_sessions)} detail="sessões abertas" icon={<ShieldCheck size={16} />} />
                     <StatusTile label="Push" value={numberValue(snapshot.push_devices)} detail="dispositivos" icon={<BellRing size={16} />} />
                     <StatusTile label="Storage" value={numberValue(snapshot.storage_objects)} detail="objetos" icon={<HardDrive size={16} />} />
-                    <StatusTile label="Auditoria 24h" value={numberValue(snapshot.audit_24h)} detail="eventos" icon={<Activity size={16} />} />
+                    <StatusTile label="Atividades nas últimas 24h" value={numberValue(snapshot.audit_24h)} detail="registros" icon={<Activity size={16} />} />
                     <StatusTile
                       label="Datasul 24h"
                       value={numberValue(snapshot.datasul_operations_24h)}
@@ -1058,8 +1079,8 @@ export default function App() {
                     />
                   </div>
 
-                  <Panel title="Atividade recente" kicker="AUDITORIA" icon={<FileClock />}>
-                    <AuditList rows={audit.slice(0, 8)} />
+                  <Panel title="Atividade recente" kicker="ATIVIDADES DO SITE" icon={<FileClock />}>
+                    <AuditList rows={audit.slice(0, 8)} names={auditNames} />
                   </Panel>
                 </div>
               )}
@@ -1228,7 +1249,7 @@ export default function App() {
                       </button>
                       <p className="panel-copy">
                         Escritas e exclusões exigem MFA recente e entram no
-                        histórico técnico.
+                        histórico de atividades.
                       </p>
                     </Panel>
                   </div>
@@ -1238,26 +1259,7 @@ export default function App() {
                     </Panel>
                   )}
                   <div className="datasul-history-shell">
-                  <Panel title="Histórico Datasul" kicker="AUDITORIA DE API" icon={<FileClock />}>
-                    <TechnicalTable label="Histórico de operações Datasul">
-                      <table>
-                        <thead><tr><th>Data</th><th>Operador</th><th>Método</th><th>Endpoint</th><th>HTTP</th><th>Duração</th><th>Status</th></tr></thead>
-                        <tbody>
-                          {datasulOps.map((row) => (
-                            <tr key={row.id}>
-                              <td>{formatDate(row.created_at)}</td>
-                              <td>{row.actor_name || "Sistema"}</td>
-                              <td><code>{row.method}</code></td>
-                              <td><code>{row.path}</code></td>
-                              <td>{row.response_status || "-"}</td>
-                              <td>{row.duration_ms} ms</td>
-                              <td><Badge tone={row.success ? "ok" : "error"}>{row.success ? "OK" : row.error_message || "Falha"}</Badge></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </TechnicalTable>
-                  </Panel>
+                  <Panel title="Atividades da conexão com Datasul" kicker="CONSULTAS E ALTERAÇÕES" icon={<FileClock />}><DatasulHistory rows={datasulOps} /></Panel>
                   </div>
                 </div>
               )}
@@ -1758,28 +1760,11 @@ export default function App() {
 
               {view === "logs" && (
                 <>
-                  <Panel title="Auditoria geral" kicker="ÚLTIMOS EVENTOS" icon={<Activity />}>
-                    <AuditList rows={audit} full />
+                  <Panel title="Atividades do site" kicker="QUEM FEZ, QUANDO E O QUE MUDOU" icon={<Activity />}>
+                    <p className="activity-intro">Os registros explicam as ações e mostram se elas foram concluídas.</p>
+                    <AuditList rows={audit} names={auditNames} full />
                   </Panel>
-                  <Panel title="Operações Datasul" kicker="API" icon={<Database />}>
-                    <TechnicalTable label="Log de operações Datasul">
-                      <table>
-                        <thead><tr><th>Data</th><th>Operador</th><th>Método</th><th>Endpoint</th><th>HTTP</th><th>Status</th></tr></thead>
-                        <tbody>
-                          {datasulOps.map((row) => (
-                            <tr key={row.id}>
-                              <td>{formatDate(row.created_at)}</td>
-                              <td>{row.actor_name || "-"}</td>
-                              <td>{row.method}</td>
-                              <td><code>{row.path}</code></td>
-                              <td>{row.response_status || "-"}</td>
-                              <td><Badge tone={row.success ? "ok" : "error"}>{row.success ? "Sucesso" : "Falha"}</Badge></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </TechnicalTable>
-                  </Panel>
+                  <Panel title="Conexão com Datasul" kicker="CONSULTAS E ALTERAÇÕES" icon={<FileClock />}><DatasulHistory rows={datasulOps} /></Panel>
                 </>
               )}
             </>
@@ -1916,36 +1901,83 @@ function StateRow({
 
 function AuditList({
   rows,
+  names,
   full = false,
 }: {
   rows: AuditRow[];
+  names: ActivityNames;
   full?: boolean;
 }) {
-  if (!rows.length) return <Empty text="Nenhum evento encontrado." />;
+  if (!rows.length) return <Empty text="Nenhuma atividade registrada." />;
   return (
-    <div className={full ? "audit-list full" : "audit-list"}>
-      {rows.map((row) => (
-        <div className="audit-row" key={row.id}>
-          <div className="audit-icon">
-            {row.success ? (
-              <CheckCircle2 size={17} />
-            ) : (
-              <XCircle size={17} />
+    <ol
+      className={"activity-list" + (full ? "" : " activity-compact")}
+      aria-label="Atividades do site"
+    >
+      {rows.map((row) => {
+        const activity = describeActivity(row, names);
+        return (
+          <li className="activity-item" key={row.id}>
+            <div className="activity-topline">
+              <span className={row.success ? "badge badge-completed ok" : "badge badge-rejected error"} data-success={row.success}>
+                {activity.result}
+              </span>
+              <time dateTime={row.created_at}>
+                {formatDate(row.created_at)}
+              </time>
+            </div>
+            <h3>{activity.title}</h3>
+            <p>{activity.description}</p>
+            <p className="activity-area">
+              {activity.area}
+              {activity.subject ? " · " + activity.subject : ""}
+            </p>
+            {full && (
+              <details>
+                <summary>Ver detalhes</summary>
+                <ActivityDetails
+                  entry={row}
+                  names={names}
+                  when={formatDate(row.created_at)}
+                />
+              </details>
             )}
-          </div>
-          <div>
-            <strong>{row.action}</strong>
-            <span>
-              {row.actor_name || "Sistema"} | {row.module}
-            </span>
-          </div>
-          <Badge tone={row.success ? "ok" : "error"}>
-            {row.success ? "OK" : "Falha"}
-          </Badge>
-          <time>{formatDate(row.created_at)}</time>
-        </div>
-      ))}
-    </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
+function DatasulHistory({ rows }: { rows: DatasulOperation[] }) {
+  if (!rows.length)
+    return <Empty text="Ainda não há atividades na conexão com Datasul." />;
+  return (
+    <ol
+      className="activity-list"
+      aria-label="Atividades da conexão com Datasul"
+    >
+      {rows.map((row) => {
+        const activity = describeDatasulActivity(row);
+        return (
+          <li className="activity-item" key={row.id}>
+            <div className="activity-topline">
+              <span className={row.success ? "badge badge-completed ok" : "badge badge-rejected error"} data-success={row.success}>
+                {activity.result}
+              </span>
+              <time dateTime={row.created_at}>
+                {formatDate(row.created_at)}
+              </time>
+            </div>
+            <h3>{activity.title}</h3>
+            <p>Quem fez: {activity.actor}</p>
+            <p>{activity.note}</p>
+            <p className="activity-area">
+              Tempo de resposta: {activity.duration}
+            </p>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}

@@ -171,7 +171,7 @@ export const rhNavGroups: RhNavGroup[] = [
       },
       {
         path: "/auditoria",
-        name: "Logs e auditoria",
+        name: "Histórico de atividades",
         icon: Activity,
         permission: "audit.view",
       },

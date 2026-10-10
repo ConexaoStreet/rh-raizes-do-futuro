@@ -310,8 +310,7 @@ main {
   margin: 0 auto;
 }
 
-.panel-icon,
-.audit-icon {
+.panel-icon {
   display: grid;
   place-items: center;
   color: #a3cdb1;
@@ -512,50 +511,6 @@ pre {
 .status-dot.warn {
   background: #dfa650;
   box-shadow: 0 0 0 5px rgba(223, 166, 80, .08);
-}
-
-.audit-list {
-  display: grid;
-}
-
-.audit-row {
-  min-height: 52px;
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid rgba(191, 222, 204, .07);
-}
-
-.audit-row:last-child {
-  border-bottom: 0;
-}
-
-.audit-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-}
-
-.audit-row strong,
-.audit-row span {
-  display: block;
-}
-
-.audit-row strong {
-  font-size: .74rem;
-}
-
-.audit-row span {
-  color: var(--muted);
-  font-size: .64rem;
-  margin-top: 2px;
-}
-
-.audit-row time {
-  color: #73887d;
-  font-size: .63rem;
-  white-space: nowrap;
 }
 
 .empty,
@@ -819,13 +774,6 @@ pre {
     padding: 18px;
   }
 
-  .audit-row {
-    grid-template-columns: 34px minmax(0, 1fr);
-  }
-
-  .audit-row time {
-    grid-column: 2;
-  }
 }
 
 @media (max-width: 470px) {
@@ -896,8 +844,7 @@ html[data-theme="light"] .access-card {
   color: var(--text);
   border-color: var(--border);
 }
-html[data-theme="light"] .panel-icon,
-html[data-theme="light"] .audit-icon {
+html[data-theme="light"] .panel-icon {
   color: #477961;
   background: #edf4ef;
   border-color: #dfebe3;
@@ -2286,19 +2233,6 @@ html[data-theme="light"] .ticket-card {
 .datasul-history-shell {
   margin-top:18px;
 }
-.datasul-history-shell .panel {
-  border-radius:20px;
-  overflow:hidden;
-}
-.datasul-history-shell table thead {
-  position:sticky;
-  top:0;
-  z-index:1;
-}
-.datasul-history-shell tbody tr:hover {
-  background:rgba(143,199,163,.045);
-}
-
 html[data-theme="light"] .datasul-command-header {
   background:
     radial-gradient(circle at 88% 20%,rgba(129,164,70,.08),transparent 16rem),
