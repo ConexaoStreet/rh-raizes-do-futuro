@@ -8,8 +8,10 @@ Testados acessos negativos, conta pendente e suspensa, tarefas, edição concorr
 
 Revisão independente encontrou e confirmou correções para limpeza de arquivos vencidos, locks de upload e descarte, e reabertura de denúncia. Concorrência foi revisada pela semântica dos locks; os testes PGlite são sequenciais.
 
-## Publicação pendente
+## Banco aplicado e publicação em validação
 
-O pacote 1 está publicado com manutenção e acompanhamento. A aplicação do banco do pacote 2 retornou `Invalid or expired requestState` em duas tentativas pela conexão Supabase. As tabelas novas não existem em produção. Não se deve publicar o frontend nem desligar manutenção até aplicar as duas migrations, conferir o CI e confirmar o deployment.
+O pacote 1 está publicado com manutenção e acompanhamento. A nova tentativa resolveu a falha `Invalid or expired requestState` aplicando a estrutura em partes menores. As quatro migrations estão registradas em produção: 20261010054143, 20261010054325, 20261010054339 e 20261010054432. Foram confirmados seis canais, bucket privado, cron ativo, RLS e ausência de privilégios de chat para anon. A manutenção permanece até confirmar a publicação do frontend.
 
-As funções Edge existentes não foram executadas com credenciais reais. Deno check está no CI. Não foram criados usuários, mensagens ou arquivos fictícios em produção. Os espaços por setor são internos ao RH; integração real com TOTVS Datasul depende da configuração do serviço externo. O visual reutiliza a identidade aprovada no Figma existente.
+As funções Edge existentes não foram executadas com credenciais reais. Deno check passou no CI do PR 93. Não foram criados usuários, mensagens ou arquivos fictícios em produção. Os espaços por setor são internos ao RH; integração real com TOTVS Datasul depende da configuração do serviço externo. O visual reutiliza a identidade aprovada no Figma existente.
+
+O monitor privado usa RLS sem policy e não permite clientes, por intenção. Índices novos ainda sem uso não foram removidos antes de receber tráfego. O advisor mantém o aviso existente de [proteção contra senhas vazadas desativada](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection), dependente da configuração do plano; nenhum serviço pago foi habilitado.

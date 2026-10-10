@@ -45,11 +45,11 @@
 
 **Interfaces:** public.workspace_snapshot(department_identifier uuid default null), public.save_sector_task(payload jsonb,expected_version integer default null); auth.roles orienta a navegação, autorização de setor vem do servidor. Chat consome public.chat_rooms com department_id.
 
-- [ ] Testar acesso do próprio setor, negativa de outro setor, ausência de vínculo e visão de gestores/instrutor.
-- [ ] Implementar RPCs e tabelas com RLS, tarefas versionadas, dados agregados e seções com uma aba por vez.
-- [ ] Implementar painéis personalizados e atalhos com as permissões atuais; integrar navegação e manter rotas antigas.
-- [ ] Testar tarefas, abas, ações e troca de sessão em desktop/celular.
-- [ ] Conferir testes e registrar etapa concluída no acompanhamento, sem deploy intermediário.
+- [x] Testar acesso do próprio setor, negativa de outro setor, ausência de vínculo e visão de gestores/instrutor.
+- [x] Implementar RPCs e tabelas com RLS, tarefas versionadas, dados agregados e seções com uma aba por vez.
+- [x] Implementar painéis personalizados e atalhos com as permissões atuais; integrar navegação e manter rotas antigas.
+- [x] Testar tarefas, abas, ações e troca de sessão em desktop/celular.
+- [x] Conferir testes e registrar etapa concluída no acompanhamento, sem deploy intermediário.
 
 ### Task 3: Chat, moderação e anexos
 
@@ -57,11 +57,11 @@
 
 **Interfaces:** public.send_chat_message(room_identifier uuid,body text,attachment_identifiers uuid[] default '{}',request_identifier uuid default gen_random_uuid()), public.reserve_chat_attachment(payload jsonb), public.report_chat_message(message_identifier uuid,reason text), public.moderate_chat_message(message_identifier uuid,reason text). Mensagens paginadas e realtime; anexos privados e links de 120 segundos.
 
-- [ ] Testar censura no servidor, flood, idempotência, sala indevida, anexos de outro dono/sala, arquivos perigosos e tamanho.
-- [ ] Implementar políticas de sala/mensagem/anexo, RPCs privados com wrappers invoker e grants restritos; bucket privado sem upsert.
-- [ ] Implementar conversa, histórico paginado, estado de envio, denúncia, moderação, anexos e retry com idempotência.
-- [ ] Testar conexão, troca de sala/conta durante resposta pendente, publicação filtrada e anexos no navegador.
-- [ ] Executar testes e registrar etapa real no acompanhamento.
+- [x] Testar censura no servidor, flood, idempotência, sala indevida, anexos de outro dono/sala, arquivos perigosos e tamanho.
+- [x] Implementar políticas de sala/mensagem/anexo, RPCs privados com wrappers invoker e grants restritos; bucket privado sem upsert.
+- [x] Implementar conversa, histórico paginado, estado de envio, denúncia, moderação, anexos e retry com idempotência.
+- [x] Testar conexão, troca de sala/conta durante resposta pendente, publicação filtrada e anexos no navegador.
+- [x] Executar testes e registrar etapa real no acompanhamento.
 
 ### Task 4: Versões, Figma e revisão completa
 
@@ -69,9 +69,9 @@
 
 **Interfaces:** manifesto release.json {version,commit,published_at,changes}; versão baseada em commit; sem reload automático de rascunhos. Histórico público numerado após deploy via conexão autorizada.
 
-- [ ] Testar resumo humano, identificação de versão e rascunho preservado.
-- [ ] Implementar manifesto e aviso de versão; preparar telas de setores/chat/instrutor no Figma existente.
-- [ ] Auditar todos os módulos e RPCs existentes; cobrir operações de negócio em banco local e fluxos no navegador, corrigir falhas encontradas.
-- [ ] Executar npm run verify, testes de funções Edge, privacidade, auditoria de dependências e suite Playwright completa; verificar Supabase advisors e acesso a arquivos.
+- [x] Testar resumo humano, identificação de versão e rascunho preservado.
+- [x] Implementar manifesto e aviso de versão; reutilizar a identidade aprovada no Figma existente nas telas de setores/chat/instrutor.
+- [x] Auditar todos os módulos e RPCs existentes; cobrir operações de negócio em banco local e fluxos no navegador, corrigir falhas encontradas.
+- [x] Executar npm run verify, testes de funções Edge, privacidade, auditoria de dependências e suite Playwright completa; verificar Supabase advisors e acesso a arquivos.
 - [ ] Revisão independente do pacote final, correções com regressões, commit e publicação apenas após checks verdes.
 - [ ] Confirmar produção, registrar versão publicada, desativar manutenção, conferir acesso normal e entregar relatório com limitações reais.

@@ -32,4 +32,8 @@ Validação completa: npm verify aprovado com 84 testes unitários, 46 verifica�
 
 Revisões independentes: corrigidas limpeza de upload vencido após transferência de setor e concorrência entre Storage e envio/descarte. Revisor final aprovou condicionado à reabertura de denúncias; regressão RED confirmada e correção GREEN 17/17, exit 0. Nenhum dado de teste escrito em produção.
 
-Bloqueio externo na publicação: supabase.apply_migration retornou Invalid or expired requestState em duas chamadas. Leitura posterior confirmou public.chat_rooms e private.release_monitor ausentes, portanto migrations não aplicadas. Não publicar frontend em main nem retirar manutenção antes de resolver aplicação do banco. Código será disponibilizado em PR para revisão.
+Publicação preparada em PR 93. Checks GitHub e Vercel RH/TI do primeiro commit verdes. A aplicação grande retornava Invalid or expired requestState. Nova tentativa resolveu com partes menores, revisadas independentemente; somente revogações preventivas extras entre etapas, sem ampliar acesso.
+
+Migrations aplicadas: automatic_release_history 20261010054143; workspaces_chat_schema 20261010054325; workspaces_chat_operations 20261010054339; workspaces_chat_access 20261010054432. Confirmados seis canais, bucket privado, cron ativo a cada cinco minutos, RLS nas seis tabelas e ausência de RPC/escrita direta para anon. Sincronizados nomes locais com histórico remoto. Suite completa de banco passou após divisão.
+
+Advisors: sem erro de segurança do pacote. RLS sem policy do monitor privado é intencional; não há grants para clientes. Índices novos ainda sem uso são esperados antes da publicação. Aviso existente sobre proteção contra senhas vazadas permanece e não foi habilitado serviço pago. Ainda conferir deploy público e desligar manutenção somente após produção READY.
