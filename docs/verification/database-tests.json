@@ -1,6 +1,6 @@
 {
   "engine": "PostgreSQL 17 via PGlite",
-  "generated_at": "2026-10-09T22:26:31.473Z",
+  "generated_at": "2026-10-09T23:06:40.073Z",
   "results": [
     {
       "name": "Equipe de RH e turma ficam separadas sem aceitar grupo inválido",
@@ -124,6 +124,30 @@
     },
     {
       "name": "Relatório usa dados finais e contabiliza manutenção",
+      "passed": true
+    },
+    {
+      "name": "Boletim salva, publica para o titular e protege edições concorrentes",
+      "passed": true
+    },
+    {
+      "name": "Feedback publicado pode ser lido e respondido apenas pelo titular",
+      "passed": true
+    },
+    {
+      "name": "Justificativa chega ao RH e a análise respeita a versão do registro",
+      "passed": true
+    },
+    {
+      "name": "Importações de colaboradores e calendário são atômicas",
+      "passed": true
+    },
+    {
+      "name": "Arquivo de relatório é registrado e continua privado",
+      "passed": true
+    },
+    {
+      "name": "Avaliação da gestão aceita um voto e preserva o mínimo de anonimato",
       "passed": true
     },
     {

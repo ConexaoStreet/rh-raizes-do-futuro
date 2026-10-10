@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Database, Json } from "./database.types";
 import { errorMessage } from "./domain";
+import { validateAttachmentFile } from "./attachment-files";
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 export const configured = Boolean(url && key);
@@ -90,25 +91,12 @@ export async function uploadAttachment(
   employeeId: string,
   links: { justificationId?: string; feedbackId?: string } = {},
 ) {
-  const allowed = [
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ];
-  if (file.size > 10 * 1024 * 1024 || !allowed.includes(file.type))
-    throw new Error("INVALID_FILE");
-  const ext =
-    file.name
-      .split(".")
-      .pop()
-      ?.toLowerCase()
-      .replace(/[^a-z0-9]/g, "") || "bin";
   const bucket = links.justificationId
     ? "justifications"
     : links.feedbackId
       ? "feedback-files"
       : "documents";
+  const ext = validateAttachmentFile(file, bucket);
   const path = `${employeeId}/${crypto.randomUUID()}.${ext}`;
   const { error } = await client()
     .storage.from(bucket)

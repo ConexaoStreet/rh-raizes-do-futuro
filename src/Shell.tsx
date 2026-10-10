@@ -40,6 +40,9 @@ const Administration = lazy(() => import("./Administration"));
 const Calendar = lazy(() => import("./Calendar"));
 const EntitySettings = lazy(() => import("./EntitySettings"));
 const SupportTickets = lazy(() => import("./SupportTickets"));
+const SectorWorkspace = lazy(() => import("./SectorWorkspace"));
+const OverviewWorkspace = lazy(() => import("./OverviewWorkspace"));
+const Chat = lazy(() => import("./Chat"));
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{
@@ -392,6 +395,38 @@ export default function Shell() {
         <main id="main-content" className="page-content">
           <Suspense fallback={<Loading />}>
             <Routes>
+              <Route
+                path="/meu-setor"
+                element={
+                  <Guard permission="workspace.view">
+                    <SectorWorkspace />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/gestores"
+                element={
+                  <Guard permission="workspace.overview">
+                    <OverviewWorkspace />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/instrutor"
+                element={
+                  <Guard permission="workspace.instructor">
+                    <OverviewWorkspace instructor />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/conversas"
+                element={
+                  <Guard permission="chat.use">
+                    <Chat />
+                  </Guard>
+                }
+              />
               <Route
                 path="/"
                 element={

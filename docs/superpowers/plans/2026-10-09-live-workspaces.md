@@ -37,7 +37,7 @@
 - [x] Implementar projeção pública com RLS e status SQL invoker; verificar anonimato, bloqueio de escrita e sincronização do controle.
 - [x] Implementar provider compartilhado, aviso e rota pública, erro/retry e atualização visível sem polling em background.
 - [x] Testar login e acompanhamento em 320,390,768,1440px, sem overflow e sem campos de pessoas na página pública.
-- [ ] Executar lint, testes, build e orçamento; revisar; aplicar migration, registrar andamento verdadeiro e publicar pacote 1. Confirmar produção.
+- [x] Executar lint, testes, build e orçamento; revisar; aplicar migration, registrar andamento verdadeiro e publicar pacote 1. Confirmar produção.
 
 ### Task 2: Espaços por setor e visão geral
 

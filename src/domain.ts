@@ -116,6 +116,12 @@ export function errorMessage(error: unknown) {
         ? String(error.message)
         : "";
   const known: Record<string, string> = {
+    INVALID_FILE: "Escolha um arquivo permitido, com até 10 MB e nome válido.",
+    INVALID_MESSAGE: "Confira o texto e os anexos antes de enviar.",
+    INVALID_ATTACHMENT: "Não foi possível confirmar este anexo. Remova-o e selecione o arquivo novamente.",
+    ATTACHMENT_LIMIT: "Há anexos pendentes. Remova os que não vai enviar antes de acrescentar outros.",
+    INVALID_ASSIGNEE: "Escolha uma pessoa com conta ativa neste setor.",
+    RATE_LIMIT: "Aguarde alguns segundos antes de enviar outra mensagem.",
     FORBIDDEN: "Você não tem permissão.",
     OUTSIDE_WINDOW: "Fora do horário da chamada.",
     INVALID_COURSE_DAY: "Não há curso nesta data.",

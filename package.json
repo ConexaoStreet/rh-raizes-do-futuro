@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build && node scripts/protect-build.mjs",
+    "build": "node scripts/generate-release.mjs && tsc -b && vite build && node scripts/generate-release.mjs publish && node scripts/protect-build.mjs",
     "lint": "eslint . && node scripts/check-source.mjs",
     "test": "vitest run",
-    "test:database": "node tests/database.mjs && node tests/site-live.mjs",
+    "test:database": "node tests/database.mjs && node tests/site-live.mjs && node tests/workspaces-chat.mjs && node tests/release.mjs && node tests/release-monitor.mjs",
     "test:e2e": "playwright test",
     "verify": "npm run lint && npm run check:privacy && npm run test && npm run test:database && npm run build && npm run check:bundle",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
