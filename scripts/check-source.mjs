@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
 
-const roots = ["src", "scripts", "tests", "supabase"];
+const roots = ["src", "shared", "scripts", "tests", "supabase"];
 const pendingWords = new RegExp(
   "\\b(" + ["TO" + "DO", "FIX" + "ME"].join("|") + ")\\b",
 );

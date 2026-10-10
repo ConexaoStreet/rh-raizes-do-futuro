@@ -1,10 +1,8 @@
 {
   "pack": 2,
   "changes": [
-    "Cada setor ganhou um espaço próprio com tarefas, equipe e acompanhamento.",
-    "Gestores acompanham todos os setores. O instrutor tem uma visão organizada por abas.",
-    "O chat geral e as salas dos setores recebem anexos e planilhas, com filtro, denúncias e moderação.",
-    "Novas publicações são identificadas automaticamente e entram no histórico numerado.",
-    "Revisamos os acessos, os principais fluxos do RH e o layout no computador e no celular."
+    "Os registros agora usam frases simples, com o nome de quem fez a ação e seu resultado.",
+    "Os históricos do RH e do painel de TI mostram o que mudou antes e depois, sem códigos na leitura principal.",
+    "As atividades da conexão com Datasul também têm descrições fáceis de entender."
   ]
 }
