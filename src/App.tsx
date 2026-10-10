@@ -7,6 +7,7 @@ import MaintenanceNotice from "./MaintenanceNotice";
 
 const Shell = lazy(() => import("./Shell"));
 const LiveMaintenance = lazy(() => import("./LiveMaintenance"));
+const ReleaseNotice = lazy(() => import("./ReleaseNotice"));
 
 export default function App() {
   return (
@@ -21,6 +22,9 @@ function SiteContent() {
   const { data } = useSiteStatus();
   return (
     <>
+      <Suspense fallback={null}>
+        <ReleaseNotice />
+      </Suspense>
       {data && location.pathname === "/ao-vivo" && (
         <MaintenanceNotice maintenance={data.maintenance} />
       )}

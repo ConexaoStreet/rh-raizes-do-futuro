@@ -1,5 +1,5 @@
 {
-  "release": "raizes-live-maintenance-pack-1",
-  "base_commit": "5e1cefe0eb4b92191862728c31927dbd8b3ee9d7",
+  "release": "raizes-live-workspaces-pack-2",
+  "base_commit": "d553907dd9ca7b905f7849ae1f8bfad75c784c8b",
   "purpose": "deployment verification"
 }
