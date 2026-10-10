@@ -15,11 +15,16 @@ describe("repository contracts", () => {
     expect(styles).not.toMatch(/\.datasul-mascot-perch\s*\{[^}]*display\s*:\s*none/s);
   });
 
-  it("keeps the Datasul bridge full-featured and origin-restricted", () => {
+  it("keeps the Datasul bridge internal, read-oriented and origin-restricted", () => {
     const source = read("supabase/functions/datasul-bridge/index.ts");
-    expect(source).toContain('action === "request"');
-    expect(source).toContain('"ti.datasul.write"');
-    expect(source).toContain('"ti.datasul.delete"');
+    expect(source).toContain('action === "status"');
+    expect(source).toContain('action === "health"');
+    expect(source).toContain('action === "preview"');
+    expect(source).toContain('"ti.datasul.read"');
+    expect(source).toContain('"ti.datasul.sync"');
+    expect(source).not.toContain('action === "request"');
+    expect(source).not.toContain('"ti.datasul.write"');
+    expect(source).not.toContain('"ti.datasul.delete"');
     expect(source).not.toContain('"Access-Control-Allow-Origin": "*"');
   });
 
