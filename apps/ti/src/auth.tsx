@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -26,6 +27,7 @@ type Bootstrap = {
   permissions: string[];
   privileged: boolean;
   mfa_verified: boolean;
+  recently_verified: boolean;
   ready: boolean;
   maintenance: { enabled?: boolean; allow_managers?: boolean };
 };
@@ -650,24 +652,39 @@ function PasswordRecovery({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-function Verification({ onDone }: { onDone: () => Promise<void> }) {
+export function Verification({
+  onDone,
+  onCancel,
+}: {
+  onDone: () => Promise<void>;
+  onCancel?: () => void;
+}) {
   const [sent, setSent] = useState(false);
   const [masked, setMasked] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const dialog = useRef<HTMLDialogElement>(null);
+  const modal = Boolean(onCancel);
+
+  useEffect(() => {
+    const element = dialog.current;
+    if (modal) element?.showModal();
+    return () => element?.close();
+  }, [modal]);
 
   async function invoke(body: Record<string, string>) {
     const { data, error: functionError } = await client().functions.invoke("email-2fa", { body });
     if (functionError) throw functionError;
+    if (data?.ok !== true) throw new Error("VERIFICATION_FAILED");
     return data as { masked_email?: string };
   }
 
-  return (
-    <AccessFrame>
+  const content = (
+    <>
       <ShieldCheck size={34} />
       <span className="eyebrow">SEGURANÇA</span>
-      <h1>Verificação em duas etapas</h1>
-      <p>{sent ? `Enviamos um código para ${masked}.` : "Confirme sua identidade para abrir a Central de T.I."}</p>
+      <h1 id="ti-identity-verification">{modal ? "Renovar verificação" : "Verificação em duas etapas"}</h1>
+      <p>{sent ? `Enviamos um código para ${masked}.` : modal ? "Confirme sua identidade para continuar. Seu rascunho será mantido e a ação será retomada após a verificação." : "Confirme sua identidade para abrir a Central de T.I."}</p>
       {error && <div className="form-error" role="alert">{error}</div>}
       {sent && (
         <form
@@ -675,12 +692,14 @@ function Verification({ onDone }: { onDone: () => Promise<void> }) {
             event.preventDefault();
             setBusy(true);
             setError("");
+            let verified = false;
             try {
               const code = String(new FormData(event.currentTarget).get("code") || "");
               await invoke({ action: "verify", code });
+              verified = true;
               await onDone();
             } catch {
-              setError("Código inválido ou expirado.");
+              setError(verified ? "Não foi possível retomar a ação. Tente novamente." : "Código inválido ou expirado.");
             } finally {
               setBusy(false);
             }
@@ -689,6 +708,7 @@ function Verification({ onDone }: { onDone: () => Promise<void> }) {
           <input
             className="otp"
             name="code"
+            aria-label="Código de verificação"
             inputMode="numeric"
             autoComplete="one-time-code"
             pattern="[0-9]{6}"
@@ -718,9 +738,23 @@ function Verification({ onDone }: { onDone: () => Promise<void> }) {
       >
         {sent ? "Reenviar código" : "Enviar código"}
       </button>
-      <button className="text-button" onClick={() => void client().auth.signOut()}>Voltar ao login</button>
-    </AccessFrame>
+      <button className="text-button" disabled={busy} onClick={onCancel || (() => void client().auth.signOut())}>{modal ? "Cancelar verificação" : "Voltar ao login"}</button>
+    </>
   );
+
+  return modal ? (
+    <dialog
+      ref={dialog}
+      className="access-card verification-dialog"
+      aria-labelledby="ti-identity-verification"
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!busy) onCancel?.();
+      }}
+    >
+      {content}
+    </dialog>
+  ) : <AccessFrame>{content}</AccessFrame>;
 }
 
 function AccessFrame({ children }: { children: ReactNode }) {

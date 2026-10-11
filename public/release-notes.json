@@ -1,10 +1,13 @@
 {
-  "pack": 3,
+  "pack": 4,
   "changes": [
-    "A tela de entrada ganhou uma composição mais clara, com o logo oficial e mais espaço para acessar ou ativar o cadastro.",
-    "O painel destaca melhor os indicadores, as pendências e as ações do dia a dia.",
-    "Os setores ganharam seletores mais claros e abas com destaque para a área em que você está.",
-    "As conversas, os anexos e os nomes das equipes ficaram mais fáceis de ler nos temas claro e escuro.",
-    "Também ajustamos a leitura dos indicadores do painel de TI e conferimos o visual no computador e no celular."
+    "O Datasul agora apresenta os dados do próprio Raízes, com pessoas por setor, turmas e chamadas, sem pedir conexão com outro sistema.",
+    "Corrigimos a troca entre Turma e Equipe de RH para abrir a primeira página do grupo escolhido.",
+    "Calendário, documentos e feedbacks explicam falhas de carregamento e permitem tentar novamente, sem parecer vazios.",
+    "A importação do calendário recusa datas impossíveis e motivos vazios; os arquivos PowerPoint são enviados com o formato correto.",
+    "Cancelar ações na TI não mostra mais sucesso, e o painel se adapta melhor às telas pequenas.",
+    "As configurações da TI são salvas com verificação de acesso; contas bloqueadas não conseguem usar chamados e anexos.",
+    "A limpeza de envios incompletos preserva os arquivos já registrados, e o histórico informa quando um chamado foi resolvido.",
+    "A TI permite renovar a confirmação de identidade sem perder o rascunho, e o Datasul explica quando a conta não pode consultar os cadastros."
   ]
 }

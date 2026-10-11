@@ -323,7 +323,6 @@ main {
   height: 19px;
 }
 
-.service-text strong,
 .badge {
   grid-column: 1 / -1;
   width: fit-content;
@@ -513,7 +512,6 @@ pre {
   box-shadow: 0 0 0 5px rgba(223, 166, 80, .08);
 }
 
-.empty,
 .loading-panel {
   color: var(--muted);
   font-size: .78rem;
@@ -1053,8 +1051,7 @@ html[data-theme="light"] .access-page {
   min-height: 44px;
 }
 
-.form-grid,
-.request-grid {
+.form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
@@ -1261,8 +1258,7 @@ html[data-theme="light"] .access-page {
 @media (max-width: 720px) {
   .stats-grid,
   .bucket-grid,
-  .form-grid,
-  .request-grid {
+  .form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1459,7 +1455,6 @@ select:focus-visible {
 }
 .stats-grid { gap: 12px; margin: 18px 0 22px; }
 .stat-card,
-.service-card,
 .panel {
   border-radius: var(--ti-radius);
   border-color: var(--ti-line);
@@ -1697,13 +1692,19 @@ select:focus-visible {
   background: linear-gradient(160deg,rgba(18,34,28,.95),rgba(10,24,18,.96));
   box-shadow: 0 34px 100px rgba(0,0,0,.3);
 }
+.verification-dialog {
+  width: min(500px,calc(100% - 28px));
+  max-height: calc(100% - 28px);
+  overflow: auto;
+  color: var(--text);
+}
+.verification-dialog::backdrop { background: #0009; }
 .recovery-form,
 .recovery-field { display: grid; gap: 9px; }
 .recovery-form { margin-top: 18px; }
 
 html[data-theme="light"] .panel,
 html[data-theme="light"] .stat-card,
-html[data-theme="light"] .service-card,
 html[data-theme="light"] .toolbar {
   background: rgba(255,255,255,.94);
   border-color: #dfe7e1;
@@ -2204,7 +2205,6 @@ html[data-theme="light"] .ticket-card {
   margin-top:8px;font-size:1.08rem;
 }
 .datasul-command-status strong.ok{color:#92d0a6}
-.datasul-command-status strong.warn{color:#dfb46c}
 .datasul-command-status strong.error{color:#eb958d}
 .datasul-command-status small{margin-top:7px;color:#6e8478;font-size:.63rem;line-height:1.45}
 .datasul-pulse-grid {
@@ -2224,15 +2224,7 @@ html[data-theme="light"] .ticket-card {
 .datasul-pulse-card span{color:#70877a;font-size:.56rem;font-weight:800;letter-spacing:.12em}
 .datasul-pulse-card strong{margin-top:9px;font-size:1.25rem;letter-spacing:-.035em}
 .datasul-pulse-card small{margin-top:4px;color:#687b70;font-size:.61rem}
-.datasul-pulse-card .mono-value{font-family:"SFMono-Regular",Consolas,monospace;font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.datasul-primary-grid{align-items:start}
-.datasul-primary-grid > .panel {
-  border-radius:16px;
-  background:rgba(13,27,21,.9);
-}
-.datasul-history-shell {
-  margin-top:18px;
-}
+.ti-topbar{gap:12px;flex-wrap:wrap}.operator,.operator-copy{min-width:0}.operator{max-width:100%}.operator-copy strong,.operator-copy span{overflow-wrap:anywhere}
 html[data-theme="light"] .datasul-command-header {
   background:
     radial-gradient(circle at 88% 20%,rgba(129,164,70,.08),transparent 16rem),
