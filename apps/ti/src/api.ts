@@ -27,10 +27,9 @@ export async function rpc(name: string, args: Record<string, unknown> = {}) {
   return data;
 }
 
-export async function updateSetting(key: string, value: Record<string, unknown>) {
-  const { error } = await client()
-    .from("settings")
-    .update({ value, updated_at: new Date().toISOString() })
-    .eq("key", key);
-  if (error) throw error;
+export async function updateSetting(
+  key: string,
+  value: Record<string, unknown>,
+) {
+  await rpc("ti_update_setting", { setting_key: key, setting_value: value });
 }

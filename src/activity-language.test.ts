@@ -8,6 +8,17 @@ import {
 } from "../shared/activity-language";
 
 describe("registros em linguagem simples", () => {
+  it("explica quando um chamado foi resolvido", () => {
+    expect(
+      activityChanges({
+        action: "update",
+        module: "ti_support_tickets",
+        success: true,
+        old_values: { status: "open" },
+        new_values: { status: "resolved" },
+      }),
+    ).toEqual([{ field: "Situação", before: "Aberto", after: "Resolvido" }]);
+  });
   it("trata nomes de propriedades internas como atividades desconhecidas", () => {
     const result = describeActivity({
       action: "constructor",

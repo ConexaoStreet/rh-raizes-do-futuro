@@ -102,18 +102,26 @@ export async function uploadAttachment(
     .storage.from(bucket)
     .upload(path, file, { contentType: file.type, upsert: false });
   if (error) throw error;
-  return rpc("attach_file", {
-    payload: json({
-      employee_id: employeeId,
-      justification_id: links.justificationId || null,
-      feedback_id: links.feedbackId || null,
-      bucket,
-      path,
-      filename: file.name,
-      size_bytes: file.size,
-      mime_type: file.type,
-    }),
-  });
+  try {
+    return await rpc("attach_file", {
+      payload: json({
+        employee_id: employeeId,
+        justification_id: links.justificationId || null,
+        feedback_id: links.feedbackId || null,
+        bucket,
+        path,
+        filename: file.name,
+        size_bytes: file.size,
+        mime_type: file.type,
+      }),
+    });
+  } catch (registrationError) {
+    await client()
+      .storage.from(bucket)
+      .remove([path])
+      .catch(() => undefined);
+    throw registrationError;
+  }
 }
 export async function signedUrl(bucket: string, path: string) {
   const { data, error } = await client()

@@ -3,7 +3,17 @@ import { readActivityNames } from "./activity-api";
 import { describeActivity } from "../shared/activity-language";
 import { ActivityDetails } from "../shared/ActivityDetails";
 import { Link, useParams } from "react-router-dom";
-import { Camera, CheckCircle2, Download, FileUp, Paperclip, Plus, TriangleAlert, Upload, XCircle } from "lucide-react";
+import {
+  Camera,
+  CheckCircle2,
+  Download,
+  FileUp,
+  Paperclip,
+  Plus,
+  TriangleAlert,
+  Upload,
+  XCircle,
+} from "lucide-react";
 import {
   client,
   json,
@@ -46,7 +56,7 @@ export default function People({ mode }: { mode: Mode }) {
     return (
       <>
         <EntityPage
-          key={version}
+          key={`${version}:${peopleGroup}`}
           spec={specs.colaboradores}
           filter={{ key: "member_group", value: peopleGroup }}
           subnav={
@@ -105,7 +115,11 @@ export default function People({ mode }: { mode: Mode }) {
           <TriangleAlert size={20} />
           <div>
             <strong>Histórico da planilha importado</strong>
-            <span>As faltas e presenças registradas na planilha já estão no sistema. A base histórica contém ocorrências; nomes ausentes em uma data não foram convertidos automaticamente em presença.</span>
+            <span>
+              As faltas e presenças registradas na planilha já estão no sistema.
+              A base histórica contém ocorrências; nomes ausentes em uma data
+              não foram convertidos automaticamente em presença.
+            </span>
           </div>
         </div>
         <Occurrences />
@@ -330,14 +344,14 @@ function EsproPhotoCard({
     };
     if (!result.ok) {
       throw new Error(
-        result.message ||
-          "A foto não passou pela verificação básica.",
+        result.message || "A foto não passou pela verificação básica.",
       );
     }
   }
 
   if (profile.loading) return <Loading />;
-  if (profile.error || !profile.data) return <ErrorState retry={profile.reload} />;
+  if (profile.error || !profile.data)
+    return <ErrorState retry={profile.reload} />;
 
   const status = profile.data.espro_photo_status;
   const verification =
@@ -440,6 +454,8 @@ function EmployeeFeedbacks({ id }: { id: string }) {
     <section className="panel">
       {data.loading ? (
         <Loading />
+      ) : data.error ? (
+        <ErrorState retry={data.reload} />
       ) : data.data?.length ? (
         data.data.map((row) => (
           <button
@@ -668,6 +684,8 @@ export function Documents({
       </div>
       {data.loading ? (
         <Loading />
+      ) : data.error ? (
+        <ErrorState retry={data.reload} />
       ) : data.data?.length ? (
         data.data.map((file) => (
           <div className="file-row" key={file.id}>
@@ -839,7 +857,11 @@ function Occurrences({
   return (
     <>
       {!employeeId && (
-        <Heading className="operational-heading" title={late ? "Atrasos" : "Faltas"} eyebrow="PRESENÇA">
+        <Heading
+          className="operational-heading"
+          title={late ? "Atrasos" : "Faltas"}
+          eyebrow="PRESENÇA"
+        >
           {can("attendance.manage") && (
             <Link to="/chamada" className="button primary">
               <Plus size={17} />
