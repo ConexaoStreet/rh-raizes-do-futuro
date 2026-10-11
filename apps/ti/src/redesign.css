@@ -171,13 +171,13 @@
 }
 
 .ti-health-row strong {
-  font-size: .74rem;
+  font-size: .83rem;
 }
 
 .ti-health-row small {
   margin-top: 2px;
   color: var(--ti-muted);
-  font-size: .61rem;
+  font-size: .7rem;
 }
 
 .ti-health-row-status {
@@ -193,12 +193,12 @@
 .ti-status-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 9px;
+  gap: 14px;
 }
 
 .ti-status-tile {
-  min-height: 92px;
-  padding: 13px;
+  min-height: 112px;
+  padding: 18px;
   border: 1px solid var(--ti-border);
   border-radius: 12px;
   background: var(--ti-surface);
@@ -209,7 +209,7 @@
   justify-content: space-between;
   gap: 8px;
   color: var(--ti-muted);
-  font-size: .64rem;
+  font-size: .75rem;
 }
 
 .ti-status-tile-icon {
@@ -219,14 +219,14 @@
 .ti-status-tile > strong {
   display: block;
   margin-top: 9px;
-  font: 800 1.35rem/1 var(--ti-mono);
+  font: 800 1.75rem/1 var(--ti-mono);
 }
 
 .ti-status-tile > small {
   display: block;
   margin-top: 5px;
   color: var(--ti-muted);
-  font-size: .61rem;
+  font-size: .73rem;
 }
 
 @media (max-width: 760px) {

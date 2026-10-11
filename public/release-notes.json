@@ -1,10 +1,10 @@
 {
-  "pack": 2,
+  "pack": 3,
   "changes": [
-    "Os registros agora usam frases simples, com o nome de quem fez a ação e seu resultado.",
-    "Os históricos do RH e do painel de TI mostram o que mudou antes e depois, sem códigos na leitura principal.",
-    "As atividades da conexão com Datasul também têm descrições fáceis de entender.",
-    "O painel de TI recebeu ajustes para abrir corretamente após a atualização.",
-    "O acompanhamento ao vivo também ganhou títulos curtos e explicações simples, com o número de cada atualização em destaque."
+    "A tela de entrada ganhou uma composição mais clara, com o logo oficial e mais espaço para acessar ou ativar o cadastro.",
+    "O painel destaca melhor os indicadores, as pendências e as ações do dia a dia.",
+    "Os setores ganharam seletores mais claros e abas com destaque para a área em que você está.",
+    "As conversas, os anexos e os nomes das equipes ficaram mais fáceis de ler nos temas claro e escuro.",
+    "Também ajustamos a leitura dos indicadores do painel de TI e conferimos o visual no computador e no celular."
   ]
 }

@@ -42,13 +42,11 @@ test("failed send preserves text and attachments and retries with the same ident
   await page
     .getByLabel("Mensagem para Conversa geral")
     .fill("Pauta da próxima reunião");
-  await page
-    .locator('.chat-attach input[type="file"]')
-    .setInputFiles({
-      name: "pauta.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from("dia;atividade\n1;reunião"),
-    });
+  await page.locator('.chat-attach input[type="file"]').setInputFiles({
+    name: "pauta.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("dia;atividade\n1;reunião"),
+  });
   await expect(page.locator(".chat-pending-files")).toContainText("pauta.csv");
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.getByLabel("Mensagem para Conversa geral")).toBeEnabled();
@@ -359,6 +357,12 @@ test("instructor sees sectors through organized tabs on mobile and desktop", asy
     await expect(page.locator(".workspace-member")).toContainText(
       "Pessoa de Teste",
     );
+    if (width === 390 || width === 1440)
+      await page.screenshot({
+        path: test.info().outputPath(`instructor-${width}.png`),
+        fullPage: true,
+        animations: "disabled",
+      });
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -416,6 +420,18 @@ test("chat sends filtered text and a spreadsheet without layout overflow", async
   await page.getByLabel("Mensagem para Ecológico").fill("Segue a pauta");
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(page.locator(".chat-file")).toContainText("pauta.csv");
+  await page.screenshot({
+    path: test.info().outputPath("chat-mobile-light.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.screenshot({
+    path: test.info().outputPath("chat-mobile-dark.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
   expect(state.sends[1].attachment_identifiers).toEqual(["file-1"]);
   expect(
     await page.evaluate(

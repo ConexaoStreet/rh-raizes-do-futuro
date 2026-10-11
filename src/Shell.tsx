@@ -166,34 +166,13 @@ export default function Shell() {
             <X size={20} />
           </button>
         </div>
-        <div
-          className="workspace-label"
-          style={{
-            overflow: "hidden",
-            background:
-              "radial-gradient(circle at 14% 50%, rgba(105,230,148,.14), transparent 30%), linear-gradient(115deg, rgba(20,58,43,.96), rgba(10,35,26,.97))",
-          }}
-        >
-          <span
-            className="workspace-icon"
-            aria-hidden="true"
-            style={{
-              overflow: "hidden",
-              borderColor: "rgba(173,235,190,.15)",
-              background:
-                "radial-gradient(circle, rgba(77,154,102,.32), rgba(17,61,43,.74) 70%)",
-              boxShadow: "inset 0 0 12px rgba(88,214,132,.09)",
-            }}
-          >
+        <div className="workspace-label">
+          <span className="workspace-icon" aria-hidden="true">
             <img
               src="/brand/raizes-logo-mark.png"
               alt=""
               width={28}
               height={28}
-              style={{
-                filter: "brightness(2.05) contrast(1.12)",
-                opacity: 0.96,
-              }}
             />
           </span>
           <div className="workspace-copy">

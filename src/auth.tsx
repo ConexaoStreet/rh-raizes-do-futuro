@@ -636,12 +636,20 @@ function Login({ configured: ready }: { configured: boolean }) {
     <div
       className={`login-page ${mode === "signup" ? "login-page-signup" : ""}`}
     >
-      <div className="login-theme-control" style={{ position: "absolute" }}>
+      <div className="login-theme-control">
         <ThemeToggle compact />
       </div>
 
       <section className="login-brand">
         <Brand />
+        <img
+          className="login-brand-symbol"
+          src="/brand/raizes-logo-mark.png"
+          alt=""
+          aria-hidden="true"
+          width={320}
+          height={320}
+        />
         <div className="login-brand-copy">
           <span>PESSOAS. APRENDIZADO. POSSIBILIDADES.</span>
           <h1>
@@ -666,7 +674,12 @@ function Login({ configured: ready }: { configured: boolean }) {
             </div>
           </div>
         </div>
-        <div className="login-brand-foot">RH · ANHANGUERA / ESPRO</div>
+        <div className="login-brand-foot">
+          <span>RH · ANHANGUERA / ESPRO</span>
+          <Link to="/ao-vivo">
+            Acompanhar as melhorias <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
       </section>
 
       <section className="login-panel">
