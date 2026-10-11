@@ -489,7 +489,10 @@ export async function buildPptx(
       "Dados do relatório gerado pelo RH. Conteúdo e gráficos editáveis.",
     );
   }
-  return (await pptx.write({ outputType: "blob" })) as Blob;
+  const output = (await pptx.write({ outputType: "blob" })) as Blob;
+  return new Blob([output], {
+    type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  });
 }
 export async function buildXlsx(
   snapshot: ReportSnapshot,

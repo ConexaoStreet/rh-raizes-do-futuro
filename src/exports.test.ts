@@ -64,6 +64,7 @@ describe("report file builders", () => {
 
       expect(pdf.size).toBeGreaterThan(500);
       expect(pptx.size).toBeGreaterThan(500);
+      expect(pptx.type).toBe("application/vnd.openxmlformats-officedocument.presentationml.presentation");
       expect(xlsx.size).toBeGreaterThan(500);
     },
     30000,

@@ -3,9 +3,17 @@ import { ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { client, json, rpc, runAction, useAsync } from "./api";
 import { useAuth } from "./auth";
-import { Badge, Field, Heading, Loading, Modal } from "./components";
+import {
+  Badge,
+  ErrorState,
+  Field,
+  Heading,
+  Loading,
+  Modal,
+} from "./components";
 import { dateLabel, localDate } from "./domain";
 import { parseCsv } from "./imports";
+import { z } from "zod";
 import type { Row } from "./database.types";
 export default function Calendar() {
   const { can } = useAuth();
@@ -125,6 +133,8 @@ export default function Calendar() {
         </div>
         {data.loading ? (
           <Loading />
+        ) : data.error ? (
+          <ErrorState retry={data.reload} />
         ) : (
           <div className="calendar-grid">
             {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((name) => (
@@ -315,6 +325,8 @@ function CalendarImport({
         type="file"
         accept=".csv"
         onChange={async (e) => {
+          setRows([]);
+          setError("");
           const file = e.target.files?.[0];
           if (!file) return;
           try {
@@ -330,8 +342,9 @@ function CalendarImport({
               ri < 0 ||
               parsed.some(
                 (r) =>
-                  !/^\d{4}-\d{2}-\d{2}$/.test(r.scheduled_date) ||
-                  r.reason?.length < 3,
+                  !z.iso.date().safeParse(r.scheduled_date).success ||
+                  typeof r.reason !== "string" ||
+                  r.reason.trim().length < 3,
               ) ||
               parsed.length > 1000
             )

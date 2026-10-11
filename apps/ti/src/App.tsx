@@ -31,7 +31,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { client, rpc, updateSetting } from "./api";
-import { useAuth } from "./auth";
+import { useAuth, Verification } from "./auth";
 import { LoginMascot } from "./LoginMascot";
 import { TiShell } from "./Shell";
 import { StatusTile } from "./components/StatusTile";
@@ -42,10 +42,21 @@ import { TechnicalField } from "./components/TechnicalField";
 import { CodeSurface } from "./components/CodeSurface";
 import { IntegrationCard } from "./components/IntegrationCard";
 import type { TiView } from "./navigation";
-import { describeActivity, describeDatasulActivity, resolveActivityNames, activityReferenceName, type ActivityNames } from "../../../shared/activity-language";
+import {
+  describeActivity,
+  describeDatasulActivity,
+  resolveActivityNames,
+  activityReferenceName,
+  type ActivityNames,
+} from "../../../shared/activity-language";
 import { ActivityDetails } from "../../../shared/ActivityDetails";
 
 type JsonObject = Record<string, unknown>;
+type PendingAction = {
+  key: string;
+  action: () => Promise<void | false>;
+  success: string;
+};
 type SettingRow = { key: string; value: unknown };
 type ProfileRow = {
   id: string;
@@ -184,22 +195,6 @@ type Inventory = {
   roles?: RoleRow[];
   profiles_count?: number;
 };
-type DatasulResponse = {
-  ok?: boolean;
-  status?: number;
-  duration_ms?: number;
-  configured?: boolean;
-  capabilities?: JsonObject;
-  data?: unknown;
-  preview?: unknown;
-  sample?: unknown[];
-  keys?: string[];
-  total_returned?: number;
-  state?: JsonObject;
-  required_secrets?: string[];
-  error?: string;
-  message?: string;
-};
 
 const settingKeys = [
   "ti_control",
@@ -283,7 +278,7 @@ function toneFor(value: unknown) {
 }
 
 export default function App() {
-  const { user, can } = useAuth();
+  const { user, can, refresh } = useAuth();
   const [view, setView] = useState<TiView>("overview");
   const [settings, setSettings] = useState<Record<string, JsonObject>>({});
   const [snapshot, setSnapshot] = useState<Snapshot>({});
@@ -305,6 +300,9 @@ export default function App() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+    null,
+  );
   const [search, setSearch] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<ProfileRow | null>(
     null,
@@ -313,23 +311,15 @@ export default function App() {
   const [profileStatus, setProfileStatus] = useState("active");
   const [profileRoleId, setProfileRoleId] = useState("");
   const [profileReason, setProfileReason] = useState("");
-  const [selectedEmployee, setSelectedEmployee] =
-    useState<EmployeeRow | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeRow | null>(
+    null,
+  );
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [storageBucket, setStorageBucket] = useState("");
   const [storagePrefix, setStoragePrefix] = useState("");
   const [storageItems, setStorageItems] = useState<StorageItem[]>([]);
-  const [datasulResult, setDatasulResult] = useState<unknown>(null);
   const [platformResult, setPlatformResult] = useState<unknown>(null);
-  const [companyId, setCompanyId] = useState("");
-  const [healthPath, setHealthPath] = useState("");
-  const [employeesPath, setEmployeesPath] = useState("");
-  const [departmentsPath, setDepartmentsPath] = useState("");
-  const [positionsPath, setPositionsPath] = useState("");
-  const [attendancePath, setAttendancePath] = useState("");
-  const [requestMethod, setRequestMethod] = useState("GET");
-  const [requestPath, setRequestPath] = useState("");
-  const [requestBody, setRequestBody] = useState("{\n\n}");
+  const [datasulDepartment, setDatasulDepartment] = useState("");
   const [maintenanceTitle, setMaintenanceTitle] = useState("");
   const [maintenanceMessage, setMaintenanceMessage] = useState("");
   const [notificationTarget, setNotificationTarget] = useState("");
@@ -337,26 +327,10 @@ export default function App() {
   const [notificationBody, setNotificationBody] = useState("");
   const [notificationPath, setNotificationPath] = useState("/");
 
-  const datasul = useMemo(
-    () => settings.ti_datasul || {},
-    [settings.ti_datasul],
-  );
-  const github = useMemo(
-    () => settings.ti_github || {},
-    [settings.ti_github],
-  );
-  const vercel = useMemo(
-    () => settings.ti_vercel || {},
-    [settings.ti_vercel],
-  );
-  const email = useMemo(
-    () => settings.ti_email || {},
-    [settings.ti_email],
-  );
-  const site = useMemo(
-    () => settings.ti_site || {},
-    [settings.ti_site],
-  );
+  const github = useMemo(() => settings.ti_github || {}, [settings.ti_github]);
+  const vercel = useMemo(() => settings.ti_vercel || {}, [settings.ti_vercel]);
+  const email = useMemo(() => settings.ti_email || {}, [settings.ti_email]);
+  const site = useMemo(() => settings.ti_site || {}, [settings.ti_site]);
   const maintenance = useMemo(
     () => settings.maintenance || {},
     [settings.maintenance],
@@ -380,12 +354,11 @@ export default function App() {
   }, [rolesById, userRoles]);
 
   const invokeFunction = useCallback(
-    async (
-      name: string,
-      body: JsonObject,
-    ): Promise<unknown> => {
-      const { data, error: invokeError } =
-        await client().functions.invoke(name, { body });
+    async (name: string, body: JsonObject): Promise<unknown> => {
+      const { data, error: invokeError } = await client().functions.invoke(
+        name,
+        { body },
+      );
       if (invokeError) throw invokeError;
       return data;
     },
@@ -394,17 +367,22 @@ export default function App() {
 
   async function run(
     key: string,
-    action: () => Promise<void>,
+    action: () => Promise<void | false>,
     success = "",
   ) {
     setBusy(key);
     setError("");
     setNotice("");
     try {
-      await action();
-      if (success) setNotice(success);
+      const completed = await action();
+      if (success && completed !== false) setNotice(success);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Ação não concluída.");
+      const message = errorText(caught);
+      if (message.includes("RECENT_VERIFICATION_REQUIRED")) {
+        setPendingAction({ key, action, success });
+      } else {
+        setError(message);
+      }
     } finally {
       setBusy("");
     }
@@ -434,7 +412,9 @@ export default function App() {
         run: async () => {
           const result = await client()
             .from("audit_logs")
-            .select("id,created_at,actor_name,action,module,event_type,severity,success,entity_id,old_values,new_values,context")
+            .select(
+              "id,created_at,actor_name,action,module,event_type,severity,success,entity_id,old_values,new_values,context",
+            )
             .order("created_at", { ascending: false })
             .limit(80);
           if (result.error) throw result.error;
@@ -442,7 +422,11 @@ export default function App() {
           const names = await resolveActivityNames(rows, async (request) => {
             const reference = await client()
               .from(request.table)
-              .select("id," + request.field + (request.table === "permissions" ? ",code" : ""))
+              .select(
+                "id," +
+                  request.field +
+                  (request.table === "permissions" ? ",code" : ""),
+              )
               .in("id", request.ids);
             if (reference.error) return [];
             return (reference.data as unknown as Record<string, unknown>[]).map(
@@ -461,7 +445,9 @@ export default function App() {
         run: async () => {
           const result = await client()
             .from("profiles")
-            .select("id,full_name,email,phone,status,last_seen_at,espro_photo_path,espro_photo_status,espro_photo_rejection_reason")
+            .select(
+              "id,full_name,email,phone,status,last_seen_at,espro_photo_path,espro_photo_status,espro_photo_rejection_reason",
+            )
             .order("full_name")
             .limit(500);
           if (result.error) throw result.error;
@@ -473,7 +459,9 @@ export default function App() {
         run: async () => {
           const result = await client()
             .from("employees")
-            .select("id,profile_id,full_name,email,phone,registration,status,member_group,access_role_code,class_id,department_id,job_position_id,manager_id,version")
+            .select(
+              "id,profile_id,full_name,email,phone,registration,status,member_group,access_role_code,class_id,department_id,job_position_id,manager_id,version",
+            )
             .order("full_name")
             .limit(1000);
           if (result.error) throw result.error;
@@ -545,7 +533,9 @@ export default function App() {
         run: async () => {
           const result = await client()
             .from("ti_datasul_operations")
-            .select("id,created_at,actor_name,method,path,response_status,success,duration_ms,error_message")
+            .select(
+              "id,created_at,actor_name,method,path,response_status,success,duration_ms,error_message",
+            )
             .order("created_at", { ascending: false })
             .limit(100);
           if (result.error) throw result.error;
@@ -557,7 +547,9 @@ export default function App() {
         run: async () => {
           const result = await client()
             .from("ti_support_tickets")
-            .select("id,user_id,category,subject,description,page_path,page_title,technical_context,attachment_path,status,created_at,updated_at")
+            .select(
+              "id,user_id,category,subject,description,page_path,page_title,technical_context,attachment_path,status,created_at,updated_at",
+            )
             .order("created_at", { ascending: false })
             .limit(250);
           if (result.error) throw result.error;
@@ -574,7 +566,9 @@ export default function App() {
         key: "inventário",
         run: async () => {
           setInventory(
-            object(await invokeFunction("ti-admin-bridge", { action: "inventory" })) as Inventory,
+            object(
+              await invokeFunction("ti-admin-bridge", { action: "inventory" }),
+            ) as Inventory,
           );
         },
       },
@@ -591,7 +585,9 @@ export default function App() {
 
     const failedCount = Object.keys(failures).length;
     if (failedCount === tasks.length) {
-      setError("A Central T.I. não conseguiu carregar nenhum módulo. Verifique a sessão e o Supabase.");
+      setError(
+        "A Central T.I. não conseguiu carregar nenhum módulo. Verifique a sessão e o Supabase.",
+      );
     } else if (failedCount > 0) {
       setNotice(
         `Central carregada parcialmente: ${failedCount} módulo(s) indisponível(is). O restante continua operacional.`,
@@ -606,22 +602,22 @@ export default function App() {
   }, [reload]);
 
   useEffect(() => {
-    setCompanyId(text(datasul.company_id));
-    setHealthPath(text(datasul.health_path, "/api/btb/v1/companies"));
-    setEmployeesPath(text(datasul.employees_path));
-    setDepartmentsPath(text(datasul.departments_path));
-    setPositionsPath(text(datasul.positions_path));
-    setAttendancePath(text(datasul.attendance_path));
     setMaintenanceTitle(
-      text(site.maintenance_title, "Sistema em manutenção"),
+      text(
+        maintenance.title,
+        text(site.maintenance_title, "Sistema em manutenção"),
+      ),
     );
     setMaintenanceMessage(
       text(
-        site.maintenance_message,
-        "Alguns recursos podem ficar temporariamente indisponíveis.",
+        maintenance.message,
+        text(
+          site.maintenance_message,
+          "Alguns recursos podem ficar temporariamente indisponíveis.",
+        ),
       ),
     );
-  }, [datasul, site]);
+  }, [maintenance, site]);
 
   const filteredProfiles = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -651,54 +647,6 @@ export default function App() {
     );
   }, [employees, search]);
 
-  async function saveDatasulSettings() {
-    await updateSetting("ti_datasul", {
-      ...datasul,
-      company_id: companyId || null,
-      health_path: healthPath || "/api/btb/v1/companies",
-      employees_path: employeesPath || null,
-      departments_path: departmentsPath || null,
-      positions_path: positionsPath || null,
-      attendance_path: attendancePath || null,
-    });
-    await reload();
-  }
-
-  async function invokeDatasul(body: JsonObject) {
-    const data = (await invokeFunction(
-      "datasul-bridge",
-      body,
-    )) as DatasulResponse;
-    setDatasulResult(data);
-    await reload();
-    return data;
-  }
-
-  async function runDatasulRequest() {
-    let payload: unknown = undefined;
-    if (requestMethod !== "GET") {
-      try {
-        payload = requestBody.trim() ? JSON.parse(requestBody) : null;
-      } catch {
-        throw new Error("O corpo precisa ser JSON válido.");
-      }
-    }
-    if (
-      requestMethod === "DELETE" &&
-      !window.confirm(
-        "Confirmar exclusão no Datasul? Esta ação pode ser irreversível.",
-      )
-    )
-      return;
-
-    await invokeDatasul({
-      action: "request",
-      method: requestMethod,
-      path: requestPath,
-      payload,
-    });
-  }
-
   async function invokePlatform() {
     setPlatformResult(
       await invokeFunction("platform-bridge", { action: "status" }),
@@ -711,18 +659,7 @@ export default function App() {
     const message =
       maintenanceMessage.trim() ||
       "Estamos realizando ajustes no sistema. Tente novamente em instantes.";
-    await Promise.all([
-      updateSetting("maintenance", {
-        ...maintenance,
-        title,
-        message,
-      }),
-      updateSetting("ti_site", {
-        ...site,
-        maintenance_title: title,
-        maintenance_message: message,
-      }),
-    ]);
+    await updateSetting("maintenance", { ...maintenance, title, message });
     await reload();
   }
 
@@ -735,7 +672,7 @@ export default function App() {
           : "Desativar manutenção e liberar o RH?",
       )
     )
-      return;
+      return false;
     const title = maintenanceTitle.trim() || "Sistema em manutenção";
     const message =
       maintenanceMessage.trim() ||
@@ -784,12 +721,15 @@ export default function App() {
   }
 
   async function revokeSession(sessionId: string) {
-    if (!window.confirm("Revogar esta sessão?")) return;
+    if (!window.confirm("Revogar esta sessão?")) return false;
     await rpc("revoke_session", { session_identifier: sessionId });
     if (selectedProfile) await loadSessions(selectedProfile);
   }
 
-  async function reviewPhoto(profile: ProfileRow, status: "approved" | "rejected") {
+  async function reviewPhoto(
+    profile: ProfileRow,
+    status: "approved" | "rejected",
+  ) {
     let reason: string | null = null;
     if (status === "rejected") {
       reason = window.prompt("Motivo da rejeição:");
@@ -812,10 +752,8 @@ export default function App() {
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
-  async function saveEmployee(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function saveEmployee(form: FormData) {
     if (!selectedEmployee) return;
-    const form = new FormData(event.currentTarget);
     const payload = {
       id: selectedEmployee.id,
       full_name: String(form.get("full_name") || ""),
@@ -823,9 +761,7 @@ export default function App() {
       phone: String(form.get("phone") || "") || null,
       status: String(form.get("status") || "active"),
       member_group: String(form.get("member_group") || "class"),
-      access_role_code: String(
-        form.get("access_role_code") || "COLLABORATOR",
-      ),
+      access_role_code: String(form.get("access_role_code") || "COLLABORATOR"),
       class_id: String(form.get("class_id") || "") || null,
       department_id: String(form.get("department_id") || "") || null,
       job_position_id: String(form.get("job_position_id") || "") || null,
@@ -862,7 +798,7 @@ export default function App() {
     const typed = window.prompt(
       "Digite EXCLUIR para remover este arquivo: " + path,
     );
-    if (typed !== "EXCLUIR") return;
+    if (typed !== "EXCLUIR") return false;
     await invokeFunction("ti-admin-bridge", {
       action: "storage_delete",
       bucket: storageBucket,
@@ -916,9 +852,25 @@ export default function App() {
     await reload();
   }
 
+  const canReadDatasul = can("employee.view");
+  const nativeDataReady =
+    canReadDatasul &&
+    !["colaboradores", "departamentos", "turmas", "indicadores"].some(
+      (key) => moduleErrors[key],
+    );
+  const nativeDataStatus = !canReadDatasul
+    ? "Permissão de consulta necessária"
+    : nativeDataReady
+      ? "Dados disponíveis"
+      : "Carregamento incompleto";
+  const visibleDatasulEmployees = employees.filter(
+    (employee) =>
+      !datasulDepartment || employee.department_id === datasulDepartment,
+  );
+
   const healthScore = useMemo(() => {
     const values = [
-      text(datasul.status),
+      nativeDataReady ? "healthy" : "error",
       text(github.status),
       text(vercel.status),
       text(email.status),
@@ -928,7 +880,7 @@ export default function App() {
     ).length;
     const partial = values.filter((value) => value === "partial").length;
     return Math.round(((ok + partial * 0.5 + 1) / 5) * 100);
-  }, [datasul.status, github.status, vercel.status, email.status]);
+  }, [nativeDataReady, github.status, vercel.status, email.status]);
 
   const rhSite =
     import.meta.env.VITE_RH_SITE_URL ||
@@ -953,823 +905,1504 @@ export default function App() {
           void run("database", loadDatabase);
       }}
     >
-        <div className="content">
-          {error && <Notice tone="error">{error}</Notice>}
-          {notice && <Notice tone="ok">{notice}</Notice>}
-          {Object.keys(moduleErrors).length > 0 && (
-            <div className="module-health-warning">
-              <AlertTriangle size={18} />
-              <div>
-                <strong>Operação parcial</strong>
-                <span>
-                  {Object.entries(moduleErrors)
-                    .map(([module]) => module)
-                    .join(" · ")}
-                </span>
-              </div>
-              <button onClick={() => void run("reload", reload)}>
-                <RefreshCw size={15} /> Tentar novamente
-              </button>
-            </div>
-          )}
-          {flag(maintenance.enabled) && view !== "datasul" && (
-            <button
-              className="maintenance-console-strip"
-              onClick={() => setView("datasul")}
-            >
-              <Wrench size={18} />
+      {pendingAction && (
+        <Verification
+          onCancel={() => setPendingAction(null)}
+          onDone={async () => {
+            const verified = (await rpc("bootstrap")) as {
+              ready?: boolean;
+              recently_verified?: boolean;
+            };
+            if (!verified.ready || !verified.recently_verified)
+              throw new Error("VERIFICATION_REQUIRED");
+            await refresh();
+            setPendingAction(null);
+            await run(
+              pendingAction.key,
+              pendingAction.action,
+              pendingAction.success,
+            );
+          }}
+        />
+      )}
+      <div className="content">
+        {error && <Notice tone="error">{error}</Notice>}
+        {notice && <Notice tone="ok">{notice}</Notice>}
+        {Object.keys(moduleErrors).length > 0 && (
+          <div className="module-health-warning">
+            <AlertTriangle size={18} />
+            <div>
+              <strong>Operação parcial</strong>
               <span>
-                <strong>RH em manutenção</strong>
-                Acesso técnico permanece ativo. Abrir Datasul.
+                {Object.entries(moduleErrors)
+                  .map(([module]) => module)
+                  .join(" · ")}
               </span>
-              <ArrowUpRight size={16} />
-            </button>
-          )}
-          {loading ? (
-            <div className="loading-panel">
-              <div className="loader" />
-              Carregando operação técnica...
             </div>
-          ) : (
-            <>
-              {view === "overview" && (
-                <div className="ti-overview">
-                  <section className="ti-overview-health">
-                    <div>
-                      <span className="eyebrow">SITUAÇÃO ATUAL</span>
-                      <h2>Operação técnica do Raízes do Futuro.</h2>
-                      <p>
-                        Saúde, incidentes e serviços críticos primeiro; volume e
-                        atividade logo abaixo, sem esconder módulos saudáveis.
-                      </p>
-                    </div>
-                    <div
-                      className="ti-overview-score"
-                      data-tone={healthScore >= 80 ? "ok" : healthScore >= 55 ? "warn" : "error"}
-                    >
-                      <strong>{healthScore}%</strong>
-                      <span>saúde técnica</span>
-                    </div>
-                  </section>
+            <button onClick={() => void run("reload", reload)}>
+              <RefreshCw size={15} /> Tentar novamente
+            </button>
+          </div>
+        )}
+        {flag(maintenance.enabled) && view !== "datasul" && (
+          <button
+            className="maintenance-console-strip"
+            onClick={() => setView("datasul")}
+          >
+            <Wrench size={18} />
+            <span>
+              <strong>RH em manutenção</strong>
+              Acesso técnico permanece ativo. Abrir Datasul.
+            </span>
+            <ArrowUpRight size={16} />
+          </button>
+        )}
+        {loading ? (
+          <div className="loading-panel">
+            <div className="loader" />
+            Carregando operação técnica...
+          </div>
+        ) : (
+          <>
+            {view === "overview" && (
+              <div className="ti-overview">
+                <section className="ti-overview-health">
+                  <div>
+                    <span className="eyebrow">SITUAÇÃO ATUAL</span>
+                    <h2>Operação técnica do Raízes do Futuro.</h2>
+                    <p>
+                      Saúde, incidentes e serviços críticos primeiro; volume e
+                      atividade logo abaixo, sem esconder módulos saudáveis.
+                    </p>
+                  </div>
+                  <div
+                    className="ti-overview-score"
+                    data-tone={
+                      healthScore >= 80
+                        ? "ok"
+                        : healthScore >= 55
+                          ? "warn"
+                          : "error"
+                    }
+                  >
+                    <strong>{healthScore}%</strong>
+                    <span>saúde técnica</span>
+                  </div>
+                </section>
 
-                  <IncidentNotice modules={Object.keys(moduleErrors)} />
+                <IncidentNotice modules={Object.keys(moduleErrors)} />
 
-                  <section className="ti-health-grid" aria-label="Saúde dos serviços">
-                    <HealthRow
-                      name="RH"
-                      status={flag(maintenance.enabled) ? "Manutenção" : "Operação normal"}
-                      secondary="Aplicação de gestão"
-                      tone={flag(maintenance.enabled) ? "warn" : "ok"}
-                      action={
-                        <button type="button" onClick={() => setView("site")}>
-                          Abrir controle
-                        </button>
+                <section
+                  className="ti-health-grid"
+                  aria-label="Saúde dos serviços"
+                >
+                  <HealthRow
+                    name="RH"
+                    status={
+                      flag(maintenance.enabled)
+                        ? "Manutenção"
+                        : "Operação normal"
+                    }
+                    secondary="Aplicação de gestão"
+                    tone={flag(maintenance.enabled) ? "warn" : "ok"}
+                    action={
+                      <button type="button" onClick={() => setView("site")}>
+                        Abrir controle
+                      </button>
+                    }
+                  />
+                  <HealthRow
+                    name="Datasul"
+                    status={nativeDataStatus}
+                    secondary="Sistema interno do Raízes"
+                    tone={nativeDataReady ? "ok" : "error"}
+                    action={
+                      <button type="button" onClick={() => setView("datasul")}>
+                        Ver áreas
+                      </button>
+                    }
+                  />
+                  <HealthRow
+                    name="GitHub"
+                    status={labelStatus(github.status)}
+                    secondary={text(github.repository, "Repositório")}
+                    tone={toneFor(github.status)}
+                  />
+                  <HealthRow
+                    name="Vercel"
+                    status={labelStatus(vercel.status)}
+                    secondary={text(vercel.project, "Deploy")}
+                    tone={toneFor(vercel.status)}
+                  />
+                  <HealthRow
+                    name="E-mail"
+                    status={labelStatus(email.status)}
+                    secondary="Resend"
+                    tone={toneFor(email.status)}
+                  />
+                </section>
+
+                <div className="ti-status-grid">
+                  <StatusTile
+                    label="Perfis"
+                    value={numberValue(snapshot.profiles_total)}
+                    detail={numberValue(snapshot.profiles_active) + " ativos"}
+                    icon={<Users size={16} />}
+                  />
+                  <StatusTile
+                    label="Colaboradores"
+                    value={numberValue(snapshot.employees_total)}
+                    detail={numberValue(snapshot.employees_active) + " ativos"}
+                    icon={<UserCog size={16} />}
+                  />
+                  <StatusTile
+                    label="Sessões Auth"
+                    value={numberValue(snapshot.auth_sessions)}
+                    detail="sessões abertas"
+                    icon={<ShieldCheck size={16} />}
+                  />
+                  <StatusTile
+                    label="Push"
+                    value={numberValue(snapshot.push_devices)}
+                    detail="dispositivos"
+                    icon={<BellRing size={16} />}
+                  />
+                  <StatusTile
+                    label="Storage"
+                    value={numberValue(snapshot.storage_objects)}
+                    detail="objetos"
+                    icon={<HardDrive size={16} />}
+                  />
+                  <StatusTile
+                    label="Atividades nas últimas 24h"
+                    value={numberValue(snapshot.audit_24h)}
+                    detail="registros"
+                    icon={<Activity size={16} />}
+                  />
+                  <StatusTile
+                    label="Chamadas"
+                    value={numberValue(snapshot.attendance_sessions)}
+                    detail="registradas no Raízes"
+                    icon={<Database size={16} />}
+                  />
+                  <StatusTile
+                    label="Fotos Espro"
+                    value={
+                      numberValue(snapshot.photo_status?.basic_passed) +
+                      numberValue(snapshot.photo_status?.approved)
+                    }
+                    detail="válidas ou aprovadas"
+                    icon={<CheckCircle2 size={16} />}
+                  />
+                </div>
+
+                <Panel
+                  title="Atividade recente"
+                  kicker="ATIVIDADES DO SITE"
+                  icon={<FileClock />}
+                >
+                  <AuditList rows={audit.slice(0, 8)} names={auditNames} />
+                </Panel>
+              </div>
+            )}
+
+            {view === "datasul" && (
+              <div className="datasul-view-root">
+                <section className="datasul-command-header">
+                  <div
+                    className="datasul-mascot-perch"
+                    data-testid="datasul-mascot"
+                  >
+                    <LoginMascot
+                      placement="datasul"
+                      scopeSelector=".datasul-view-root"
+                      mood={
+                        flag(maintenance.enabled)
+                          ? "alert"
+                          : busy
+                            ? "work"
+                            : !nativeDataReady
+                              ? "error"
+                              : "idle"
                       }
-                    />
-                    <HealthRow
-                      name="Datasul"
-                      status={labelStatus(datasul.status)}
-                      secondary="ERP / RH"
-                      tone={toneFor(datasul.status)}
-                      action={
-                        <button type="button" onClick={() => setView("datasul")}>
-                          Diagnóstico
-                        </button>
-                      }
-                    />
-                    <HealthRow
-                      name="GitHub"
-                      status={labelStatus(github.status)}
-                      secondary={text(github.repository, "Repositório")}
-                      tone={toneFor(github.status)}
-                    />
-                    <HealthRow
-                      name="Vercel"
-                      status={labelStatus(vercel.status)}
-                      secondary={text(vercel.project, "Deploy")}
-                      tone={toneFor(vercel.status)}
-                    />
-                    <HealthRow
-                      name="E-mail"
-                      status={labelStatus(email.status)}
-                      secondary="Resend"
-                      tone={toneFor(email.status)}
-                    />
-                  </section>
-
-                  <div className="ti-status-grid">
-                    <StatusTile label="Perfis" value={numberValue(snapshot.profiles_total)} detail={numberValue(snapshot.profiles_active) + " ativos"} icon={<Users size={16} />} />
-                    <StatusTile label="Colaboradores" value={numberValue(snapshot.employees_total)} detail={numberValue(snapshot.employees_active) + " ativos"} icon={<UserCog size={16} />} />
-                    <StatusTile label="Sessões Auth" value={numberValue(snapshot.auth_sessions)} detail="sessões abertas" icon={<ShieldCheck size={16} />} />
-                    <StatusTile label="Push" value={numberValue(snapshot.push_devices)} detail="dispositivos" icon={<BellRing size={16} />} />
-                    <StatusTile label="Storage" value={numberValue(snapshot.storage_objects)} detail="objetos" icon={<HardDrive size={16} />} />
-                    <StatusTile label="Atividades nas últimas 24h" value={numberValue(snapshot.audit_24h)} detail="registros" icon={<Activity size={16} />} />
-                    <StatusTile
-                      label="Datasul 24h"
-                      value={numberValue(snapshot.datasul_operations_24h)}
-                      detail={numberValue(snapshot.datasul_failures_24h) + " falhas"}
-                      tone={numberValue(snapshot.datasul_failures_24h) > 0 ? "warn" : "ok"}
-                      icon={<Database size={16} />}
-                    />
-                    <StatusTile
-                      label="Fotos Espro"
-                      value={numberValue(snapshot.photo_status?.basic_passed) + numberValue(snapshot.photo_status?.approved)}
-                      detail="válidas ou aprovadas"
-                      icon={<CheckCircle2 size={16} />}
                     />
                   </div>
-
-                  <Panel title="Atividade recente" kicker="ATIVIDADES DO SITE" icon={<FileClock />}>
-                    <AuditList rows={audit.slice(0, 8)} names={auditNames} />
-                  </Panel>
+                  <div className="datasul-command-copy">
+                    <span className="eyebrow">RAÍZES · DATASUL INTERNO</span>
+                    <h2>O Datasul do Raízes, organizado por área.</h2>
+                    <p>
+                      Cadastros, presença, notas, documentos e conversas fazem
+                      parte deste sistema. Cada setor acompanha sua área;
+                      gestores e instrutores têm uma visão organizada do
+                      conjunto.
+                    </p>
+                  </div>
+                  <div className="datasul-command-status">
+                    <span>DADOS DO SISTEMA</span>
+                    <strong className={nativeDataReady ? "ok" : "error"}>
+                      {nativeDataStatus}
+                    </strong>
+                    <small>
+                      As informações vêm dos cadastros do próprio Raízes.
+                    </small>
+                  </div>
+                </section>
+                <div className="datasul-pulse-grid">
+                  <div className="datasul-pulse-card">
+                    <span>PESSOAS</span>
+                    <strong>
+                      {nativeDataReady
+                        ? visibleDatasulEmployees.length
+                        : "Indisponível"}
+                    </strong>
+                    <small>na área selecionada</small>
+                  </div>
+                  <div className="datasul-pulse-card">
+                    <span>SETORES</span>
+                    <strong>
+                      {nativeDataReady ? departments.length : "Indisponível"}
+                    </strong>
+                    <small>áreas do Raízes</small>
+                  </div>
+                  <div className="datasul-pulse-card">
+                    <span>TURMAS</span>
+                    <strong>
+                      {nativeDataReady ? classes.length : "Indisponível"}
+                    </strong>
+                    <small>turmas cadastradas</small>
+                  </div>
+                  <div className="datasul-pulse-card">
+                    <span>CHAMADAS</span>
+                    <strong>
+                      {nativeDataReady
+                        ? numberValue(snapshot.attendance_sessions)
+                        : "Indisponível"}
+                    </strong>
+                    <small>registros de presença</small>
+                  </div>
                 </div>
-              )}
-
-              {view === "datasul" && (
-                <div className="datasul-view-root">
-                  <section className="datasul-command-header">
-                    <div className="datasul-mascot-perch" data-testid="datasul-mascot">
-                      <LoginMascot
-                        placement="datasul"
-                        scopeSelector=".datasul-view-root"
-                        mood={
-                          flag(maintenance.enabled)
-                            ? "alert"
-                            : busy
-                              ? "work"
-                              : error
-                                ? "error"
-                                : notice
-                                  ? "success"
-                                  : "idle"
-                        }
-                      />
+                {flag(maintenance.enabled) && (
+                  <section
+                    className="datasul-maintenance-banner"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div className="datasul-maintenance-icon">
+                      <Wrench size={30} />
                     </div>
-                    <div className="datasul-command-copy">
-                      <span className="eyebrow">OPERAÇÃO · DATASUL</span>
-                      <h2>Conexão, diagnóstico e API em uma única superfície.</h2>
+                    <div className="datasul-maintenance-copy">
+                      <span>MANUTENÇÃO GLOBAL ATIVA</span>
+                      <h2>
+                        {text(
+                          maintenance.title,
+                          text(site.maintenance_title, "Sistema em manutenção"),
+                        )}
+                      </h2>
                       <p>
-                        Um console operacional para trabalhar com endpoints reais,
-                        acompanhar resposta, auditar requisições e entender o estado
-                        da integração sem perder contexto.
+                        {text(
+                          maintenance.message,
+                          text(
+                            site.maintenance_message,
+                            "Estamos realizando ajustes no sistema.",
+                          ),
+                        )}
                       </p>
-                    </div>
-                    <div className="datasul-command-status">
-                      <span>ESTADO DA INTEGRAÇÃO</span>
-                      <strong className={toneFor(datasul.status)}>
-                        {labelStatus(datasul.status)}
-                      </strong>
                       <small>
-                        {text(datasul.last_check_at)
-                          ? "Última verificação " + formatDate(text(datasul.last_check_at))
-                          : "Ainda não verificado nesta sessão"}
+                        A equipe de TI continua acompanhando os dados e os
+                        ajustes por aqui.
                       </small>
                     </div>
+                    <button
+                      className="maintenance-manage-button"
+                      onClick={() => setView("site")}
+                    >
+                      <Settings2 size={16} />
+                      Gerenciar manutenção
+                    </button>
                   </section>
-
-                  <div className="datasul-pulse-grid">
-                    <div className="datasul-pulse-card">
-                      <span>OPERAÇÕES · 24H</span>
-                      <strong>{numberValue(snapshot.datasul_operations_24h)}</strong>
-                      <small>requisições registradas</small>
-                    </div>
-                    <div className="datasul-pulse-card">
-                      <span>FALHAS · 24H</span>
-                      <strong>{numberValue(snapshot.datasul_failures_24h)}</strong>
-                      <small>eventos que pedem atenção</small>
-                    </div>
-                    <div className="datasul-pulse-card">
-                      <span>COMPANY ID</span>
-                      <strong>{companyId || "-"}</strong>
-                      <small>empresa em contexto</small>
-                    </div>
-                    <div className="datasul-pulse-card">
-                      <span>HEALTH PATH</span>
-                      <strong className="mono-value">{healthPath || "-"}</strong>
-                      <small>endpoint de verificação</small>
-                    </div>
-                  </div>
-                  {flag(maintenance.enabled) && (
-                    <section className="datasul-maintenance-banner" role="status" aria-live="polite">
-                      <div className="datasul-maintenance-icon">
-                        <Wrench size={30} />
-                      </div>
-                      <div className="datasul-maintenance-copy">
-                        <span>MANUTENÇÃO GLOBAL ATIVA</span>
-                        <h2>
-                          {text(
-                            maintenance.title,
-                            text(site.maintenance_title, "Sistema em manutenção"),
-                          )}
-                        </h2>
-                        <p>
-                          {text(
-                            maintenance.message,
-                            text(
-                              site.maintenance_message,
-                              "Estamos realizando ajustes no sistema. O acesso será liberado novamente assim que a manutenção for concluída.",
-                            ),
-                          )}
-                        </p>
-                        <small>
-                          O RH está bloqueado para usuários comuns. A Central T.I. e este console Datasul continuam ativos para diagnóstico e correção; qualquer operação aqui continua afetando dados reais.
-                        </small>
-                      </div>
-                      <button
-                        className="maintenance-manage-button"
-                        onClick={() => setView("site")}
+                )}
+                <Panel
+                  title="Pessoas por setor"
+                  kicker="ÁREAS DO DATASUL"
+                  icon={<Users />}
+                >
+                  <div className="form-grid">
+                    <Field label="Área do Datasul">
+                      <select
+                        disabled={!canReadDatasul}
+                        value={datasulDepartment}
+                        onChange={(event) =>
+                          setDatasulDepartment(event.target.value)
+                        }
                       >
-                        <Settings2 size={16} />
-                        Gerenciar manutenção
-                      </button>
-                    </section>
-                  )}
-                  <div className="two-columns datasul-primary-grid">
-                    <Panel title="Conexão Datasul RH" kicker="CONFIGURAÇÃO" icon={<Database />}>
-                      <div className="form-grid">
-                        <Field label="Company ID">
-                          <input value={companyId} onChange={(event) => setCompanyId(event.target.value)} />
-                        </Field>
-                        <Field label="Health endpoint">
-                          <input value={healthPath} onChange={(event) => setHealthPath(event.target.value)} />
-                        </Field>
-                        <Field label="Colaboradores" wide>
-                          <input value={employeesPath} onChange={(event) => setEmployeesPath(event.target.value)} placeholder="/api/rh/v1/employees" />
-                        </Field>
-                        <Field label="Departamentos">
-                          <input value={departmentsPath} onChange={(event) => setDepartmentsPath(event.target.value)} />
-                        </Field>
-                        <Field label="Cargos">
-                          <input value={positionsPath} onChange={(event) => setPositionsPath(event.target.value)} />
-                        </Field>
-                        <Field label="Frequência" wide>
-                          <input value={attendancePath} onChange={(event) => setAttendancePath(event.target.value)} />
-                        </Field>
-                      </div>
-                      <div className="actions">
-                        <button onClick={() => void run("datasul-save", saveDatasulSettings, "Configuração salva.")}>
-                          <Save size={16} /> Salvar endpoints
-                        </button>
-                        <button className="primary-button" onClick={() => void run("datasul-health", async () => { await invokeDatasul({ action: "health" }); })}>
-                          <RefreshCw size={16} /> Testar conexão
-                        </button>
-                        <button onClick={() => void run("datasul-preview", async () => { await invokeDatasul({ action: "preview" }); })} disabled={!employeesPath}>
-                          <Users size={16} /> Prévia de colaboradores
-                        </button>
-                      </div>
-                      <Notice>
-                        Credenciais permanecem apenas nos Secrets do Supabase.
-                        O navegador nunca recebe usuário ou senha do Datasul.
-                      </Notice>
-                    </Panel>
-
-                    <Panel title="Console de API" kicker="OPERAÇÃO TOTAL" icon={<KeyRound />}>
-                      <div className="request-grid">
-                        <TechnicalField label="Método" mono>
-                          <select value={requestMethod} onChange={(event) => setRequestMethod(event.target.value)}>
-                            {["GET", "POST", "PUT", "PATCH", "DELETE"].map((method) => <option key={method}>{method}</option>)}
-                          </select>
-                        </TechnicalField>
-                        <TechnicalField label="Endpoint" wide mono>
-                          <input value={requestPath} onChange={(event) => setRequestPath(event.target.value)} placeholder="/api/..." />
-                        </TechnicalField>
-                      </div>
-                      {requestMethod !== "GET" && (
-                        <TechnicalField label="JSON" mono hint="Corpo enviado ao Datasul; credenciais continuam somente no servidor.">
-                          <textarea rows={10} value={requestBody} onChange={(event) => setRequestBody(event.target.value)} spellCheck={false} />
-                        </TechnicalField>
-                      )}
-                      <button
-                        className={requestMethod === "DELETE" ? "danger-button" : "primary-button"}
-                        onClick={() => void run("datasul-request", runDatasulRequest)}
-                        disabled={!requestPath || busy !== ""}
+                        <option value="">Todas as áreas</option>
+                        {departments.map((department) => (
+                          <option key={department.id} value={department.id}>
+                            {department.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+                  <div className="actions">
+                    {can("workspace.overview") && (
+                      <a
+                        href={rhSite + "/#/gestores"}
+                        target="_blank"
+                        rel="noreferrer"
                       >
-                        <Send size={16} />
-                        Executar {requestMethod}
-                      </button>
-                      <p className="panel-copy">
-                        Escritas e exclusões exigem MFA recente e entram no
-                        histórico de atividades.
-                      </p>
-                    </Panel>
+                        <ArrowUpRight size={16} />
+                        Área de gestores
+                      </a>
+                    )}
+                    {can("workspace.instructor") && (
+                      <a
+                        href={rhSite + "/#/instrutor"}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <ArrowUpRight size={16} />
+                        Área do instrutor
+                      </a>
+                    )}
                   </div>
-                  {datasulResult !== null && (
-                    <Panel title="Resposta do Datasul" kicker="RESULTADO" icon={<Activity />}>
-                      <CodeSurface label="Resposta JSON do Datasul" value={datasulResult} />
-                    </Panel>
-                  )}
-                  <div className="datasul-history-shell">
-                  <Panel title="Atividades da conexão com Datasul" kicker="CONSULTAS E ALTERAÇÕES" icon={<FileClock />}><DatasulHistory rows={datasulOps} /></Panel>
-                  </div>
-                </div>
-              )}
-
-              {view === "users" && (
-                <>
-                  <Toolbar search={search} setSearch={setSearch} placeholder="Buscar usuário, e-mail ou status" />
-                  <Panel title="Usuários e acessos" kicker="AUTH + CARGOS" icon={<UserCog />}>
-                    <TechnicalTable label="Tabela de usuários e acessos">
+                  {!nativeDataReady ? (
+                    <div className="alert error" role="alert">
+                      {!canReadDatasul
+                        ? "Esta conta não tem permissão para consultar os cadastros do Datasul."
+                        : "Não foi possível carregar todos os dados desta área. Use Atualizar dados para tentar novamente."}
+                    </div>
+                  ) : (
+                    <TechnicalTable label="Tabela do Datasul">
                       <table>
-                        <thead><tr><th>Usuário</th><th>Status</th><th>Cargo</th><th>Foto Espro</th><th>Último acesso</th><th>Ações</th></tr></thead>
+                        <thead>
+                          <tr>
+                            <th>Pessoa</th>
+                            <th>Setor</th>
+                            <th>Turma</th>
+                            <th>Grupo</th>
+                            <th>Situação</th>
+                            {can("employee.manage") && <th>Ações</th>}
+                          </tr>
+                        </thead>
                         <tbody>
-                          {filteredProfiles.map((profile) => {
-                            const userRole = roleByUser[profile.id]?.[0];
-                            return (
-                              <tr key={profile.id}>
-                                <td><strong>{profile.full_name}</strong><small>{profile.email}</small></td>
-                                <td><Badge tone={toneFor(profile.status)}>{profile.status}</Badge></td>
-                                <td>{userRole?.name || "-"}</td>
-                                <td><Badge tone={toneFor(profile.espro_photo_status)}>{profile.espro_photo_status}</Badge></td>
-                                <td>{formatDate(profile.last_seen_at)}</td>
+                          {visibleDatasulEmployees.map((employee) => (
+                            <tr key={employee.id}>
+                              <td>
+                                <strong>{employee.full_name}</strong>
+                                <small>{employee.registration}</small>
+                              </td>
+                              <td>
+                                {departments.find(
+                                  (department) =>
+                                    department.id === employee.department_id,
+                                )?.name || "Sem setor"}
+                              </td>
+                              <td>
+                                {classes.find(
+                                  (item) => item.id === employee.class_id,
+                                )?.name || "Sem turma"}
+                              </td>
+                              <td>
+                                {employee.member_group === "rh"
+                                  ? "Equipe de RH"
+                                  : "Turma"}
+                              </td>
+                              <td>
+                                <span
+                                  className={
+                                    "badge " + toneFor(employee.status)
+                                  }
+                                >
+                                  {employee.status === "active"
+                                    ? "Ativo"
+                                    : "Inativo"}
+                                </span>
+                              </td>
+                              {can("employee.manage") && (
                                 <td>
-                                  <div className="row-actions">
-                                    {profile.id !== user.profile.id && (
-                                      <button onClick={() => openManageProfile(profile)}>Gerenciar</button>
-                                    )}
-                                    <button onClick={() => void run("sessions", () => loadSessions(profile))}>Sessões</button>
-                                    {profile.espro_photo_path && (
-                                      <button onClick={() => void run("photo-open", () => openPhoto(profile))}>Foto</button>
-                                    )}
-                                    {["basic_passed", "pending"].includes(profile.espro_photo_status) && (
-                                      <>
-                                        <button onClick={() => void run("photo-approve", () => reviewPhoto(profile, "approved"), "Foto aprovada.")}>Aprovar foto</button>
-                                        <button className="danger-text" onClick={() => void run("photo-reject", () => reviewPhoto(profile, "rejected"), "Foto rejeitada.")}>Rejeitar</button>
-                                      </>
-                                    )}
-                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedEmployee(employee);
+                                      setView("rh");
+                                    }}
+                                  >
+                                    Editar pessoa
+                                  </button>
                                 </td>
-                              </tr>
-                            );
-                          })}
+                              )}
+                            </tr>
+                          ))}
+                          {!visibleDatasulEmployees.length && (
+                            <tr>
+                              <td colSpan={can("employee.manage") ? 6 : 5}>
+                                Nenhuma pessoa cadastrada nesta área.
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </TechnicalTable>
-                  </Panel>
-                  {editingProfile && (
-                    <Panel
-                      title={"Gerenciar " + editingProfile.full_name}
-                      kicker="ACESSO E CARGO"
-                      icon={<UserCog />}
+                  )}
+                </Panel>
+                <Panel
+                  title="Atividades do Datasul"
+                  kicker="HISTÓRICO DO RAÍZES"
+                  icon={<FileClock />}
+                >
+                  <AuditList
+                    rows={audit
+                      .filter((row) =>
+                        [
+                          "employees",
+                          "departments",
+                          "classes",
+                          "attendance_sessions",
+                          "feedbacks",
+                          "attachments",
+                        ].includes(row.module),
+                      )
+                      .slice(0, 12)}
+                    names={auditNames}
+                  />
+                </Panel>
+              </div>
+            )}
+
+            {view === "users" && (
+              <>
+                <Toolbar
+                  search={search}
+                  setSearch={setSearch}
+                  placeholder="Buscar usuário, e-mail ou status"
+                />
+                <Panel
+                  title="Usuários e acessos"
+                  kicker="AUTH + CARGOS"
+                  icon={<UserCog />}
+                >
+                  <TechnicalTable label="Tabela de usuários e acessos">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Usuário</th>
+                          <th>Status</th>
+                          <th>Cargo</th>
+                          <th>Foto Espro</th>
+                          <th>Último acesso</th>
+                          <th>Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredProfiles.map((profile) => {
+                          const userRole = roleByUser[profile.id]?.[0];
+                          return (
+                            <tr key={profile.id}>
+                              <td>
+                                <strong>{profile.full_name}</strong>
+                                <small>{profile.email}</small>
+                              </td>
+                              <td>
+                                <Badge tone={toneFor(profile.status)}>
+                                  {profile.status}
+                                </Badge>
+                              </td>
+                              <td>{userRole?.name || "-"}</td>
+                              <td>
+                                <Badge
+                                  tone={toneFor(profile.espro_photo_status)}
+                                >
+                                  {profile.espro_photo_status}
+                                </Badge>
+                              </td>
+                              <td>{formatDate(profile.last_seen_at)}</td>
+                              <td>
+                                <div className="row-actions">
+                                  {profile.id !== user.profile.id && (
+                                    <button
+                                      onClick={() => openManageProfile(profile)}
+                                    >
+                                      Gerenciar
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() =>
+                                      void run("sessions", () =>
+                                        loadSessions(profile),
+                                      )
+                                    }
+                                  >
+                                    Sessões
+                                  </button>
+                                  {profile.espro_photo_path && (
+                                    <button
+                                      onClick={() =>
+                                        void run("photo-open", () =>
+                                          openPhoto(profile),
+                                        )
+                                      }
+                                    >
+                                      Foto
+                                    </button>
+                                  )}
+                                  {["basic_passed", "pending"].includes(
+                                    profile.espro_photo_status,
+                                  ) && (
+                                    <>
+                                      <button
+                                        onClick={() =>
+                                          void run(
+                                            "photo-approve",
+                                            () =>
+                                              reviewPhoto(profile, "approved"),
+                                            "Foto aprovada.",
+                                          )
+                                        }
+                                      >
+                                        Aprovar foto
+                                      </button>
+                                      <button
+                                        className="danger-text"
+                                        onClick={() =>
+                                          void run(
+                                            "photo-reject",
+                                            () =>
+                                              reviewPhoto(profile, "rejected"),
+                                            "Foto rejeitada.",
+                                          )
+                                        }
+                                      >
+                                        Rejeitar
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </TechnicalTable>
+                </Panel>
+                {editingProfile && (
+                  <Panel
+                    title={"Gerenciar " + editingProfile.full_name}
+                    kicker="ACESSO E CARGO"
+                    icon={<UserCog />}
+                  >
+                    <form
+                      className="form-grid"
+                      onSubmit={(event) =>
+                        void run(
+                          "user-save",
+                          () => saveProfileAccess(event),
+                          "Acesso atualizado.",
+                        )
+                      }
                     >
-                      <form
-                        className="form-grid"
-                        onSubmit={(event) =>
-                          void run(
-                            "user-save",
-                            () => saveProfileAccess(event),
-                            "Acesso atualizado.",
+                      <Field label="Status">
+                        <select
+                          value={profileStatus}
+                          onChange={(event) =>
+                            setProfileStatus(event.target.value)
+                          }
+                        >
+                          <option value="active">Ativo</option>
+                          <option value="suspended">Suspenso</option>
+                          <option value="inactive">Inativo</option>
+                          <option value="blocked">Bloqueado</option>
+                        </select>
+                      </Field>
+                      <Field label="Cargo">
+                        <select
+                          value={profileRoleId}
+                          onChange={(event) =>
+                            setProfileRoleId(event.target.value)
+                          }
+                          required
+                        >
+                          {roles.map((role) => (
+                            <option key={role.id} value={role.id}>
+                              {role.name} | nível {role.level}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Motivo" wide>
+                        <textarea
+                          rows={4}
+                          value={profileReason}
+                          onChange={(event) =>
+                            setProfileReason(event.target.value)
+                          }
+                          required
+                        />
+                      </Field>
+                      <div className="actions wide">
+                        <button
+                          className="primary-button"
+                          disabled={busy !== ""}
+                        >
+                          <Save size={16} />
+                          Salvar acesso
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingProfile(null)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  </Panel>
+                )}
+                {selectedProfile && (
+                  <Panel
+                    title={"Sessões de " + selectedProfile.full_name}
+                    kicker="SEGURANÇA"
+                    icon={<ShieldCheck />}
+                  >
+                    <div className="session-list">
+                      {sessions.length ? (
+                        sessions.map((session) => (
+                          <div className="session-row" key={session.id}>
+                            <div>
+                              <strong>
+                                {session.current
+                                  ? "Sessão atual"
+                                  : session.id.slice(0, 8)}
+                              </strong>
+                              <span>
+                                Criada em {formatDate(session.created_at)} |
+                                Atualizada em {formatDate(session.updated_at)}
+                              </span>
+                            </div>
+                            <Badge tone={session.revoked ? "error" : "ok"}>
+                              {session.revoked ? "Revogada" : "Ativa"}
+                            </Badge>
+                            {!session.current && !session.revoked && (
+                              <button
+                                className="danger-text"
+                                onClick={() =>
+                                  void run(
+                                    "revoke-session",
+                                    () => revokeSession(session.id),
+                                    "Sessão revogada.",
+                                  )
+                                }
+                              >
+                                Revogar
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <Empty text="Nenhuma sessão encontrada." />
+                      )}
+                    </div>
+                  </Panel>
+                )}
+              </>
+            )}
+
+            {view === "rh" && (
+              <>
+                <Toolbar
+                  search={search}
+                  setSearch={setSearch}
+                  placeholder="Buscar colaborador, matrícula ou cargo"
+                />
+                <Panel
+                  title="Base de colaboradores"
+                  kicker="RH OPERACIONAL"
+                  icon={<Users />}
+                >
+                  <TechnicalTable label="Tabela da base de colaboradores">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Nome</th>
+                          <th>Matrícula</th>
+                          <th>Grupo</th>
+                          <th>Cargo</th>
+                          <th>Status</th>
+                          <th>Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredEmployees.map((employee) => (
+                          <tr key={employee.id}>
+                            <td>
+                              <strong>{employee.full_name}</strong>
+                              <small>{employee.email || "-"}</small>
+                            </td>
+                            <td>{employee.registration}</td>
+                            <td>{employee.member_group}</td>
+                            <td>{employee.access_role_code}</td>
+                            <td>
+                              <Badge tone={toneFor(employee.status)}>
+                                {employee.status}
+                              </Badge>
+                            </td>
+                            <td>
+                              <button
+                                onClick={() => setSelectedEmployee(employee)}
+                              >
+                                Editar
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </TechnicalTable>
+                </Panel>
+                {selectedEmployee && (
+                  <Panel
+                    title={"Editar " + selectedEmployee.full_name}
+                    kicker="CADASTRO"
+                    icon={<Settings2 />}
+                  >
+                    <form
+                      className="form-grid"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        const form = new FormData(event.currentTarget);
+                        void run(
+                          "employee-save",
+                          () => saveEmployee(form),
+                          "Cadastro atualizado.",
+                        );
+                      }}
+                    >
+                      <Field label="Nome" wide>
+                        <input
+                          name="full_name"
+                          defaultValue={selectedEmployee.full_name}
+                          required
+                        />
+                      </Field>
+                      <Field label="E-mail">
+                        <input
+                          name="email"
+                          type="email"
+                          defaultValue={selectedEmployee.email || ""}
+                        />
+                      </Field>
+                      <Field label="Telefone">
+                        <input
+                          name="phone"
+                          defaultValue={selectedEmployee.phone || ""}
+                        />
+                      </Field>
+                      <Field label="Status">
+                        <select
+                          name="status"
+                          defaultValue={selectedEmployee.status}
+                        >
+                          {["active", "inactive", "suspended", "blocked"].map(
+                            (value) => (
+                              <option key={value}>{value}</option>
+                            ),
+                          )}
+                        </select>
+                      </Field>
+                      <Field label="Grupo">
+                        <select
+                          name="member_group"
+                          defaultValue={selectedEmployee.member_group}
+                        >
+                          <option value="class">Turma</option>
+                          <option value="rh">Equipe RH</option>
+                        </select>
+                      </Field>
+                      <Field label="Cargo de acesso">
+                        <select
+                          name="access_role_code"
+                          defaultValue={selectedEmployee.access_role_code}
+                        >
+                          <option value="COLLABORATOR">Colaborador</option>
+                          <option value="MANAGER">Gestor</option>
+                          <option value="DIRECTOR">Diretor</option>
+                          <option value="INSTRUCTOR">Instrutor</option>
+                        </select>
+                      </Field>
+                      <Field label="Turma">
+                        <select
+                          name="class_id"
+                          defaultValue={selectedEmployee.class_id || ""}
+                        >
+                          <option value="">Sem turma</option>
+                          {classes.map((row) => (
+                            <option key={row.id} value={row.id}>
+                              {row.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Departamento">
+                        <select
+                          name="department_id"
+                          defaultValue={selectedEmployee.department_id || ""}
+                        >
+                          <option value="">Sem departamento</option>
+                          {departments.map((row) => (
+                            <option key={row.id} value={row.id}>
+                              {row.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Cargo interno">
+                        <select
+                          name="job_position_id"
+                          defaultValue={selectedEmployee.job_position_id || ""}
+                        >
+                          <option value="">Sem cargo interno</option>
+                          {positions.map((row) => (
+                            <option key={row.id} value={row.id}>
+                              {row.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <div className="actions wide">
+                        <button
+                          className="primary-button"
+                          disabled={busy !== ""}
+                        >
+                          <Save size={16} />
+                          Salvar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedEmployee(null)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  </Panel>
+                )}
+              </>
+            )}
+
+            {view === "storage" && (
+              <>
+                <div className="bucket-grid">
+                  {(inventory.buckets || []).map((bucket) => (
+                    <button
+                      key={bucket.id}
+                      className={
+                        storageBucket === bucket.id
+                          ? "bucket-card active"
+                          : "bucket-card"
+                      }
+                      onClick={() =>
+                        void run("storage-list", () => loadStorage(bucket.id))
+                      }
+                    >
+                      <FolderOpen size={22} />
+                      <strong>{bucket.name}</strong>
+                      <span>
+                        {bucket.public ? "Público" : "Privado"} | limite{" "}
+                        {formatBytes(bucket.file_size_limit)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {storageBucket && (
+                  <Panel
+                    title={storageBucket}
+                    kicker="STORAGE"
+                    icon={<HardDrive />}
+                  >
+                    <div className="actions">
+                      <TechnicalField label="Prefixo" mono>
+                        <input
+                          value={storagePrefix}
+                          onChange={(event) =>
+                            setStoragePrefix(event.target.value)
+                          }
+                          placeholder="pasta/subpasta"
+                        />
+                      </TechnicalField>
+                      <button
+                        onClick={() =>
+                          void run("storage-list", () =>
+                            loadStorage(storageBucket, storagePrefix),
                           )
                         }
                       >
-                        <Field label="Status">
-                          <select
-                            value={profileStatus}
-                            onChange={(event) => setProfileStatus(event.target.value)}
-                          >
-                            <option value="active">Ativo</option>
-                            <option value="suspended">Suspenso</option>
-                            <option value="inactive">Inativo</option>
-                            <option value="blocked">Bloqueado</option>
-                          </select>
-                        </Field>
-                        <Field label="Cargo">
-                          <select
-                            value={profileRoleId}
-                            onChange={(event) => setProfileRoleId(event.target.value)}
-                            required
-                          >
-                            {roles.map((role) => (
-                              <option key={role.id} value={role.id}>
-                                {role.name} | nível {role.level}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field label="Motivo" wide>
-                          <textarea
-                            rows={4}
-                            value={profileReason}
-                            onChange={(event) => setProfileReason(event.target.value)}
-                            required
-                          />
-                        </Field>
-                        <div className="actions wide">
-                          <button className="primary-button" disabled={busy !== ""}>
-                            <Save size={16} />
-                            Salvar acesso
-                          </button>
-                          <button type="button" onClick={() => setEditingProfile(null)}>
-                            Cancelar
-                          </button>
-                        </div>
-                      </form>
-                    </Panel>
-                  )}
-                  {selectedProfile && (
-                    <Panel title={"Sessões de " + selectedProfile.full_name} kicker="SEGURANÇA" icon={<ShieldCheck />}>
-                      <div className="session-list">
-                        {sessions.length ? sessions.map((session) => (
-                          <div className="session-row" key={session.id}>
-                            <div>
-                              <strong>{session.current ? "Sessão atual" : session.id.slice(0, 8)}</strong>
-                              <span>Criada em {formatDate(session.created_at)} | Atualizada em {formatDate(session.updated_at)}</span>
-                            </div>
-                            <Badge tone={session.revoked ? "error" : "ok"}>{session.revoked ? "Revogada" : "Ativa"}</Badge>
-                            {!session.current && !session.revoked && (
-                              <button className="danger-text" onClick={() => void run("revoke-session", () => revokeSession(session.id), "Sessão revogada.")}>Revogar</button>
-                            )}
-                          </div>
-                        )) : <Empty text="Nenhuma sessão encontrada." />}
-                      </div>
-                    </Panel>
-                  )}
-                </>
-              )}
-
-              {view === "rh" && (
-                <>
-                  <Toolbar search={search} setSearch={setSearch} placeholder="Buscar colaborador, matrícula ou cargo" />
-                  <Panel title="Base de colaboradores" kicker="RH OPERACIONAL" icon={<Users />}>
-                    <TechnicalTable label="Tabela da base de colaboradores">
-                      <table>
-                        <thead><tr><th>Nome</th><th>Matrícula</th><th>Grupo</th><th>Cargo</th><th>Status</th><th>Ação</th></tr></thead>
-                        <tbody>
-                          {filteredEmployees.map((employee) => (
-                            <tr key={employee.id}>
-                              <td><strong>{employee.full_name}</strong><small>{employee.email || "-"}</small></td>
-                              <td>{employee.registration}</td>
-                              <td>{employee.member_group}</td>
-                              <td>{employee.access_role_code}</td>
-                              <td><Badge tone={toneFor(employee.status)}>{employee.status}</Badge></td>
-                              <td><button onClick={() => setSelectedEmployee(employee)}>Editar</button></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </TechnicalTable>
-                  </Panel>
-                  {selectedEmployee && (
-                    <Panel title={"Editar " + selectedEmployee.full_name} kicker="CADASTRO" icon={<Settings2 />}>
-                      <form className="form-grid" onSubmit={(event) => void run("employee-save", () => saveEmployee(event), "Cadastro atualizado.")}>
-                        <Field label="Nome" wide><input name="full_name" defaultValue={selectedEmployee.full_name} required /></Field>
-                        <Field label="E-mail"><input name="email" type="email" defaultValue={selectedEmployee.email || ""} /></Field>
-                        <Field label="Telefone"><input name="phone" defaultValue={selectedEmployee.phone || ""} /></Field>
-                        <Field label="Status">
-                          <select name="status" defaultValue={selectedEmployee.status}>
-                            {["active", "inactive", "suspended", "blocked"].map((value) => <option key={value}>{value}</option>)}
-                          </select>
-                        </Field>
-                        <Field label="Grupo">
-                          <select name="member_group" defaultValue={selectedEmployee.member_group}>
-                            <option value="class">Turma</option>
-                            <option value="rh">Equipe RH</option>
-                          </select>
-                        </Field>
-                        <Field label="Cargo de acesso">
-                          <select name="access_role_code" defaultValue={selectedEmployee.access_role_code}>
-                            <option value="COLLABORATOR">Colaborador</option>
-                            <option value="MANAGER">Gestor</option>
-                            <option value="DIRECTOR">Diretor</option>
-                            <option value="INSTRUCTOR">Instrutor</option>
-                          </select>
-                        </Field>
-                        <Field label="Turma">
-                          <select name="class_id" defaultValue={selectedEmployee.class_id || ""}>
-                            <option value="">Sem turma</option>
-                            {classes.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
-                          </select>
-                        </Field>
-                        <Field label="Departamento">
-                          <select name="department_id" defaultValue={selectedEmployee.department_id || ""}>
-                            <option value="">Sem departamento</option>
-                            {departments.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
-                          </select>
-                        </Field>
-                        <Field label="Cargo interno">
-                          <select name="job_position_id" defaultValue={selectedEmployee.job_position_id || ""}>
-                            <option value="">Sem cargo interno</option>
-                            {positions.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
-                          </select>
-                        </Field>
-                        <div className="actions wide">
-                          <button className="primary-button" disabled={busy !== ""}><Save size={16} />Salvar</button>
-                          <button type="button" onClick={() => setSelectedEmployee(null)}>Cancelar</button>
-                        </div>
-                      </form>
-                    </Panel>
-                  )}
-                </>
-              )}
-
-              {view === "storage" && (
-                <>
-                  <div className="bucket-grid">
-                    {(inventory.buckets || []).map((bucket) => (
-                      <button
-                        key={bucket.id}
-                        className={storageBucket === bucket.id ? "bucket-card active" : "bucket-card"}
-                        onClick={() => void run("storage-list", () => loadStorage(bucket.id))}
-                      >
-                        <FolderOpen size={22} />
-                        <strong>{bucket.name}</strong>
-                        <span>{bucket.public ? "Público" : "Privado"} | limite {formatBytes(bucket.file_size_limit)}</span>
+                        <RefreshCw size={16} />
+                        Listar
                       </button>
-                    ))}
-                  </div>
-                  {storageBucket && (
-                    <Panel title={storageBucket} kicker="STORAGE" icon={<HardDrive />}>
-                      <div className="actions">
-                        <TechnicalField label="Prefixo" mono>
-                          <input value={storagePrefix} onChange={(event) => setStoragePrefix(event.target.value)} placeholder="pasta/subpasta" />
-                        </TechnicalField>
-                        <button onClick={() => void run("storage-list", () => loadStorage(storageBucket, storagePrefix))}><RefreshCw size={16} />Listar</button>
-                      </div>
-                      <div className="file-list">
-                        {storageItems.length ? storageItems.map((item) => (
+                    </div>
+                    <div className="file-list">
+                      {storageItems.length ? (
+                        storageItems.map((item) => (
                           <div className="file-row" key={item.name}>
                             <FolderOpen size={18} />
-                            <span><strong>{item.name}</strong><small>{formatBytes(item.metadata?.size)} | {formatDate(item.updated_at)}</small></span>
+                            <span>
+                              <strong>{item.name}</strong>
+                              <small>
+                                {formatBytes(item.metadata?.size)} |{" "}
+                                {formatDate(item.updated_at)}
+                              </small>
+                            </span>
                             {item.id && (
-                              <button className="danger-text" onClick={() => void run("storage-delete", () => deleteStorageItem(item), "Arquivo removido.")}>
+                              <button
+                                className="danger-text"
+                                onClick={() =>
+                                  void run(
+                                    "storage-delete",
+                                    () => deleteStorageItem(item),
+                                    "Arquivo removido.",
+                                  )
+                                }
+                              >
                                 <Trash2 size={16} /> Excluir
                               </button>
                             )}
                           </div>
-                        )) : <Empty text="Nenhum item neste nível." />}
-                      </div>
-                    </Panel>
-                  )}
-                </>
-              )}
+                        ))
+                      ) : (
+                        <Empty text="Nenhum item neste nível." />
+                      )}
+                    </div>
+                  </Panel>
+                )}
+              </>
+            )}
 
-              {view === "notifications" && (
-                <div className="two-columns">
-                  <Panel title="Enviar notificação" kicker="PUSH + INTERNA" icon={<BellRing />}>
-                    <form onSubmit={(event) => void run("notification", () => sendNotification(event))}>
-                      <Field label="Usuário">
-                        <select value={notificationTarget} onChange={(event) => setNotificationTarget(event.target.value)} required>
-                          <option value="">Selecionar usuário</option>
-                          {profiles.filter((profile) => profile.status === "active").map((profile) => <option key={profile.id} value={profile.id}>{profile.full_name} | {profile.email}</option>)}
-                        </select>
-                      </Field>
-                      <Field label="Título"><input value={notificationTitle} onChange={(event) => setNotificationTitle(event.target.value)} maxLength={100} required /></Field>
-                      <Field label="Mensagem"><textarea rows={5} value={notificationBody} onChange={(event) => setNotificationBody(event.target.value)} maxLength={500} required /></Field>
-                      <Field label="Destino no app"><input value={notificationPath} onChange={(event) => setNotificationPath(event.target.value)} /></Field>
-                      <button className="primary-button" disabled={busy !== ""}><Send size={16} />Enviar notificação</button>
-                    </form>
-                  </Panel>
-                  <Panel title="Estado das notificações" kicker="MÉTRICAS" icon={<Activity />}>
-                    <Stat title="Não lidas" value={numberValue(snapshot.notifications_unread)} />
-                    <Stat title="Dispositivos push" value={numberValue(snapshot.push_devices)} />
-                    <p className="panel-copy">
-                      O envio cria a notificação interna e o gatilho Web Push tenta
-                      entregar nos dispositivos registrados.
-                    </p>
-                  </Panel>
+            {view === "notifications" && (
+              <div className="two-columns">
+                <Panel
+                  title="Enviar notificação"
+                  kicker="PUSH + INTERNA"
+                  icon={<BellRing />}
+                >
+                  <form
+                    onSubmit={(event) =>
+                      void run("notification", () => sendNotification(event))
+                    }
+                  >
+                    <Field label="Usuário">
+                      <select
+                        value={notificationTarget}
+                        onChange={(event) =>
+                          setNotificationTarget(event.target.value)
+                        }
+                        required
+                      >
+                        <option value="">Selecionar usuário</option>
+                        {profiles
+                          .filter((profile) => profile.status === "active")
+                          .map((profile) => (
+                            <option key={profile.id} value={profile.id}>
+                              {profile.full_name} | {profile.email}
+                            </option>
+                          ))}
+                      </select>
+                    </Field>
+                    <Field label="Título">
+                      <input
+                        value={notificationTitle}
+                        onChange={(event) =>
+                          setNotificationTitle(event.target.value)
+                        }
+                        maxLength={100}
+                        required
+                      />
+                    </Field>
+                    <Field label="Mensagem">
+                      <textarea
+                        rows={5}
+                        value={notificationBody}
+                        onChange={(event) =>
+                          setNotificationBody(event.target.value)
+                        }
+                        maxLength={500}
+                        required
+                      />
+                    </Field>
+                    <Field label="Destino no app">
+                      <input
+                        value={notificationPath}
+                        onChange={(event) =>
+                          setNotificationPath(event.target.value)
+                        }
+                      />
+                    </Field>
+                    <button className="primary-button" disabled={busy !== ""}>
+                      <Send size={16} />
+                      Enviar notificação
+                    </button>
+                  </form>
+                </Panel>
+                <Panel
+                  title="Estado das notificações"
+                  kicker="MÉTRICAS"
+                  icon={<Activity />}
+                >
+                  <Stat
+                    title="Não lidas"
+                    value={numberValue(snapshot.notifications_unread)}
+                  />
+                  <Stat
+                    title="Dispositivos push"
+                    value={numberValue(snapshot.push_devices)}
+                  />
+                  <p className="panel-copy">
+                    O envio cria a notificação interna e o gatilho Web Push
+                    tenta entregar nos dispositivos registrados.
+                  </p>
+                </Panel>
+              </div>
+            )}
+
+            {view === "database" && (
+              <>
+                <div className="actions">
+                  <button
+                    className="primary-button"
+                    onClick={() => void run("database", loadDatabase)}
+                  >
+                    <RefreshCw size={16} />
+                    Atualizar diagnóstico
+                  </button>
                 </div>
-              )}
-
-              {view === "database" && (
-                <>
-                  <div className="actions">
-                    <button className="primary-button" onClick={() => void run("database", loadDatabase)}><RefreshCw size={16} />Atualizar diagnóstico</button>
-                  </div>
-                  {database ? (
-                    <>
-                      <div className="stats-grid">
-                        <Stat title="Tamanho do banco" value={formatBytes(database.database_size_bytes)} />
-                        <Stat title="Conexões" value={database.connections} />
-                        <Stat title="Tabelas" value={database.tables.length} />
-                        <Stat title="Extensões" value={database.extensions.length} />
-                      </div>
-                      <Panel title="Tabelas" kicker="POSTGRES" icon={<Database />}>
-                        <TechnicalTable label="Tabelas do PostgreSQL">
-                          <table>
-                            <thead><tr><th>Tabela</th><th>Linhas estimadas</th><th>Mortas</th><th>Tamanho</th><th>Análise</th></tr></thead>
-                            <tbody>
-                              {database.tables.map((row) => (
-                                <tr key={row.schema + "." + row.table}>
-                                  <td><code>{row.schema}.{row.table}</code></td>
-                                  <td>{row.estimated_rows}</td>
-                                  <td>{row.dead_rows}</td>
-                                  <td>{formatBytes(row.size_bytes)}</td>
-                                  <td>{formatDate(row.last_autoanalyze || row.last_analyze)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </TechnicalTable>
-                      </Panel>
-                      <Panel title="RLS" kicker="SEGURANÇA DE LINHAS" icon={<ShieldCheck />}>
-                        <div className="rls-grid">
-                          {database.rls.filter((row) => row.schema === "public").map((row) => (
-                            <div className="rls-item" key={row.schema + row.table}>
+                {database ? (
+                  <>
+                    <div className="stats-grid">
+                      <Stat
+                        title="Tamanho do banco"
+                        value={formatBytes(database.database_size_bytes)}
+                      />
+                      <Stat title="Conexões" value={database.connections} />
+                      <Stat title="Tabelas" value={database.tables.length} />
+                      <Stat
+                        title="Extensões"
+                        value={database.extensions.length}
+                      />
+                    </div>
+                    <Panel
+                      title="Tabelas"
+                      kicker="POSTGRES"
+                      icon={<Database />}
+                    >
+                      <TechnicalTable label="Tabelas do PostgreSQL">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Tabela</th>
+                              <th>Linhas estimadas</th>
+                              <th>Mortas</th>
+                              <th>Tamanho</th>
+                              <th>Análise</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {database.tables.map((row) => (
+                              <tr key={row.schema + "." + row.table}>
+                                <td>
+                                  <code>
+                                    {row.schema}.{row.table}
+                                  </code>
+                                </td>
+                                <td>{row.estimated_rows}</td>
+                                <td>{row.dead_rows}</td>
+                                <td>{formatBytes(row.size_bytes)}</td>
+                                <td>
+                                  {formatDate(
+                                    row.last_autoanalyze || row.last_analyze,
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </TechnicalTable>
+                    </Panel>
+                    <Panel
+                      title="RLS"
+                      kicker="SEGURANÇA DE LINHAS"
+                      icon={<ShieldCheck />}
+                    >
+                      <div className="rls-grid">
+                        {database.rls
+                          .filter((row) => row.schema === "public")
+                          .map((row) => (
+                            <div
+                              className="rls-item"
+                              key={row.schema + row.table}
+                            >
                               <code>{row.table}</code>
-                              <Badge tone={row.enabled ? "ok" : "error"}>{row.enabled ? "RLS ativo" : "RLS desligado"}</Badge>
+                              <Badge tone={row.enabled ? "ok" : "error"}>
+                                {row.enabled ? "RLS ativo" : "RLS desligado"}
+                              </Badge>
                             </div>
                           ))}
-                        </div>
-                      </Panel>
-                    </>
-                  ) : <Empty text="Carregue o diagnóstico do banco." />}
-                </>
-              )}
+                      </div>
+                    </Panel>
+                  </>
+                ) : (
+                  <Empty text="Carregue o diagnóstico do banco." />
+                )}
+              </>
+            )}
 
-              {view === "integrations" && (
-                <>
-                  <div className="two-columns ti-integration-grid">
-                    <IntegrationCard
-                      name="GitHub"
-                      status={labelStatus(github.status)}
-                      detail={text(github.repository, "Repositório não informado")}
-                      tone={toneFor(github.status)}
-                      action={
-                        <button className="primary-button" onClick={() => void run("platform", invokePlatform)}>
-                          <RefreshCw size={16} /> Verificar plataforma
-                        </button>
+            {view === "integrations" && (
+              <>
+                <div className="two-columns ti-integration-grid">
+                  <IntegrationCard
+                    name="GitHub"
+                    status={labelStatus(github.status)}
+                    detail={text(
+                      github.repository,
+                      "Repositório não informado",
+                    )}
+                    tone={toneFor(github.status)}
+                    action={
+                      <button
+                        className="primary-button"
+                        onClick={() => void run("platform", invokePlatform)}
+                      >
+                        <RefreshCw size={16} /> Verificar plataforma
+                      </button>
+                    }
+                  >
+                    <p className="panel-copy">
+                      CI, ações e estado do repositório consultados por
+                      credenciais mantidas somente no servidor.
+                    </p>
+                  </IntegrationCard>
+                  <IntegrationCard
+                    name="Vercel"
+                    status={labelStatus(vercel.status)}
+                    detail={text(vercel.project, "Projeto não informado")}
+                    tone={toneFor(vercel.status)}
+                  >
+                    <p className="panel-copy">
+                      Saúde do deploy separada da configuração para facilitar
+                      diagnóstico operacional.
+                    </p>
+                  </IntegrationCard>
+                </div>
+                {platformResult !== null && (
+                  <CodeSurface
+                    label="Diagnóstico de GitHub e Vercel"
+                    value={platformResult}
+                  />
+                )}
+              </>
+            )}
+
+            {view === "site" && (
+              <div className="two-columns">
+                <IntegrationCard
+                  name="Site RH"
+                  status={
+                    flag(maintenance.enabled)
+                      ? "Manutenção ativa"
+                      : "Operação normal"
+                  }
+                  detail="Controle global de disponibilidade"
+                  tone={flag(maintenance.enabled) ? "warn" : "ok"}
+                >
+                  <div className="maintenance-state">
+                    <span
+                      className={
+                        flag(maintenance.enabled)
+                          ? "status-dot warn"
+                          : "status-dot ok"
+                      }
+                    />
+                    <div>
+                      <strong>
+                        {flag(maintenance.enabled)
+                          ? "Manutenção ativa"
+                          : "Operação normal"}
+                      </strong>
+                      <span>
+                        A Central T.I. mantém acesso técnico durante manutenção.
+                      </span>
+                    </div>
+                  </div>
+                  <div className="actions">
+                    <button
+                      className={
+                        flag(maintenance.enabled)
+                          ? "primary-button"
+                          : "danger-button"
+                      }
+                      onClick={() =>
+                        void run(
+                          "maintenance",
+                          toggleMaintenance,
+                          "Estado de manutenção atualizado.",
+                        )
                       }
                     >
-                      <p className="panel-copy">
-                        CI, ações e estado do repositório consultados por credenciais mantidas somente no servidor.
-                      </p>
-                    </IntegrationCard>
-                    <IntegrationCard
-                      name="Vercel"
-                      status={labelStatus(vercel.status)}
-                      detail={text(vercel.project, "Projeto não informado")}
-                      tone={toneFor(vercel.status)}
-                    >
-                      <p className="panel-copy">
-                        Saúde do deploy separada da configuração para facilitar diagnóstico operacional.
-                      </p>
-                    </IntegrationCard>
+                      <Wrench size={16} />
+                      {flag(maintenance.enabled)
+                        ? "Desativar manutenção"
+                        : "Ativar manutenção"}
+                    </button>
                   </div>
-                  {platformResult !== null && (
-                    <CodeSurface
-                      label="Diagnóstico de GitHub e Vercel"
-                      value={platformResult}
+                </IntegrationCard>
+                <Panel
+                  title="Mensagem de manutenção"
+                  kicker="COMUNICAÇÃO"
+                  icon={<Mail />}
+                >
+                  <TechnicalField label="Título">
+                    <input
+                      value={maintenanceTitle}
+                      onChange={(event) =>
+                        setMaintenanceTitle(event.target.value)
+                      }
                     />
-                  )}
-                </>
-              )}
-
-              {view === "site" && (
-                <div className="two-columns">
-                  <IntegrationCard
-                    name="Site RH"
-                    status={flag(maintenance.enabled) ? "Manutenção ativa" : "Operação normal"}
-                    detail="Controle global de disponibilidade"
-                    tone={flag(maintenance.enabled) ? "warn" : "ok"}
+                  </TechnicalField>
+                  <TechnicalField label="Mensagem" wide>
+                    <textarea
+                      rows={5}
+                      value={maintenanceMessage}
+                      onChange={(event) =>
+                        setMaintenanceMessage(event.target.value)
+                      }
+                    />
+                  </TechnicalField>
+                  <button
+                    className="primary-button"
+                    onClick={() =>
+                      void run(
+                        "maintenance-text",
+                        saveMaintenance,
+                        "Mensagem salva.",
+                      )
+                    }
                   >
-                    <div className="maintenance-state">
-                      <span className={flag(maintenance.enabled) ? "status-dot warn" : "status-dot ok"} />
-                      <div>
-                        <strong>{flag(maintenance.enabled) ? "Manutenção ativa" : "Operação normal"}</strong>
-                        <span>A Central T.I. mantém acesso técnico durante manutenção.</span>
-                      </div>
-                    </div>
-                    <div className="actions">
-                      <button className={flag(maintenance.enabled) ? "primary-button" : "danger-button"} onClick={() => void run("maintenance", toggleMaintenance, "Estado de manutenção atualizado.")}>
-                        <Wrench size={16} />
-                        {flag(maintenance.enabled) ? "Desativar manutenção" : "Ativar manutenção"}
-                      </button>
-                    </div>
-                  </IntegrationCard>
-                  <Panel title="Mensagem de manutenção" kicker="COMUNICAÇÃO" icon={<Mail />}>
-                    <TechnicalField label="Título"><input value={maintenanceTitle} onChange={(event) => setMaintenanceTitle(event.target.value)} /></TechnicalField>
-                    <TechnicalField label="Mensagem" wide><textarea rows={5} value={maintenanceMessage} onChange={(event) => setMaintenanceMessage(event.target.value)} /></TechnicalField>
-                    <button className="primary-button" onClick={() => void run("maintenance-text", saveMaintenance, "Mensagem salva.")}><Save size={16} />Salvar</button>
+                    <Save size={16} />
+                    Salvar
+                  </button>
+                </Panel>
+              </div>
+            )}
+
+            {view === "security" && (
+              <>
+                <div className="two-columns">
+                  <Panel
+                    title="Camada de segurança"
+                    kicker="ACESSO TÉCNICO"
+                    icon={<ShieldCheck />}
+                  >
+                    <StateRow name="Auth" value="Supabase Auth" tone="ok" />
+                    <StateRow
+                      name="MFA privilegiado"
+                      value="Obrigatório"
+                      tone="ok"
+                    />
+                    <StateRow
+                      name="RLS"
+                      value="Ativo nas tabelas expostas"
+                      tone="ok"
+                    />
+                    <StateRow
+                      name="Secrets"
+                      value="Somente servidor"
+                      tone="ok"
+                    />
+                    <StateRow
+                      name="Permissões T.I."
+                      value={
+                        user.permissions.filter((permission) =>
+                          permission.startsWith("ti."),
+                        ).length + " concedidas"
+                      }
+                      tone="ok"
+                    />
+                  </Panel>
+                  <Panel
+                    title="Pendências conhecidas"
+                    kicker="HARDENING"
+                    icon={<AlertTriangle />}
+                  >
+                    <Notice tone="warn">
+                      Leaked Password Protection segue desativada no Supabase
+                      Auth.
+                    </Notice>
+                    <Notice tone="warn">
+                      A extensão pg_net permanece no schema public porque o push
+                      atual depende dela.
+                    </Notice>
                   </Panel>
                 </div>
-              )}
-
-              {view === "security" && (
-                <>
-                  <div className="two-columns">
-                    <Panel title="Camada de segurança" kicker="ACESSO TÉCNICO" icon={<ShieldCheck />}>
-                      <StateRow name="Auth" value="Supabase Auth" tone="ok" />
-                      <StateRow name="MFA privilegiado" value="Obrigatório" tone="ok" />
-                      <StateRow name="RLS" value="Ativo nas tabelas expostas" tone="ok" />
-                      <StateRow name="Secrets" value="Somente servidor" tone="ok" />
-                      <StateRow name="Permissões T.I." value={user.permissions.filter((permission) => permission.startsWith("ti.")).length + " concedidas"} tone="ok" />
-                    </Panel>
-                    <Panel title="Pendências conhecidas" kicker="HARDENING" icon={<AlertTriangle />}>
-                      <Notice tone="warn">Leaked Password Protection segue desativada no Supabase Auth.</Notice>
-                      <Notice tone="warn">A extensão pg_net permanece no schema public porque o push atual depende dela.</Notice>
-                    </Panel>
+                <Panel
+                  title="Minhas permissões"
+                  kicker="RBAC"
+                  icon={<KeyRound />}
+                >
+                  <div className="permission-cloud">
+                    {user.permissions.map((permission) => (
+                      <code key={permission}>{permission}</code>
+                    ))}
                   </div>
-                  <Panel title="Minhas permissões" kicker="RBAC" icon={<KeyRound />}>
-                    <div className="permission-cloud">
-                      {user.permissions.map((permission) => <code key={permission}>{permission}</code>)}
-                    </div>
-                  </Panel>
-                </>
-              )}
+                </Panel>
+              </>
+            )}
 
-              {view === "support" && (
-                <>
-                  <div className="support-summary">
-                    <Stat
-                      title="Abertos"
-                      value={supportTickets.filter((ticket) => ticket.status === "open").length}
-                      detail="aguardando triagem"
-                    />
-                    <Stat
-                      title="Em andamento"
-                      value={supportTickets.filter((ticket) => ticket.status === "in_progress").length}
-                      detail="em atendimento"
-                    />
-                    <Stat
-                      title="Resolvidos"
-                      value={supportTickets.filter((ticket) => ticket.status === "resolved").length}
-                      detail="solucionados"
-                    />
-                    <Stat
-                      title="Total"
-                      value={supportTickets.length}
-                      detail="chamados carregados"
-                    />
-                  </div>
-                  <Panel title="Fila de chamados T.I." kicker="SUPORTE INTERNO" icon={<Wrench />}>
-                    {supportTickets.length === 0 ? (
-                      <Empty text="Nenhum chamado de T.I. registrado." />
-                    ) : (
-                      <div className="ticket-list">
-                        {supportTickets.map((ticket) => {
-                          const owner = profiles.find((profile) => profile.id === ticket.user_id);
-                          return (
-                            <article className="ticket-card" key={ticket.id}>
-                              <div className="ticket-card-head">
-                                <div>
-                                  <span className="eyebrow">{ticket.category.toUpperCase()}</span>
-                                  <h3>{ticket.subject}</h3>
-                                  <small>
-                                    {owner?.full_name || ticket.user_id} · {formatDate(ticket.created_at)}
-                                  </small>
-                                </div>
-                                <select
-                                  aria-label={"Status do chamado " + ticket.subject}
-                                  value={ticket.status}
-                                  onChange={(event) =>
+            {view === "support" && (
+              <>
+                <div className="support-summary">
+                  <Stat
+                    title="Abertos"
+                    value={
+                      supportTickets.filter(
+                        (ticket) => ticket.status === "open",
+                      ).length
+                    }
+                    detail="aguardando triagem"
+                  />
+                  <Stat
+                    title="Em andamento"
+                    value={
+                      supportTickets.filter(
+                        (ticket) => ticket.status === "in_progress",
+                      ).length
+                    }
+                    detail="em atendimento"
+                  />
+                  <Stat
+                    title="Resolvidos"
+                    value={
+                      supportTickets.filter(
+                        (ticket) => ticket.status === "resolved",
+                      ).length
+                    }
+                    detail="solucionados"
+                  />
+                  <Stat
+                    title="Total"
+                    value={supportTickets.length}
+                    detail="chamados carregados"
+                  />
+                </div>
+                <Panel
+                  title="Fila de chamados T.I."
+                  kicker="SUPORTE INTERNO"
+                  icon={<Wrench />}
+                >
+                  {supportTickets.length === 0 ? (
+                    <Empty text="Nenhum chamado de T.I. registrado." />
+                  ) : (
+                    <div className="ticket-list">
+                      {supportTickets.map((ticket) => {
+                        const owner = profiles.find(
+                          (profile) => profile.id === ticket.user_id,
+                        );
+                        return (
+                          <article className="ticket-card" key={ticket.id}>
+                            <div className="ticket-card-head">
+                              <div>
+                                <span className="eyebrow">
+                                  {ticket.category.toUpperCase()}
+                                </span>
+                                <h3>{ticket.subject}</h3>
+                                <small>
+                                  {owner?.full_name || ticket.user_id} ·{" "}
+                                  {formatDate(ticket.created_at)}
+                                </small>
+                              </div>
+                              <select
+                                aria-label={
+                                  "Status do chamado " + ticket.subject
+                                }
+                                value={ticket.status}
+                                onChange={(event) =>
+                                  void run(
+                                    "ticket-" + ticket.id,
+                                    () =>
+                                      updateSupportTicketStatus(
+                                        ticket.id,
+                                        event.target
+                                          .value as SupportTicket["status"],
+                                      ),
+                                    "Chamado atualizado.",
+                                  )
+                                }
+                              >
+                                <option value="open">Aberto</option>
+                                <option value="in_progress">
+                                  Em andamento
+                                </option>
+                                <option value="resolved">Resolvido</option>
+                                <option value="closed">Fechado</option>
+                              </select>
+                            </div>
+                            <p>{ticket.description}</p>
+                            <div className="ticket-meta">
+                              <code>{ticket.page_path || "/"}</code>
+                              <span>
+                                {ticket.page_title || "Página não informada"}
+                              </span>
+                              {ticket.attachment_path && (
+                                <button
+                                  onClick={() =>
                                     void run(
-                                      "ticket-" + ticket.id,
-                                      () =>
-                                        updateSupportTicketStatus(
-                                          ticket.id,
-                                          event.target.value as SupportTicket["status"],
-                                        ),
-                                      "Chamado atualizado.",
+                                      "ticket-attachment-" + ticket.id,
+                                      () => openSupportAttachment(ticket),
                                     )
                                   }
                                 >
-                                  <option value="open">Aberto</option>
-                                  <option value="in_progress">Em andamento</option>
-                                  <option value="resolved">Resolvido</option>
-                                  <option value="closed">Fechado</option>
-                                </select>
-                              </div>
-                              <p>{ticket.description}</p>
-                              <div className="ticket-meta">
-                                <code>{ticket.page_path || "/"}</code>
-                                <span>{ticket.page_title || "Página não informada"}</span>
-                                {ticket.attachment_path && (
-                                  <button
-                                    onClick={() =>
-                                      void run(
-                                        "ticket-attachment-" + ticket.id,
-                                        () => openSupportAttachment(ticket),
-                                      )
-                                    }
-                                  >
-                                    <FolderOpen size={14} /> Abrir anexo
-                                  </button>
-                                )}
-                              </div>
-                              <details>
-                                <summary>Contexto técnico</summary>
-                                <CodeSurface label="Contexto técnico do chamado" value={ticket.technical_context || {}} compact />
-                              </details>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </Panel>
-                </>
-              )}
+                                  <FolderOpen size={14} /> Abrir anexo
+                                </button>
+                              )}
+                            </div>
+                            <details>
+                              <summary>Contexto técnico</summary>
+                              <CodeSurface
+                                label="Contexto técnico do chamado"
+                                value={ticket.technical_context || {}}
+                                compact
+                              />
+                            </details>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Panel>
+              </>
+            )}
 
-              {view === "logs" && (
-                <>
-                  <Panel title="Atividades do site" kicker="QUEM FEZ, QUANDO E O QUE MUDOU" icon={<Activity />}>
-                    <p className="activity-intro">Os registros explicam as ações e mostram se elas foram concluídas.</p>
-                    <AuditList rows={audit} names={auditNames} full />
-                  </Panel>
-                  <Panel title="Conexão com Datasul" kicker="CONSULTAS E ALTERAÇÕES" icon={<FileClock />}><DatasulHistory rows={datasulOps} /></Panel>
-                </>
-              )}
-            </>
-          )}
-        </div>
+            {view === "logs" && (
+              <>
+                <Panel
+                  title="Atividades do site"
+                  kicker="QUEM FEZ, QUANDO E O QUE MUDOU"
+                  icon={<Activity />}
+                >
+                  <p className="activity-intro">
+                    Os registros explicam as ações e mostram se elas foram
+                    concluídas.
+                  </p>
+                  <AuditList rows={audit} names={auditNames} full />
+                </Panel>
+                <Panel
+                  title="Histórico anterior do Datasul"
+                  kicker="CONSULTAS E ALTERAÇÕES"
+                  icon={<FileClock />}
+                >
+                  <DatasulHistory rows={datasulOps} />
+                </Panel>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </TiShell>
   );
 }
@@ -1919,7 +2552,14 @@ function AuditList({
         return (
           <li className="activity-item" key={row.id}>
             <div className="activity-topline">
-              <span className={row.success ? "badge badge-completed ok" : "badge badge-rejected error"} data-success={row.success}>
+              <span
+                className={
+                  row.success
+                    ? "badge badge-completed ok"
+                    : "badge badge-rejected error"
+                }
+                data-success={row.success}
+              >
                 {activity.result}
               </span>
               <time dateTime={row.created_at}>
@@ -1962,7 +2602,14 @@ function DatasulHistory({ rows }: { rows: DatasulOperation[] }) {
         return (
           <li className="activity-item" key={row.id}>
             <div className="activity-topline">
-              <span className={row.success ? "badge badge-completed ok" : "badge badge-rejected error"} data-success={row.success}>
+              <span
+                className={
+                  row.success
+                    ? "badge badge-completed ok"
+                    : "badge badge-rejected error"
+                }
+                data-success={row.success}
+              >
                 {activity.result}
               </span>
               <time dateTime={row.created_at}>
