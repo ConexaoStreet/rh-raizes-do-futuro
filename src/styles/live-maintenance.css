@@ -124,6 +124,9 @@
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: var(--rh-surface-raised);
 }
 .live-update h3 {
   margin: 10px 0;

@@ -218,10 +218,15 @@ test("login and activation stay readable across mobile widths and themes", async
         ),
       )
       .toBe(true);
-    if (width === 1440)
+    if (width === 1440 || width === 390)
       await page.screenshot({
-        path: test.info().outputPath("login-desktop.png"),
+        path: test
+          .info()
+          .outputPath(
+            width === 1440 ? "login-desktop.png" : "login-mobile.png",
+          ),
         fullPage: true,
+        animations: "disabled",
       });
     await page
       .getByRole("button", { name: "Ativar cadastro", exact: true })
@@ -229,6 +234,12 @@ test("login and activation stay readable across mobile widths and themes", async
     await expect(
       page.getByRole("heading", { name: "Ative seu acesso" }),
     ).toBeVisible();
+    if (width === 390)
+      await page.screenshot({
+        path: test.info().outputPath("activation-mobile.png"),
+        fullPage: true,
+        animations: "disabled",
+      });
     await expect
       .poll(() =>
         page.evaluate(
@@ -252,6 +263,7 @@ test("dashboard gives page context and a keyboard search shortcut", async ({
   await page.screenshot({
     path: test.info().outputPath("dashboard-light.png"),
     fullPage: true,
+    animations: "disabled",
   });
   await page.keyboard.press("Control+k");
   await expect(
@@ -260,6 +272,13 @@ test("dashboard gives page context and a keyboard search shortcut", async ({
   await expect(page.getByRole("textbox", { name: "Pesquisar" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.screenshot({
+    path: test.info().outputPath("dashboard-dark.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
 });
 
 test("login keeps brand and form aligned on tablets and desktops", async ({
