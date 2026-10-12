@@ -1,0 +1,218 @@
+:root {
+  --evo-forest: #153e31;
+  --evo-accent: #d3ec97;
+  --color-brand-primary: var(--evo-forest);
+  --color-brand-accent: var(--evo-accent);
+  --radius-card: 16px;
+}
+.page-heading h1 {
+  letter-spacing: -0.045em;
+}
+.panel {
+  border-radius: 16px;
+  box-shadow: 0 3px 16px #17362b03;
+}
+.page-content {
+  max-width: 1560px;
+  margin-inline: auto;
+  width: 100%;
+}
+.sidebar {
+  background: #12382b;
+  color: #edf5ef;
+  border-right: 0;
+}
+.sidebar .brand {
+  color: #f6f8f5;
+}
+.sidebar .brand-logo-mark,
+.workspace-icon img {
+  filter: brightness(0) invert(1);
+}
+.sidebar .brand small,
+.sidebar .nav-label {
+  color: #b0c6b6;
+}
+.sidebar nav a {
+  color: #cddfd2;
+  border-radius: 9px;
+}
+.sidebar nav a:hover {
+  background: #ffffff0c;
+  color: #fff;
+}
+.sidebar nav a.active {
+  background: var(--evo-accent);
+  color: #153e31;
+  box-shadow: none;
+}
+.sidebar a:focus-visible {
+  outline-color: var(--evo-accent);
+}
+.workspace-copy small {
+  white-space: normal;
+}
+.workspace-label {
+  border-color: #ffffff1c;
+  background: #ffffff08;
+  border-radius: 12px;
+}
+.topbar {
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-context > span {
+  font-size: 0.67rem;
+  letter-spacing: 0.06em;
+}
+.topbar-context > strong {
+  font-size: 0.85rem;
+}
+.search-trigger kbd {
+  margin-left: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+.raizes-hero {
+  position: relative;
+  display: block;
+  min-height: 206px;
+  padding: clamp(26px, 3vw, 38px);
+  border: 0;
+  border-radius: 20px;
+  background: var(--evo-forest);
+  box-shadow: none;
+}
+.raizes-hero-copy {
+  position: relative;
+  z-index: 2;
+}
+.raizes-hero .eyebrow {
+  color: var(--evo-accent);
+  letter-spacing: 0.16em;
+  font-size: 0.62rem;
+}
+.raizes-hero h2 {
+  color: #f6f8f5;
+  margin: 12px 0 8px;
+  font-size: clamp(1.8rem, 2.8vw, 3rem);
+  letter-spacing: -0.05em;
+}
+.raizes-hero p {
+  color: #c4d5c9;
+  font-size: 0.94rem;
+  margin: 0;
+  max-width: 42ch;
+}
+.hero-date {
+  display: block;
+  margin-top: 24px;
+  color: #bfd1c4;
+  font-size: 0.76rem;
+  text-transform: capitalize;
+}
+.raizes-hero-logo {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: 24px;
+  bottom: -48px;
+  opacity: 0.08;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
+}
+.executive-metrics {
+  gap: 14px;
+}
+.stat {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  padding: 22px;
+}
+.stat > strong {
+  letter-spacing: -0.055em;
+  font-variant-numeric: tabular-nums;
+}
+.stat-primary {
+  background: #153e31;
+  color: #f6f8f5;
+  border-color: #153e31;
+}
+.stat-primary .stat-label,
+.stat-primary .stat-detail {
+  color: #c4d5c9;
+}
+.stat-primary .stat-label svg {
+  color: #d3ec97;
+}
+.stat-attention {
+  border-top: 3px solid #bf8e54;
+}
+.dashboard-priority-band {
+  border-radius: 14px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--line);
+}
+.dashboard-action-panel .pending-row {
+  border-radius: 9px;
+}
+.dashboard-action-panel .pending-row:hover {
+  background: #ffffff0b;
+}
+.dashboard-bottom .empty {
+  min-height: 160px;
+}
+html[data-theme="dark"] .stat-primary {
+  background: #153e31;
+  color: #f6f8f5;
+}
+html[data-theme="dark"] .stat-primary .stat-label,
+html[data-theme="dark"] .stat-primary .stat-detail {
+  color: #c4d5c9;
+}
+html[data-theme="dark"] .dashboard-priority-band {
+  background: #132b20;
+}
+@media (max-width: 900px) {
+  .stat {
+    padding: 18px;
+  }
+  .search-trigger kbd {
+    display: none;
+  }
+}
+@media (max-width: 560px) {
+  .page-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .page-heading .actions {
+    flex-wrap: wrap;
+  }
+  .raizes-hero {
+    min-height: 184px;
+    padding: 24px;
+  }
+  .raizes-hero h2 {
+    max-width: 16ch;
+  }
+  .raizes-hero-logo {
+    width: 150px;
+    height: 150px;
+    right: -30px;
+    bottom: -40px;
+  }
+  .stat {
+    padding: 16px;
+  }
+  .executive-metrics {
+    gap: 10px;
+  }
+  .dashboard-priority-band {
+    padding: 18px;
+  }
+}

@@ -31,8 +31,11 @@ import { shouldRefreshExpiredJwt } from "./auth-errors";
 import { ThemeToggle } from "./theme";
 import { LoginMascot, type MascotMood } from "./LoginMascot";
 import { PASSWORD_POLICY_MESSAGE, strongPassword } from "./password-policy";
-import DeveloperAvailabilityNotice from "./DeveloperAvailabilityNotice";
+import { validEmailAddress } from "../shared/email-address";
 import type { Row } from "./database.types";
+import { Link } from "react-router-dom";
+import { useSiteStatus } from "./site-status";
+import MaintenanceNotice from "./MaintenanceNotice";
 export type Bootstrap = {
   profile: Row<"profiles">;
   roles: string[];
@@ -44,7 +47,13 @@ export type Bootstrap = {
   ready: boolean;
   server_time: string;
   employee_id: string | null;
-  maintenance: { enabled?: boolean; allow_managers?: boolean; title?: string; message?: string; started_at?: string | null };
+  maintenance: {
+    enabled?: boolean;
+    allow_managers?: boolean;
+    title?: string;
+    message?: string;
+    started_at?: string | null;
+  };
 };
 const AuthContext = createContext<{
   user: Bootstrap;
@@ -58,6 +67,7 @@ export function useAuth() {
   return value;
 }
 export function AuthBoundary({ children }: { children: ReactNode }) {
+  const siteStatus = useSiteStatus();
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(configured);
@@ -132,7 +142,15 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         <Loading />
       </div>
     );
-  if (!session) return <Login configured={configured} />;
+  if (!session)
+    return (
+      <>
+        {siteStatus.data && (
+          <MaintenanceNotice maintenance={siteStatus.data.maintenance} />
+        )}
+        <Login configured={configured} />
+      </>
+    );
   if (failed)
     return (
       <AuthFrame>
@@ -177,7 +195,13 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
       <AuthFrame>
         <ShieldCheck size={36} />
         <h1>{user.maintenance.title || "Sistema em manutenção"}</h1>
-        <p>{user.maintenance.message || "Estamos realizando ajustes no sistema. O acesso será liberado novamente assim que a manutenção for concluída."}</p>
+        <p>
+          {user.maintenance.message ||
+            "Estamos realizando ajustes no sistema. O acesso será liberado novamente assim que a manutenção for concluída."}
+        </p>
+        <Link className="button primary" to="/ao-vivo">
+          Acompanhar ao vivo
+        </Link>
         <button onClick={() => void client().auth.signOut()}>Sair</button>
       </AuthFrame>
     );
@@ -186,7 +210,10 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
       <AuthFrame>
         <ShieldCheck size={36} />
         <h1>Acesso ainda não concluído</h1>
-        <p>Seu cadastro está ativo, mas ainda existe uma etapa de acesso pendente. Entre novamente ou conclua o primeiro acesso.</p>
+        <p>
+          Seu cadastro está ativo, mas ainda existe uma etapa de acesso
+          pendente. Entre novamente ou conclua o primeiro acesso.
+        </p>
         <button onClick={() => void client().auth.signOut()}>Sair</button>
       </AuthFrame>
     );
@@ -206,13 +233,19 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
 function AuthFrame({ children }: { children: ReactNode }) {
   return (
     <div className="auth-page">
-      <div className="auth-theme-control"><ThemeToggle compact /></div>
+      <div className="auth-theme-control">
+        <ThemeToggle compact />
+      </div>
       <aside className="auth-brand">
         <Brand />
         <div className="auth-wordmark" aria-label="Raízes do Futuro">
-          <span className="auth-wordmark-line auth-wordmark-line-1">Raízes</span>
+          <span className="auth-wordmark-line auth-wordmark-line-1">
+            Raízes
+          </span>
           <span className="auth-wordmark-line auth-wordmark-line-2">do</span>
-          <span className="auth-wordmark-line auth-wordmark-line-3">Futuro</span>
+          <span className="auth-wordmark-line auth-wordmark-line-3">
+            Futuro
+          </span>
         </div>
         <div className="auth-signature">RH · ANHANGUERA / ESPRO</div>
       </aside>
@@ -278,7 +311,9 @@ function useRegistrationOptions(enabled = true) {
     if (!configured || !enabled || options) return;
     let active = true;
     void client()
-      .functions.invoke("registration-bootstrap", { body: { action: "options" } })
+      .functions.invoke("registration-bootstrap", {
+        body: { action: "options" },
+      })
       .then(({ data, error }) => {
         if (error) throw error;
         if (active) setOptions(data as RegistrationOptions);
@@ -344,7 +379,9 @@ function usePreRegistrationMatch(name: string) {
 }
 
 function Login({ configured: ready }: { configured: boolean }) {
-  const [mode, setMode] = useState<"login" | "signup" | "recover" | "manager">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "recover" | "manager">(
+    "login",
+  );
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
@@ -360,23 +397,27 @@ function Login({ configured: ready }: { configured: boolean }) {
   });
   const [mascotMood, setMascotMood] = useState<MascotMood>("idle");
   const options = useRegistrationOptions(mode === "signup");
-  const nameMatch = usePreRegistrationMatch(mode === "signup" ? signupName : "");
+  const nameMatch = usePreRegistrationMatch(
+    mode === "signup" ? signupName : "",
+  );
   const normalizedRegistrationQuery = registrationQuery
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("pt-BR")
     .trim();
-  const visibleRegistrations = (options?.registrations || []).filter((candidate) => {
-    if (!normalizedRegistrationQuery) return true;
-    const normalizedCandidate = candidate
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("pt-BR");
-    return normalizedRegistrationQuery
-      .split(/\s+/)
-      .filter(Boolean)
-      .every((term) => normalizedCandidate.includes(term));
-  });
+  const visibleRegistrations = (options?.registrations || []).filter(
+    (candidate) => {
+      if (!normalizedRegistrationQuery) return true;
+      const normalizedCandidate = candidate
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase("pt-BR");
+      return normalizedRegistrationQuery
+        .split(/\s+/)
+        .filter(Boolean)
+        .every((term) => normalizedCandidate.includes(term));
+    },
+  );
 
   function changeMode(next: "login" | "signup" | "recover") {
     if (next === "signup") void import("./registration.css");
@@ -392,7 +433,7 @@ function Login({ configured: ready }: { configured: boolean }) {
       password: "",
       confirmation: "",
       departmentId: "",
-      });
+    });
     setMode(next);
   }
 
@@ -408,8 +449,8 @@ function Login({ configured: ready }: { configured: boolean }) {
 
   function continueSignupCredentials() {
     const email = signupDraft.email.trim().toLowerCase();
-    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-      toast.error("Use um endereço @gmail.com válido.");
+    if (!validEmailAddress(email)) {
+      toast.error("Informe um endereço de e-mail válido.");
       setMascotMood("error");
       return;
     }
@@ -470,7 +511,10 @@ function Login({ configured: ready }: { configured: boolean }) {
       const redirect = new URL(import.meta.env.BASE_URL, location.origin).href;
 
       if (mode === "login") {
-        const { error } = await client().auth.signInWithPassword({ email, password });
+        const { error } = await client().auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) {
           if (/email not confirmed/i.test(error.message)) {
             setVerificationEmail(email);
@@ -489,8 +533,8 @@ function Login({ configured: ready }: { configured: boolean }) {
         const phone = signupDraft.phone.trim();
         const departmentId = signupDraft.departmentId.trim();
 
-        if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-          toast.error("Use um endereço @gmail.com válido.");
+        if (!validEmailAddress(email)) {
+          toast.error("Informe um endereço de e-mail válido.");
           setMascotMood("error");
           return;
         }
@@ -590,40 +634,78 @@ function Login({ configured: ready }: { configured: boolean }) {
         : "Use seu e-mail e senha para acessar o ambiente de gestão de RH.";
 
   return (
-    <div className={`login-page ${mode === "signup" ? "login-page-signup" : ""}`}>
+    <div
+      className={`login-page ${mode === "signup" ? "login-page-signup" : ""}`}
+    >
       <div className="login-theme-control">
         <ThemeToggle compact />
       </div>
 
       <section className="login-brand">
         <Brand />
+        <img
+          className="login-brand-symbol"
+          src="/brand/raizes-logo-mark.png"
+          alt=""
+          aria-hidden="true"
+          width={320}
+          height={320}
+        />
         <div className="login-brand-copy">
-          <span>RAÍZES DO FUTURO · GESTÃO DE PESSOAS</span>
-          <h1>Gestão de RH.</h1>
+          <span>PESSOAS. APRENDIZADO. POSSIBILIDADES.</span>
+          <h1>
+            Seu futuro começa com <em>raízes.</em>
+          </h1>
           <p>
-            Presença, desenvolvimento, feedbacks, avaliações e acompanhamento
-            da turma em um ambiente único.
+            Um espaço para acompanhar sua presença, seu desenvolvimento e os
+            próximos passos da sua jornada.
           </p>
+          <div className="login-pillars" aria-label="Pilares do Raízes">
+            <div>
+              <span>01</span>
+              <strong>Presença</strong>
+            </div>
+            <div>
+              <span>02</span>
+              <strong>Desenvolvimento</strong>
+            </div>
+            <div>
+              <span>03</span>
+              <strong>Conexões</strong>
+            </div>
+          </div>
         </div>
-        <div className="login-brand-foot">RH · ANHANGUERA / ESPRO</div>
+        <div className="login-brand-foot">
+          <span>RH · ANHANGUERA / ESPRO</span>
+          <Link to="/ao-vivo">
+            Acompanhar as melhorias <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
       </section>
 
       <section className="login-panel">
-        <div className={`login-stage ${mode === "signup" ? "login-stage-signup" : ""}`}>
+        <div
+          className={`login-stage ${mode === "signup" ? "login-stage-signup" : ""}`}
+        >
           <LoginMascot
             mood={mascotMood}
             placement="login"
             scopeSelector=".login-stage"
           />
 
-          <div className={`login-card ${mode === "signup" ? "login-card-wide" : ""}`}>
-            <DeveloperAvailabilityNotice />
+          <div
+            className={`login-card ${mode === "signup" ? "login-card-wide" : ""}`}
+          >
             <span className="eyebrow">{eyebrow}</span>
-            <h2>{heading}</h2>
+            <h2>{mode === "login" ? "Bom ter você aqui." : heading}</h2>
             <p>{description}</p>
 
             {mode !== "recover" && (
-              <div className="login-mode-switch" role="group" aria-label="Forma de acesso">
+              <div
+                className="login-mode-switch"
+                role="group"
+                aria-label="Forma de acesso"
+              >
                 <button
                   type="button"
                   aria-pressed={mode === "login"}
@@ -654,14 +736,22 @@ function Login({ configured: ready }: { configured: boolean }) {
                 <div className="notice">
                   {mode === "recover"
                     ? "Confira seu e-mail para redefinir a senha."
-                    : "Confira seu Gmail e abra o link de verificação. Depois entre com seu e-mail e senha."}
+                    : "Confira seu e-mail e abra o link de verificação. Depois entre com seu e-mail e senha."}
                 </div>
                 {verificationEmail && mode !== "recover" && (
-                  <button type="button" disabled={busy} onClick={() => void resendVerification()}>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void resendVerification()}
+                  >
                     Reenviar verificação
                   </button>
                 )}
-                <button type="button" className="text-button" onClick={() => changeMode("login")}>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => changeMode("login")}
+                >
                   Voltar ao login
                 </button>
               </div>
@@ -672,10 +762,18 @@ function Login({ configured: ready }: { configured: boolean }) {
                 aria-label={`Etapa ${signupStep} de 3 do primeiro acesso`}
               >
                 <div className="steps" aria-label="Etapas do primeiro acesso">
-                  <span className={signupStep === 1 ? "active" : signupStep > 1 ? "done" : ""}>
+                  <span
+                    className={
+                      signupStep === 1 ? "active" : signupStep > 1 ? "done" : ""
+                    }
+                  >
                     1. Identidade
                   </span>
-                  <span className={signupStep === 2 ? "active" : signupStep > 2 ? "done" : ""}>
+                  <span
+                    className={
+                      signupStep === 2 ? "active" : signupStep > 2 ? "done" : ""
+                    }
+                  >
                     2. Acesso
                   </span>
                   <span className={signupStep === 3 ? "active" : ""}>
@@ -695,7 +793,8 @@ function Login({ configured: ready }: { configured: boolean }) {
                             value={registrationQuery}
                             onChange={(event) => {
                               setRegistrationQuery(event.target.value);
-                              if (event.target.value !== signupName) setSignupName("");
+                              if (event.target.value !== signupName)
+                                setSignupName("");
                             }}
                             placeholder="Pesquise seu nome"
                             autoFocus
@@ -708,7 +807,9 @@ function Login({ configured: ready }: { configured: boolean }) {
                           <CheckCircle2 size={18} aria-hidden="true" />
                           <div className="registration-selected-copy">
                             <span>Cadastro selecionado</span>
-                            <strong>{nameMatch.result.canonical_name || signupName}</strong>
+                            <strong>
+                              {nameMatch.result.canonical_name || signupName}
+                            </strong>
                           </div>
                           <button
                             type="button"
@@ -725,7 +826,9 @@ function Login({ configured: ready }: { configured: boolean }) {
                         <div className="registration-directory">
                           <div className="registration-directory-head">
                             <strong>Selecione seu nome</strong>
-                            <span>{visibleRegistrations.length} disponível(is)</span>
+                            <span>
+                              {visibleRegistrations.length} disponível(is)
+                            </span>
                           </div>
 
                           {!options ? (
@@ -785,15 +888,16 @@ function Login({ configured: ready }: { configured: boolean }) {
                 {signupStep === 2 && (
                   <>
                     <span className="muted">
-                      Confirme seus contatos e crie uma senha exclusiva para o RH.
+                      Confirme seus contatos e crie uma senha exclusiva para o
+                      RH.
                     </span>
-                    <Field label="Gmail">
+                    <Field label="E-mail">
                       <input
                         name="email"
                         type="email"
                         autoComplete="email"
                         inputMode="email"
-                        placeholder="seunome@gmail.com"
+                        placeholder="seu@email.com"
                         value={signupDraft.email}
                         onChange={(event) =>
                           setSignupDraft((current) => ({
@@ -867,7 +971,8 @@ function Login({ configured: ready }: { configured: boolean }) {
                 {signupStep === 3 && (
                   <>
                     <span className="muted">
-                      Confirme como seu cadastro deve ser vinculado à organização.
+                      Confirme como seu cadastro deve ser vinculado à
+                      organização.
                     </span>
                     <Field label="Turma">
                       <input
@@ -897,10 +1002,16 @@ function Login({ configured: ready }: { configured: boolean }) {
                       </select>
                     </Field>
                     <span className="muted">
-                      Seu cargo será aplicado automaticamente conforme o cadastro-base do RH.
+                      {
+                        "Seu cargo será aplicado automaticamente conforme o cadastro-base do RH."
+                      }
                     </span>
                     <div className="actions">
-                      <button type="button" disabled={busy} onClick={() => setSignupStep(2)}>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setSignupStep(2)}
+                      >
                         Voltar
                       </button>
                       <button
@@ -913,7 +1024,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                           !signupDraft.departmentId
                         }
                       >
-                        {busy ? "Aguarde..." : "Verificar Gmail e ativar"}
+                        {busy ? "Aguarde..." : "Verificar e-mail e ativar"}
                         <ArrowRight size={18} />
                       </button>
                     </div>
@@ -935,7 +1046,10 @@ function Login({ configured: ready }: { configured: boolean }) {
 
                 {mode !== "recover" && (
                   <Field label="Senha">
-                    <PasswordInput minLength={1} autoComplete="current-password" />
+                    <PasswordInput
+                      minLength={1}
+                      autoComplete="current-password"
+                    />
                   </Field>
                 )}
 
@@ -949,8 +1063,15 @@ function Login({ configured: ready }: { configured: boolean }) {
                   </button>
                 )}
 
-                <button className="primary large login-submit" disabled={busy || !ready}>
-                  {mode === "login" ? <KeyRound size={18} /> : <ArrowRight size={18} />}
+                <button
+                  className="primary large login-submit"
+                  disabled={busy || !ready}
+                >
+                  {mode === "login" ? (
+                    <KeyRound size={18} />
+                  ) : (
+                    <ArrowRight size={18} />
+                  )}
                   {busy
                     ? "Aguarde..."
                     : mode === "recover"
@@ -969,7 +1090,6 @@ function Login({ configured: ready }: { configured: boolean }) {
                 )}
               </form>
             )}
-
           </div>
         </div>
       </section>
@@ -995,8 +1115,8 @@ function ManagerActivation({
     const email = String(form.get("manager_email")).trim().toLowerCase();
     const password = String(form.get("manager_password"));
     const confirmation = String(form.get("manager_confirmation"));
-    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-      toast.error("Informe um endereço @gmail.com válido.");
+    if (!validEmailAddress(email)) {
+      toast.error("Informe um endereço de e-mail válido.");
       return;
     }
     if (!strongPassword(password)) {
@@ -1009,14 +1129,17 @@ function ManagerActivation({
     }
     setBusy(true);
     try {
-      const { data, error } = await client().functions.invoke("manager-activation", {
-        body: {
-          activation_code: activationCode,
-          email,
-          password,
-          terms: form.get("terms") === "on",
+      const { data, error } = await client().functions.invoke(
+        "manager-activation",
+        {
+          body: {
+            activation_code: activationCode,
+            email,
+            password,
+            terms: form.get("terms") === "on",
+          },
         },
-      });
+      );
       if (error) {
         let message = "Não foi possível ativar o acesso de gestor.";
         if ("context" in error && error.context instanceof Response) {
@@ -1026,13 +1149,15 @@ function ManagerActivation({
           if (detail?.error === "INVALID_ACTIVATION")
             message = "Código de ativação inválido, expirado ou já utilizado.";
           if (detail?.error === "ACTIVATION_IN_PROGRESS")
-            message = "Esta ativação já está em andamento. Tente novamente em instantes.";
-          if (detail?.error === "GMAIL_REQUIRED")
-            message = "Informe um endereço @gmail.com válido.";
+            message =
+              "Esta ativação já está em andamento. Tente novamente em instantes.";
+          if (detail?.error === "INVALID_EMAIL")
+            message = "Informe um endereço de e-mail válido.";
           if (detail?.error === "WEAK_PASSWORD")
-            message = "A senha precisa ter 12 caracteres, maiúscula, minúscula, número e símbolo.";
+            message =
+              "A senha precisa ter 12 caracteres, maiúscula, minúscula, número e símbolo.";
           if (detail?.error === "EMAIL_UNAVAILABLE")
-            message = "Este Gmail já está vinculado a outra conta.";
+            message = "Este e-mail já está vinculado a outra conta.";
           if (detail?.error === "TERMS_REQUIRED")
             message = "É necessário aceitar o uso dos dados para concluir.";
         }
@@ -1075,8 +1200,8 @@ function ManagerActivation({
           <div className="eyebrow">ACESSO DE GESTOR ATIVADO</div>
           <h1>Proteção em duas etapas</h1>
           <p>
-            Conta vinculada a <strong>{activatedEmail}</strong>. Preparando o envio do
-            código de segurança para concluir o primeiro acesso.
+            Conta vinculada a <strong>{activatedEmail}</strong>. Preparando o
+            envio do código de segurança para concluir o primeiro acesso.
           </p>
           <div className="manager-loading-line" />
         </div>
@@ -1095,8 +1220,9 @@ function ManagerActivation({
           <div className="eyebrow">ACESSO EXCLUSIVO DE GESTOR</div>
           <h1>Ative seu acesso de gestão</h1>
           <p>
-            Este fluxo é de uso único. Depois da ativação, seu Gmail e sua nova
-            senha serão usados no login normal, sempre com verificação em duas etapas.
+            Este fluxo é de uso único. Depois da ativação, seu e-mail e sua nova
+            senha serão usados no login normal, sempre com verificação em duas
+            etapas.
           </p>
         </div>
       </div>
@@ -1109,7 +1235,8 @@ function ManagerActivation({
 
       {!ready && (
         <div className="notice">
-          A ativação está temporariamente indisponível. Aguarde a liberação do sistema.
+          A ativação está temporariamente indisponível. Aguarde a liberação do
+          sistema.
         </div>
       )}
 
@@ -1131,7 +1258,9 @@ function ManagerActivation({
               <input
                 name="activation_code"
                 value={activationCode}
-                onChange={(event) => setActivationCode(event.target.value.toUpperCase())}
+                onChange={(event) =>
+                  setActivationCode(event.target.value.toUpperCase())
+                }
                 autoComplete="one-time-code"
                 minLength={10}
                 required
@@ -1142,7 +1271,8 @@ function ManagerActivation({
             </div>
           </Field>
           <div className="manager-security-note">
-            Use o código temporário recebido. Ele funciona uma única vez e expira automaticamente.
+            Use o código temporário recebido. Ele funciona uma única vez e
+            expira automaticamente.
           </div>
           <button className="primary large" disabled={!ready}>
             Continuar <ArrowRight size={19} />
@@ -1153,25 +1283,32 @@ function ManagerActivation({
         </form>
       ) : (
         <form className="form-stack" onSubmit={activate}>
-          <Field label="Gmail de segurança">
+          <Field label="E-mail de segurança">
             <input
               name="manager_email"
               type="email"
               inputMode="email"
               autoComplete="email"
-              placeholder="seunome@gmail.com"
+              placeholder="seu@email.com"
               required
               autoFocus
             />
           </Field>
           <div className="manager-security-note emphasized">
-            Este Gmail receberá o código de 6 dígitos da verificação em duas etapas.
+            Este e-mail receberá o código de 6 dígitos da verificação em duas
+            etapas.
           </div>
           <Field label="Crie sua nova senha">
-            <PasswordInput name="manager_password" autoComplete="new-password" />
+            <PasswordInput
+              name="manager_password"
+              autoComplete="new-password"
+            />
           </Field>
           <Field label="Confirmar nova senha">
-            <PasswordInput name="manager_confirmation" autoComplete="new-password" />
+            <PasswordInput
+              name="manager_confirmation"
+              autoComplete="new-password"
+            />
           </Field>
           <span className="muted">
             Mínimo de 12 caracteres com maiúscula, minúscula, número e símbolo.
@@ -1179,9 +1316,10 @@ function ManagerActivation({
           <details className="privacy">
             <summary>Uso dos seus dados</summary>
             <p>
-              O Gmail será usado para autenticação, recuperação de acesso e códigos de
-              segurança. Seu perfil de gestor acessa apenas os recursos autorizados pelo
-              cargo e todas as ações administrativas permanecem auditadas.
+              O e-mail será usado para autenticação, recuperação de acesso e
+              códigos de segurança. Seu perfil de gestor acessa apenas os
+              recursos autorizados pelo cargo e todas as ações administrativas
+              permanecem auditadas.
             </p>
           </details>
           <label className="check">
@@ -1248,20 +1386,27 @@ function Onboarding({
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (message.includes("PRE_REGISTRATION_NOT_FOUND"))
-        toast.error("Não encontramos esse nome entre os cadastros pré-existentes.");
+        toast.error(
+          "Não encontramos esse nome entre os cadastros pré-existentes.",
+        );
       else if (message.includes("PRE_REGISTRATION_AMBIGUOUS"))
         toast.error("Há mais de um cadastro com esse nome. Procure o RH.");
       else if (message.includes("PRE_REGISTRATION_ALREADY_LINKED"))
         toast.error("Esse cadastro já está vinculado a outra conta.");
       else if (message.includes("EMAIL_NOT_VERIFIED"))
-        toast.error("Verifique seu Gmail antes de concluir.");
+        toast.error("Verifique seu e-mail antes de concluir.");
       else if (message.includes("INVALID_DEPARTMENT"))
         toast.error("Selecione um departamento válido.");
       else if (message.includes("INVALID_PHONE"))
         toast.error("Informe um telefone válido.");
       else if (message.includes("ROLE_NOT_AUTHORIZED"))
-        toast.error("Esse cargo não está autorizado no seu cadastro pré-existente. Procure o RH para corrigir o cargo.");
-      else if (message.includes("INVALID_ROLE") || message.includes("ROLE_NOT_CONFIGURED"))
+        toast.error(
+          "Esse cargo não está autorizado no seu cadastro pré-existente. Procure o RH para corrigir o cargo.",
+        );
+      else if (
+        message.includes("INVALID_ROLE") ||
+        message.includes("ROLE_NOT_CONFIGURED")
+      )
         toast.error("Selecione um cargo válido.");
       else if (message.includes("TERMS_REQUIRED"))
         toast.error("É necessário aceitar o uso dos dados.");
@@ -1276,7 +1421,7 @@ function Onboarding({
       <div className="eyebrow">PRIMEIRO ACESSO</div>
       <h1>Confirme seus dados</h1>
       <div className="steps">
-        <span className="done">1. Gmail verificado</span>
+        <span className="done">1. E-mail verificado</span>
         <span className="active">2. Identificação</span>
         <span>3. Acesso</span>
       </div>
@@ -1297,7 +1442,8 @@ function Onboarding({
           <span className="muted">Localizando seu cadastro...</span>
         ) : nameMatch.result?.matched ? (
           <div className="notice">
-            Cadastro reconhecido: <strong>{nameMatch.result.canonical_name}</strong>
+            Cadastro reconhecido:{" "}
+            <strong>{nameMatch.result.canonical_name}</strong>
           </div>
         ) : nameMatch.result?.suggestions?.length ? (
           <div className="notice">
@@ -1324,7 +1470,7 @@ function Onboarding({
           </span>
         )}
 
-        <Field label="Gmail">
+        <Field label="E-mail">
           <input value={user.profile.email} readOnly aria-readonly="true" />
         </Field>
 
@@ -1342,7 +1488,11 @@ function Onboarding({
 
         <Field label="Turma">
           <input
-            value={options?.class?.name || user.profile.requested_class || "Turma padrão"}
+            value={
+              options?.class?.name ||
+              user.profile.requested_class ||
+              "Turma padrão"
+            }
             readOnly
             aria-readonly="true"
           />
@@ -1400,7 +1550,13 @@ function Onboarding({
     </AuthFrame>
   );
 }
-export function Verification({ onDone, onCancel }: { onDone: () => Promise<void>; onCancel?: () => void }) {
+export function Verification({
+  onDone,
+  onCancel,
+}: {
+  onDone: () => Promise<void>;
+  onCancel?: () => void;
+}) {
   const [sent, setSent] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -1411,24 +1567,43 @@ export function Verification({ onDone, onCancel }: { onDone: () => Promise<void>
     return () => clearTimeout(timer);
   }, [seconds]);
   async function invoke(body: { action: string; code?: string }) {
+    const failureMessage = (code?: string) => {
+      if (code === "PASSWORD_LOGIN_REQUIRED")
+        return "Entre novamente com e-mail e senha.";
+      if (
+        code &&
+        [
+          "INVALID_CODE",
+          "RATE_LIMITED",
+          "EMAIL_CONFIGURATION_REQUIRED",
+          "EMAIL_RATE_LIMITED",
+          "EMAIL_DELIVERY_FAILED",
+        ].includes(code)
+      )
+        return errorMessage({ code });
+      return body.action === "verify"
+        ? "Não foi possível conferir o código. Tente novamente."
+        : "Não foi possível enviar. Tente novamente.";
+    };
     const { data, error } = await client().functions.invoke("email-2fa", {
       body,
     });
     if (error) {
-      let message = "Não foi possível enviar. Tente novamente.";
+      let code: string | undefined;
       if ("context" in error && error.context instanceof Response) {
         const detail = (await error.context.json().catch(() => null)) as {
           error?: string;
         } | null;
-        if (detail?.error === "INVALID_CODE")
-          message = "Código inválido ou expirado.";
-        if (detail?.error === "RATE_LIMITED")
-          message = "Aguarde antes de tentar novamente.";
-        if (detail?.error === "PASSWORD_LOGIN_REQUIRED")
-          message = "Entre novamente com e-mail e senha.";
+        code = detail?.error;
       }
-      throw new Error(message);
+      throw new Error(failureMessage(code));
     }
+    if (
+      data?.ok !== true ||
+      (body.action === "send" &&
+        (typeof data.masked_email !== "string" || !data.masked_email.trim()))
+    )
+      throw new Error(failureMessage(data?.error));
     return data as { masked_email: string };
   }
   return (

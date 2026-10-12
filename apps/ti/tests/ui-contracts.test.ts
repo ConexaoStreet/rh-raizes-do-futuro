@@ -36,12 +36,12 @@ describe("TI redesign foundation", () => {
     expect(redesign).not.toContain("--rh-");
   });
 
-  it("keeps focus, semantic status styles, mono text and reduced motion available", () => {
+  it("keeps focus, semantic status styles, readable operator and reduced motion available", () => {
     expect(redesign).toContain(":focus-visible");
     expect(legacy).toContain(".status-badge.ok");
     expect(legacy).toContain(".status-badge.warn");
     expect(legacy).toContain(".status-badge.error");
-    expect(legacy).toContain(".mono-value");
+    expect(legacy).toContain(".operator-copy");
     expect(redesign).toContain("@media (prefers-reduced-motion: reduce)");
   });
 });

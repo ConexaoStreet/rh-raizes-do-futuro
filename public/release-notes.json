@@ -1,0 +1,10 @@
+{
+  "pack": 6,
+  "changes": [
+    "A verificação de segurança só avança quando o serviço confirma o sucesso. Respostas recusadas ou incompletas mantêm a tela de conferência aberta.",
+    "As mensagens explicam quando o envio de e-mails atingiu um limite temporário ou precisa ser configurado pelo responsável pelo site.",
+    "Os códigos de segurança agora distinguem falha de envio, limite temporário e configuração pendente, sem mostrar detalhes privados do provedor.",
+    "Conferimos os setores, tarefas, conversas, planilhas, documentos, feedbacks, notas e relatórios com contas de auditoria nos serviços publicados.",
+    "A entrega dos códigos e os cadastros restantes continuam pendentes da configuração de envio. Esta rodada não declara o site 100% aprovado."
+  ]
+}

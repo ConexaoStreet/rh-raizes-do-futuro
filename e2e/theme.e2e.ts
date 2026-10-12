@@ -38,7 +38,7 @@ test("login surface renders without uncaught browser errors", async ({ page }) =
   page.on("pageerror", (error) => errors.push(error.name));
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Entrar" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bom ter você aqui." })).toBeVisible();
   await expect(page.getByRole("button", { name: /Tema atual:/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -125,7 +125,9 @@ test("RH desktop login keeps brand and form in the same row", async ({ page }) =
       brandBottom: brandRect.bottom,
       panelBottom: panelRect.bottom,
       viewportHeight: window.innerHeight,
-      themePosition: getComputedStyle(theme).position,
+      themeTop: theme.getBoundingClientRect().top,
+      themeRight: theme.getBoundingClientRect().right,
+      viewportWidth: window.innerWidth,
     };
   });
 
@@ -133,7 +135,10 @@ test("RH desktop login keeps brand and form in the same row", async ({ page }) =
   expect(Math.abs(layout.brandRight - layout.panelLeft)).toBeLessThan(2);
   expect(layout.brandBottom).toBeGreaterThanOrEqual(layout.viewportHeight - 2);
   expect(layout.panelBottom).toBeGreaterThanOrEqual(layout.viewportHeight - 2);
-  expect(layout.themePosition).toBe("fixed");
+  expect(layout.themeTop).toBeGreaterThanOrEqual(layout.panelTop);
+  expect(layout.themeTop).toBeLessThan(layout.panelTop + 64);
+  expect(layout.themeRight).toBeGreaterThan(layout.viewportWidth - 64);
+  expect(layout.themeRight).toBeLessThanOrEqual(layout.viewportWidth);
 
   await expect(page.getByText("Acesso protegido")).toHaveCount(0);
   await expect(page.getByText("Ações auditadas")).toHaveCount(0);
@@ -178,7 +183,7 @@ test("RH login remains stable across breakpoint matrix", async ({ page }) => {
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Entrar" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bom ter você aqui." })).toBeVisible();
     await expect
       .poll(() =>
         page.evaluate(
@@ -248,7 +253,7 @@ test("first access starts with searchable preregistration identity", async ({ pa
   await expect(page.getByLabel("Quem é você?")).toBeVisible();
   await expect(page.getByPlaceholder("Pesquise seu nome")).toBeVisible();
   await expect(page.getByText("Selecione seu nome")).toBeVisible();
-  await expect(page.getByLabel("Gmail")).toHaveCount(0);
+  await expect(page.getByLabel("E-mail", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Telefone")).toHaveCount(0);
   await expect(page.getByLabel("Senha", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Turma")).toHaveCount(0);

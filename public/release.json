@@ -1,5 +1,5 @@
 {
-  "release": "registration-selector-phase",
-  "source_commit": "c32f6963a43ab49a73d98fb6a399eb9df9ff85de",
+  "release": "raizes-live-workspaces-pack-2",
+  "base_commit": "d553907dd9ca7b905f7849ae1f8bfad75c784c8b",
   "purpose": "deployment verification"
 }

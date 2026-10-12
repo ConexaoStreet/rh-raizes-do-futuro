@@ -65,7 +65,7 @@ export const tiNavigation: TiNavGroup[] = [
     items: [
       { view: "security", label: "Segurança", icon: ShieldCheck, permission: "ti.security.view" },
       { view: "support", label: "Chamados T.I.", icon: Wrench, permission: "ti.manage" },
-      { view: "logs", label: "Logs", icon: Activity },
+      { view: "logs", label: "Histórico de atividades", icon: Activity },
     ],
   },
 ];
@@ -82,5 +82,5 @@ export const tiViewTitles: Record<TiView, string> = {
   site: "Controle do site",
   security: "Segurança",
   support: "Chamados de T.I.",
-  logs: "Logs e auditoria",
+  logs: "Histórico de atividades",
 };

@@ -7,16 +7,19 @@ export async function createDatabase() {
  create table vault.secrets(id uuid primary key default gen_random_uuid(),secret text not null,name text unique not null,description text);
  create table vault.decrypted_secrets(id uuid primary key,name text unique not null,decrypted_secret text not null);
  create function vault.create_secret(secret text,name text,description text default '') returns uuid language plpgsql as $vault$ declare created_id uuid := gen_random_uuid(); begin insert into vault.secrets(id,secret,name,description) values(created_id,secret,name,description); insert into vault.decrypted_secrets(id,name,decrypted_secret) values(created_id,name,secret); return created_id; end $vault$;
- create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');
+ create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}');
  create table auth.sessions(id uuid primary key,user_id uuid references auth.users(id),created_at timestamptz default now(),updated_at timestamptz default now(),not_after timestamptz);
  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claims',true)::jsonb->>'sub','')::uuid $$;
  create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
  grant usage on schema auth to authenticated,anon,service_role; grant execute on all functions in schema auth to authenticated,anon,service_role;
  create schema net;
  create table net.http_request_queue(id bigint);
+ create table net._http_response(id bigint primary key,status_code integer,content_type text,headers jsonb,content text,timed_out boolean,error_msg text,created timestamptz default now());
+ create sequence net.test_request_sequence;
+ create function net.http_get(url text,params jsonb default '{}'::jsonb,headers jsonb default '{}'::jsonb,timeout_milliseconds integer default 2000) returns bigint language sql as $pgnet$ select nextval('net.test_request_sequence') $pgnet$;
  create function net.http_post(url text, body jsonb default '{}'::jsonb, params jsonb default '{}'::jsonb, headers jsonb default '{"Content-Type":"application/json"}'::jsonb, timeout_milliseconds integer default 5000) returns bigint language sql as $pgnet$ select 1::bigint $pgnet$;
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
- create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text);
+ create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text,owner_id text,metadata jsonb default '{}');
  alter table storage.objects enable row level security; grant usage on schema storage to authenticated; grant select,insert on storage.objects to authenticated;`);
   for (const file of (await fs.readdir("supabase/migrations"))
     .filter((f) => f.endsWith(".sql"))

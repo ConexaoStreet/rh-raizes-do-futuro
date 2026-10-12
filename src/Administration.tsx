@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Copy,
@@ -7,6 +7,9 @@ import {
   Plus,
   Search,
   ShieldCheck,
+  Bell,
+  Check,
+  RefreshCw,
 } from "lucide-react";
 import { client, json, rpc, runAction, useAsync, useDebounce } from "./api";
 import { useAuth } from "./auth";
@@ -22,7 +25,12 @@ import {
   Stat,
 } from "./components";
 import { dateLabel, label } from "./domain";
-import type { Json, Row } from "./database.types";
+import type { Row } from "./database.types";
+import { watchNotifications } from "./notifications";
+import { readActivityNames } from "./activity-api";
+import { describeActivity, activitySource } from "../shared/activity-language";
+import { ActivityDetails } from "../shared/ActivityDetails";
+import "./styles/notifications.css";
 export default function Administration({ mode }: { mode: string }) {
   if (mode === "notifications") return <Notifications />;
   if (mode === "sessions") return <Sessions />;
@@ -33,32 +41,99 @@ export default function Administration({ mode }: { mode: string }) {
   return <SettingsPage />;
 }
 function Notifications() {
+  const { user } = useAuth();
   const [page, setPage] = useState(0);
+  const [unread, setUnread] = useState(false);
+  const [marking, setMarking] = useState<string | null>(null);
   const data = useAsync(async () => {
-    const { data, error, count } = await client()
+    let query = client()
       .from("notifications")
       .select("*", { count: "exact" })
+      .eq("user_id", user.profile.id)
+      .eq("scope", "rh")
       .order("created_at", { ascending: false })
       .range(page * 25, page * 25 + 24);
+    if (unread) query = query.is("read_at", null);
+    const { data, error, count } = await query;
     if (error) throw error;
-    return { rows: data, total: count || 0 };
-  }, [page]);
+    return {
+      rows: data,
+      total: count || 0,
+      page,
+      unread,
+      owner: user.profile.id,
+    };
+  }, [page, unread, user.profile.id]);
+  useEffect(
+    () => watchNotifications(client(), user.profile.id, data.reload),
+    [user.profile.id, data.reload],
+  );
+  const current =
+    data.data?.page === page &&
+    data.data.unread === unread &&
+    data.data.owner === user.profile.id
+      ? data.data
+      : null;
+  useEffect(() => {
+    if (current && page > 0 && page * 25 >= current.total)
+      setPage(Math.max(0, Math.ceil(current.total / 25) - 1));
+  }, [current, page]);
   return (
     <>
-      <Heading title="Notificações" className="operational-heading" />
-      <section className="panel">
-        {data.loading ? (
+      <Heading
+        title="Notificações"
+        eyebrow="SEU ACOMPANHAMENTO"
+        className="operational-heading"
+      >
+        <button onClick={data.reload} disabled={data.loading}>
+          <RefreshCw size={16} className={data.loading ? "spin" : ""} />
+          Atualizar
+        </button>
+      </Heading>
+      <div className="notification-toolbar">
+        <p>As novidades da sua jornada, em um só lugar.</p>
+        <div
+          className="segmented-control"
+          role="group"
+          aria-label="Filtrar notificações"
+        >
+          {[false, true].map((value) => (
+            <button
+              key={String(value)}
+              aria-pressed={unread === value}
+              className={unread === value ? "active" : ""}
+              onClick={() => {
+                setUnread(value);
+                setPage(0);
+              }}
+            >
+              {value ? "Não lidas" : "Todas"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <section className="panel notification-center" aria-busy={data.loading}>
+        {data.loading && !current ? (
           <Loading />
         ) : data.error ? (
           <ErrorState retry={data.reload} />
-        ) : !data.data?.rows.length ? (
-          <Empty text="Nenhuma notificação." />
+        ) : !current?.rows.length ? (
+          <Empty
+            text={
+              unread
+                ? "Tudo em dia. Você leu todas as notificações."
+                : "As novidades do RH aparecerão aqui."
+            }
+          />
         ) : (
-          data.data.rows.map((n) => (
-            <div
+          current.rows.map((n) => (
+            <article
               className={`notification-row ${!n.read_at ? "unread" : ""}`}
               key={n.id}
             >
+              <span className="notification-symbol" aria-hidden="true">
+                {n.read_at ? <Check size={18} /> : <Bell size={18} />}
+              </span>
               <div>
                 <Link to={n.path}>{n.title}</Link>
                 <p>{n.body}</p>
@@ -66,22 +141,27 @@ function Notifications() {
               </div>
               {!n.read_at && (
                 <button
+                  disabled={marking === n.id}
                   onClick={() =>
-                    void runAction(async () => {
-                      await rpc("mark_notification", { identifier: n.id });
-                      data.reload();
-                    }, "")
+                    void (async () => {
+                      setMarking(n.id);
+                      const saved = await runAction(async () => {
+                        await rpc("mark_notification", { identifier: n.id });
+                      }, "");
+                      setMarking(null);
+                      if (saved) data.reload();
+                    })()
                   }
                 >
                   Marcar como lida
                 </button>
               )}
-            </div>
+            </article>
           ))
         )}
         <Pagination
           page={page}
-          total={data.data?.total || 0}
+          total={current?.total || 0}
           onChange={setPage}
         />
       </section>
@@ -105,7 +185,10 @@ function Sessions({ target }: { target?: string }) {
   );
   return (
     <>
-      <Heading title={target ? "Sessões do usuário" : "Minhas sessões"} className="operational-heading" />
+      <Heading
+        title={target ? "Sessões do usuário" : "Minhas sessões"}
+        className="operational-heading"
+      />
       <section className="panel">
         {data.loading ? (
           <Loading />
@@ -168,7 +251,11 @@ function UsersPage() {
   }, [search, status, page]);
   return (
     <>
-      <Heading title="Usuários" eyebrow="ACESSOS INDIVIDUAIS" className="operational-heading" />
+      <Heading
+        title="Usuários"
+        eyebrow="ACESSOS INDIVIDUAIS"
+        className="operational-heading"
+      />
       <section className="panel">
         <div className="table-toolbar">
           <div className="search-input">
@@ -232,7 +319,9 @@ function UsersPage() {
                     </td>
                     <td className="row-actions">
                       {p.status === "pending" ? (
-                        <span className="muted">Aguardando primeiro acesso</span>
+                        <span className="muted">
+                          Aguardando primeiro acesso
+                        </span>
                       ) : (
                         can("user.manage") && (
                           <button onClick={() => setSelected(p)}>
@@ -739,7 +828,9 @@ function RoleAssignmentsHistory({ id }: { id: string }) {
         data.data.map((row) => (
           <div className="timeline-item" key={row.id}>
             <strong>{row.profiles?.full_name || "Usuário"}</strong>
-            <span>{row.action === "assigned" ? "Cargo atribuído" : "Cargo removido"}</span>
+            <span>
+              {row.action === "assigned" ? "Cargo atribuído" : "Cargo removido"}
+            </span>
             <small>{dateLabel(row.created_at, true)}</small>
           </div>
         ))
@@ -774,6 +865,7 @@ function RoleHistory({ id, onSaved }: { id: string; onSaved: () => void }) {
     return {
       changes: changes.data,
       assignments: assignments.data as unknown as RoleAssignmentHistory[],
+      names: await readActivityNames(changes.data),
     };
   }, [id]);
 
@@ -789,11 +881,11 @@ function RoleHistory({ id, onSaved }: { id: string; onSaved: () => void }) {
           ) : (
             data.data.changes.map((row) => (
               <div className="timeline-item" key={row.id}>
-                <strong>{row.actor_name || "Sistema"}</strong>
+                <strong>{describeActivity(row, data.data?.names).title}</strong>
                 <span>{dateLabel(row.created_at, true)}</span>
                 <details>
-                  <summary>Antes e depois</summary>
-                  <JsonDiff before={row.old_values} after={row.new_values} />
+                  <summary>Ver o que mudou</summary>
+                  <ActivityDetails entry={row} names={data.data?.names} when={dateLabel(row.created_at, true)} />
                 </details>
                 {row.action === "save_role" &&
                   row.old_values &&
@@ -842,11 +934,13 @@ function RoleHistory({ id, onSaved }: { id: string; onSaved: () => void }) {
               <div className="timeline-item" key={row.id}>
                 <strong>{row.profiles?.full_name || "Usuário"}</strong>
                 <span>
-                  {row.action === "assigned" ? "Cargo atribuído" : "Cargo removido"}
+                  {row.action === "assigned"
+                    ? "Cargo atribuído"
+                    : "Cargo removido"}
                 </span>
                 <small>
                   {dateLabel(row.created_at, true)}
-                  {row.source ? ` · ${row.source}` : ""}
+                  {row.source ? ` · ${activitySource(row.source)}` : ""}
                 </small>
               </div>
             ))
@@ -856,95 +950,72 @@ function RoleHistory({ id, onSaved }: { id: string; onSaved: () => void }) {
     </>
   );
 }
-function JsonDiff({
-  before,
-  after,
-}: {
-  before: Json | null;
-  after: Json | null;
-}) {
-  const old =
-    before && typeof before === "object" && !Array.isArray(before)
-      ? before
-      : {};
-  const next =
-    after && typeof after === "object" && !Array.isArray(after) ? after : {};
-  const keys = [...new Set([...Object.keys(old), ...Object.keys(next)])];
-  return (
-    <div className="table-scroll">
-      <table className="diff-table">
-        <thead>
-          <tr>
-            <th>Campo</th>
-            <th>Antes</th>
-            <th>Depois</th>
-          </tr>
-        </thead>
-        <tbody>
-          {keys.map((key) => (
-            <tr
-              key={key}
-              className={
-                JSON.stringify(old[key]) !== JSON.stringify(next[key])
-                  ? "changed"
-                  : ""
-              }
-            >
-              <td>{key}</td>
-              <td>
-                {(typeof old[key] === "object"
-                  ? JSON.stringify(old[key])
-                  : String(old[key] ?? "-")
-                ).replaceAll("\u2014", "-")}
-              </td>
-              <td>
-                {(typeof next[key] === "object"
-                  ? JSON.stringify(next[key])
-                  : String(next[key] ?? "-")
-                ).replaceAll("\u2014", "-")}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 function Audit() {
   const [params] = useSearchParams();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const query = useDebounce(search);
   const [type, setType] = useState("");
+  const [result, setResult] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Row<"audit_logs"> | null>(null);
+  const requestKey = JSON.stringify([
+    query,
+    type,
+    result,
+    start,
+    end,
+    page,
+    params.toString(),
+    user.profile.id,
+  ]);
   const data = useAsync(async () => {
     let q = client()
       .from("audit_logs")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(page * 25, page * 25 + 24);
-    if (query) q = q.ilike("actor_name", `%${query.replace(/[%_]/g, "")}%`);
+    if (query)
+      q = q.ilike("actor_name", "%" + query.replace(/[%_]/g, "") + "%");
     if (type) q = q.eq("event_type", type);
+    if (result) q = q.eq("success", result === "true");
     if (start) q = q.gte("created_at", start + "T00:00:00-03:00");
     if (end) q = q.lte("created_at", end + "T23:59:59-03:00");
     if (params.get("manutencao"))
       q = q.eq("context->>maintenance_id", params.get("manutencao")!);
-    const { data, error, count } = await q;
+    const { data: rows, error, count } = await q;
     if (error) throw error;
-    return { rows: data, total: count || 0 };
-  }, [query, type, start, end, page, params.toString()]);
+    return {
+      rows,
+      names: await readActivityNames(rows),
+      total: count || 0,
+      key: requestKey,
+    };
+  }, [requestKey]);
+  const current = data.data?.key === requestKey ? data.data : null;
   return (
     <>
-      <Heading title="Logs e auditoria" eyebrow="HISTÓRICO DE ALTERAÇÕES" />
+      <Heading
+        title="Histórico de atividades"
+        eyebrow="O QUE ACONTECEU NO SITE"
+      >
+        <button onClick={data.reload} disabled={data.loading}>
+          <RefreshCw size={16} /> Atualizar
+        </button>
+      </Heading>
+      <p className="activity-intro">
+        Veja quem fez cada ação, quando ela aconteceu e o que mudou.
+      </p>
       <section className="panel">
         <div className="table-toolbar">
           <div className="filters">
             <label>
-              Quem alterou
+              Nome de quem fez
               <input
                 value={search}
+                placeholder="Buscar pelo nome"
                 onChange={(e) => {
                   setSearch(e.target.value);
                   setPage(0);
@@ -952,7 +1023,7 @@ function Audit() {
               />
             </label>
             <label>
-              Tipo
+              Tipo de atividade
               <select
                 value={type}
                 onChange={(e) => {
@@ -960,27 +1031,40 @@ function Audit() {
                   setPage(0);
                 }}
               >
-                <option value="">Todos</option>
-                {[
-                  ["data_change", "Alteração de dados"],
-                  ["security", "Segurança"],
-                  ["authentication", "Autenticação"],
-                  ["export", "Exportação"],
-                  ["permission_change", "Permissões"],
-                  ["attendance_maintenance", "Manutenção da chamada"],
-                ].map(([value, name]) => (
-                  <option value={value} key={value}>
-                    {name}
-                  </option>
-                ))}
+                <option value="">Todas as atividades</option>
+                <option value="data_change">Cadastros e alterações</option>
+                <option value="security">Proteção do site</option>
+                <option value="authentication">Entradas e saídas</option>
+                <option value="export">Relatórios baixados</option>
+                <option value="permission_change">Mudanças de acesso</option>
+                <option value="attendance_maintenance">
+                  Ajustes nas chamadas
+                </option>
               </select>
             </label>
             <label>
-              De
+              Resultado
+              <select
+                value={result}
+                onChange={(e) => {
+                  setResult(e.target.value);
+                  setPage(0);
+                }}
+              >
+                <option value="">Todos os resultados</option>
+                <option value="true">Concluído</option>
+                <option value="false">Não concluído</option>
+              </select>
+            </label>
+            <label>
+              Desde
               <input
                 type="date"
                 value={start}
-                onChange={(e) => setStart(e.target.value)}
+                onChange={(e) => {
+                  setStart(e.target.value);
+                  setPage(0);
+                }}
               />
             </label>
             <label>
@@ -988,7 +1072,10 @@ function Audit() {
               <input
                 type="date"
                 value={end}
-                onChange={(e) => setEnd(e.target.value)}
+                onChange={(e) => {
+                  setEnd(e.target.value);
+                  setPage(0);
+                }}
               />
             </label>
           </div>
@@ -997,117 +1084,65 @@ function Audit() {
           <Loading />
         ) : data.error ? (
           <ErrorState retry={data.reload} />
-        ) : !data.data?.rows.length ? (
-          <Empty />
+        ) : !current?.rows.length ? (
+          <Empty text="Nenhuma atividade encontrada para esses filtros." />
         ) : (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Quando</th>
-                  <th>Quem alterou</th>
-                  <th>Módulo</th>
-                  <th>Ação</th>
-                  <th>Resultado</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {data.data.rows.map((row) => (
-                  <tr key={row.id}>
-                    <td data-label="Quando">
+          <ol className="activity-list" aria-label="Atividades do site">
+            {current.rows.map((row) => {
+              const activity = describeActivity(row, current.names);
+              return (
+                <li className="activity-item" key={row.id}>
+                  <div className="activity-topline">
+                    <span
+                      className={row.success ? "badge badge-completed ok" : "badge badge-rejected error"}
+                      data-success={row.success}
+                    >
+                      {activity.result}
+                    </span>
+                    <time dateTime={row.created_at}>
                       {dateLabel(row.created_at, true)}
-                    </td>
-                    <td data-label="Quem alterou">
-                      {row.actor_name || "Sistema"}
-                    </td>
-                    <td data-label="Módulo">{auditModule(row.module)}</td>
-                    <td data-label="Ação">{auditAction(row.action)}</td>
-                    <td>{row.success ? "Concluído" : "Recusado"}</td>
-                    <td>
-                      <button onClick={() => setSelected(row)}>Detalhes</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </time>
+                  </div>
+                  <h3>{activity.title}</h3>
+                  <p>{activity.description}</p>
+                  <p className="activity-area">
+                    {activity.area}
+                    {activity.subject ? " · " + activity.subject : ""}
+                  </p>
+                  <button
+                    onClick={() => setSelected(row)}
+                    aria-label={"Ver detalhes: " + activity.title}
+                  >
+                    Ver detalhes
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
         )}
         <Pagination
           page={page}
-          total={data.data?.total || 0}
+          total={current?.total || 0}
           onChange={setPage}
         />
       </section>
       {selected && (
         <Modal
-          title="Detalhes da alteração"
+          title={describeActivity(selected, current?.names).title}
           open
           onClose={() => setSelected(null)}
           wide
         >
-          <div className="detail-text">
-            <strong>{selected.actor_name || "Sistema"}</strong>
-            <p>
-              {dateLabel(selected.created_at, true)} ·{" "}
-              {auditModule(selected.module)}
-            </p>
-          </div>
-          <JsonDiff before={selected.old_values} after={selected.new_values} />
-          {selected.context && (
-            <div className="audit-context">
-              {typeof selected.context === "object" &&
-                "reason" in selected.context && (
-                  <p>Motivo: {String(selected.context.reason || "-")}</p>
-                )}
-            </div>
-          )}
+          <ActivityDetails
+            entry={selected}
+            names={current?.names}
+            when={dateLabel(selected.created_at, true)}
+          />
         </Modal>
       )}
     </>
   );
 }
-const auditModule = (name: string) =>
-  ({
-    employees: "Colaboradores",
-    profiles: "Usuários",
-    attendance_sessions: "Chamadas",
-    attendance_members: "Presenças",
-    attendance_maintenance: "Manutenção",
-    feedbacks: "Feedbacks",
-    performance_reviews: "Notas",
-    roles: "Cargos",
-    user_roles: "Cargos dos usuários",
-    role_permissions: "Permissões",
-    settings: "Configurações",
-    security: "Segurança",
-    auth: "Acesso",
-    reports: "Relatórios",
-    attachments: "Documentos",
-    course_calendar: "Calendário",
-    absence_justifications: "Justificativas",
-  })[name] || name;
-const auditAction = (name: string) =>
-  ({
-    insert: "Criou",
-    update: "Alterou",
-    delete: "Removeu",
-    approve: "Aprovou",
-    save_role: "Alterou cargo",
-    snapshot: "Registrou turma",
-    start: "Abriu manutenção",
-    end: "Encerrou manutenção",
-    export: "Exportou",
-    login: "Entrou",
-    logout: "Saiu",
-    otp_requested: "Solicitou código",
-    otp_verified: "Confirmou código",
-    otp_failed: "Código recusado",
-    revoke_session: "Encerrou sessão",
-    change_access: "Alterou acesso",
-    scores_saved: "Salvou notas",
-    scores_before: "Alterou notas",
-  })[name] || name;
 function SettingsPage() {
   const [editing, setEditing] = useState("");
   const data = useAsync(async () => {
@@ -1151,7 +1186,9 @@ function SettingsPage() {
               <strong>{title}</strong>
               <small>{description}</small>
             </span>
-            <span className="setting-link-arrow" aria-hidden="true">→</span>
+            <span className="setting-link-arrow" aria-hidden="true">
+              →
+            </span>
           </Link>
         ))}
         <button
@@ -1163,7 +1200,9 @@ function SettingsPage() {
             <strong>Limites de atraso</strong>
             <small>Escolha quando o atraso fica leve ou moderado.</small>
           </span>
-          <span className="setting-link-arrow" aria-hidden="true">→</span>
+          <span className="setting-link-arrow" aria-hidden="true">
+            →
+          </span>
         </button>
       </div>
       {row && (
@@ -1311,7 +1350,7 @@ function SystemPanel() {
                 </button>
                 <div className="quick-actions">
                   <Link to="/usuarios">Gerenciar acessos</Link>
-                  <Link to="/auditoria">Consultar logs de segurança</Link>
+                  <Link to="/auditoria">Ver registros de segurança</Link>
                   <a
                     href={
                       new URL(

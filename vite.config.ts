@@ -1,10 +1,16 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { existsSync, readFileSync } from "node:fs";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
     plugins: [react()],
+    define: {
+      __RAIZES_RELEASE__: existsSync(".generated/release.json")
+        ? readFileSync(".generated/release.json", "utf8")
+        : "null",
+    },
     base: env.VITE_BASE_PATH || "./",
     build: {
       sourcemap: false,
@@ -22,11 +28,23 @@ export default defineConfig(({ mode }) => {
           ascii_only: true,
         },
       },
-      rolldownOptions: {
+      rollupOptions: {
         output: {
           entryFileNames: "assets/[hash].js",
           chunkFileNames: "assets/[hash].js",
           assetFileNames: "assets/[hash][extname]",
+          onlyExplicitManualChunks: true,
+          manualChunks(id) {
+            if (
+              id.includes("node_modules/recharts") ||
+              id.includes("node_modules/d3-") ||
+              id.includes("node_modules/victory-vendor")
+            )
+              return "charts";
+            if (id.includes("node_modules/exceljs")) return "excel-export";
+            if (id.includes("node_modules/pptxgenjs")) return "slides-export";
+            if (id.includes("node_modules/jspdf")) return "pdf-export";
+          },
         },
       },
     },

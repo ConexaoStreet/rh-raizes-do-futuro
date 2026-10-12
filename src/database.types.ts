@@ -846,6 +846,9 @@ export type Database = {
       };
       notifications: {
         Row: {
+          scope: "rh" | "ti" | "system";
+          event_type: string | null;
+          event_key: string | null;
           id: string;
           user_id: string;
           title: string;
@@ -855,6 +858,9 @@ export type Database = {
           created_at: string;
         };
         Insert: {
+          scope?: "rh" | "ti" | "system";
+          event_type?: string | null;
+          event_key?: string | null;
           id?: string;
           user_id: string;
           title: string;
@@ -1345,7 +1351,9 @@ export type Database = {
           source?: string;
           created_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["user_role_history"]["Insert"]>;
+        Update: Partial<
+          Database["public"]["Tables"]["user_role_history"]["Insert"]
+        >;
         Relationships: [
           {
             foreignKeyName: "user_role_history_user_id_fkey";
@@ -1393,6 +1401,47 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      chat_reports_queue: { Args: { room_identifier: string }; Returns: Json };
+      dismiss_chat_report: {
+        Args: { report_identifier: string; reason: string };
+        Returns: undefined;
+      };
+      site_status: { Args: Record<PropertyKey, never>; Returns: Json };
+      workspace_snapshot: {
+        Args: { department_identifier?: string };
+        Returns: Json;
+      };
+      save_sector_task: {
+        Args: { payload: Json; expected_version?: number };
+        Returns: Json;
+      };
+      chat_rooms_snapshot: { Args: Record<PropertyKey, never>; Returns: Json };
+      chat_history: {
+        Args: { room_identifier: string; before_sequence?: number };
+        Returns: Json;
+      };
+      reserve_chat_attachment: { Args: { payload: Json }; Returns: Json };
+      discard_chat_attachment: {
+        Args: { attachment_identifier: string };
+        Returns: undefined;
+      };
+      send_chat_message: {
+        Args: {
+          room_identifier: string;
+          body: string;
+          attachment_identifiers?: string[];
+          request_identifier?: string;
+        };
+        Returns: Json;
+      };
+      report_chat_message: {
+        Args: { message_identifier: string; reason: string };
+        Returns: undefined;
+      };
+      moderate_chat_message: {
+        Args: { message_identifier: string; reason: string };
+        Returns: undefined;
+      };
       approve_user: {
         Args: {
           user_identifier: string | null;

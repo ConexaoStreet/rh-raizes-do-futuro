@@ -31,9 +31,13 @@ describe("RH dashboard redesign", () => {
   it("keeps the intended visual hierarchy", () => {
     const stats = dashboard.indexOf('className="stats-grid executive-metrics"');
     const notice = dashboard.indexOf('className="notice maintenance-notice"');
-    const attendance = dashboard.indexOf('className="attendance-banner dashboard-priority-band"');
+    const attendance = dashboard.indexOf(
+      'className="attendance-banner dashboard-priority-band"',
+    );
     const mainGrid = dashboard.indexOf('className="dashboard-grid"');
-    const bottom = dashboard.indexOf('className="dashboard-bottom editorial-support-grid"');
+    const bottom = dashboard.indexOf(
+      'className="dashboard-bottom editorial-support-grid"',
+    );
 
     expect(stats).toBeGreaterThan(-1);
     expect(notice).toBeGreaterThan(stats);
@@ -51,12 +55,20 @@ describe("RH dashboard redesign", () => {
   });
   it("makes the RH dashboard refresh visibly distinct", () => {
     expect(dashboard).toContain('className="stats-grid executive-metrics"');
-    expect(dashboard).toContain('className="attendance-banner dashboard-priority-band"');
-    expect(dashboard).toContain('className="panel chart-panel dashboard-insight-panel"');
-    expect(dashboard).toContain('className="panel pending-panel dashboard-action-panel"');
-    expect(dashboard).toContain('className="dashboard-bottom editorial-support-grid"');
-    expect(dashboard).toContain("Raizes Do Futuro");
-    expect(dashboard).toContain("Datasul desenvolvido para Gestão Do Rh");
+    expect(dashboard).toContain(
+      'className="attendance-banner dashboard-priority-band"',
+    );
+    expect(dashboard).toContain(
+      'className="panel chart-panel dashboard-insight-panel"',
+    );
+    expect(dashboard).toContain(
+      'className="panel pending-panel dashboard-action-panel"',
+    );
+    expect(dashboard).toContain(
+      'className="dashboard-bottom editorial-support-grid"',
+    );
+    expect(dashboard).toContain("SUA JORNADA NO RAÍZES");
+    expect(dashboard).toContain("Um olhar sobre a turma e os próximos passos.");
     expect(styles).toContain(".executive-metrics");
     expect(styles).toContain(".dashboard-priority-band");
     expect(styles).toContain(".setting-link-v2");
@@ -64,5 +76,4 @@ describe("RH dashboard redesign", () => {
     expect(administration).toContain("settings-grid-v2");
     expect(styles).toContain(".dashboard-action-panel");
   });
-
 });

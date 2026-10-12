@@ -6,10 +6,12 @@ on:
       - main
     paths:
       - "apps/ti/**"
+      - "shared/**"
       - ".github/workflows/ti-app.yml"
   pull_request:
     paths:
       - "apps/ti/**"
+      - "shared/**"
       - ".github/workflows/ti-app.yml"
 
 concurrency:

@@ -1,6 +1,19 @@
 import { useState } from "react";
+import { readActivityNames } from "./activity-api";
+import { describeActivity } from "../shared/activity-language";
+import { ActivityDetails } from "../shared/ActivityDetails";
 import { Link, useParams } from "react-router-dom";
-import { Camera, CheckCircle2, Download, FileUp, Paperclip, Plus, TriangleAlert, Upload, XCircle } from "lucide-react";
+import {
+  Camera,
+  CheckCircle2,
+  Download,
+  FileUp,
+  Paperclip,
+  Plus,
+  TriangleAlert,
+  Upload,
+  XCircle,
+} from "lucide-react";
 import {
   client,
   json,
@@ -43,7 +56,7 @@ export default function People({ mode }: { mode: Mode }) {
     return (
       <>
         <EntityPage
-          key={version}
+          key={`${version}:${peopleGroup}`}
           spec={specs.colaboradores}
           filter={{ key: "member_group", value: peopleGroup }}
           subnav={
@@ -102,7 +115,11 @@ export default function People({ mode }: { mode: Mode }) {
           <TriangleAlert size={20} />
           <div>
             <strong>Histórico da planilha importado</strong>
-            <span>As faltas e presenças registradas na planilha já estão no sistema. A base histórica contém ocorrências; nomes ausentes em uma data não foram convertidos automaticamente em presença.</span>
+            <span>
+              As faltas e presenças registradas na planilha já estão no sistema.
+              A base histórica contém ocorrências; nomes ausentes em uma data
+              não foram convertidos automaticamente em presença.
+            </span>
           </div>
         </div>
         <Occurrences />
@@ -327,14 +344,14 @@ function EsproPhotoCard({
     };
     if (!result.ok) {
       throw new Error(
-        result.message ||
-          "A foto não passou pela verificação básica.",
+        result.message || "A foto não passou pela verificação básica.",
       );
     }
   }
 
   if (profile.loading) return <Loading />;
-  if (profile.error || !profile.data) return <ErrorState retry={profile.reload} />;
+  if (profile.error || !profile.data)
+    return <ErrorState retry={profile.reload} />;
 
   const status = profile.data.espro_photo_status;
   const verification =
@@ -437,6 +454,8 @@ function EmployeeFeedbacks({ id }: { id: string }) {
     <section className="panel">
       {data.loading ? (
         <Loading />
+      ) : data.error ? (
+        <ErrorState retry={data.reload} />
       ) : data.data?.length ? (
         data.data.map((row) => (
           <button
@@ -665,6 +684,8 @@ export function Documents({
       </div>
       {data.loading ? (
         <Loading />
+      ) : data.error ? (
+        <ErrorState retry={data.reload} />
       ) : data.data?.length ? (
         data.data.map((file) => (
           <div className="file-row" key={file.id}>
@@ -769,20 +790,26 @@ function EmployeeHistory({ id }: { id: string }) {
       .order("created_at", { ascending: false })
       .limit(100);
     if (error) throw error;
-    return data;
+    return { rows: data, names: await readActivityNames(data) };
   }, [id]);
   return (
     <section className="panel padded">
       {data.loading ? (
         <Loading />
       ) : (
-        data.data?.map((log) => (
+        data.data?.rows.map((log) => (
           <div className="timeline-item" key={log.id}>
-            <strong>{log.actor_name || "Sistema"}</strong>
-            <span>
-              {log.action} · {log.module}
-            </span>
+            <strong>{describeActivity(log, data.data?.names).title}</strong>
+            <span>{describeActivity(log, data.data?.names).description}</span>
             <small>{dateLabel(log.created_at, true)}</small>
+            <details>
+              <summary>Ver detalhes</summary>
+              <ActivityDetails
+                entry={log}
+                names={data.data?.names}
+                when={dateLabel(log.created_at, true)}
+              />
+            </details>
           </div>
         ))
       )}
@@ -830,7 +857,11 @@ function Occurrences({
   return (
     <>
       {!employeeId && (
-        <Heading className="operational-heading" title={late ? "Atrasos" : "Faltas"} eyebrow="PRESENÇA">
+        <Heading
+          className="operational-heading"
+          title={late ? "Atrasos" : "Faltas"}
+          eyebrow="PRESENÇA"
+        >
           {can("attendance.manage") && (
             <Link to="/chamada" className="button primary">
               <Plus size={17} />

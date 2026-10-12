@@ -59,7 +59,18 @@ export type ReportSnapshot = {
 };
 export default function Dashboard({ today = false }: { today?: boolean }) {
   const { user, can } = useAuth();
-  const serverDate = localDate(new Date(user.server_time));
+  const serverNow = new Date(user.server_time);
+  const serverDate = localDate(serverNow);
+  const firstName = user.profile.full_name.trim().split(/\s+/)[0];
+  const hour = Number(
+    new Intl.DateTimeFormat("pt-BR", {
+      hour: "numeric",
+      hourCycle: "h23",
+      timeZone: "America/Sao_Paulo",
+    }).format(serverNow),
+  );
+  const greeting =
+    hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
   const [month, setMonth] = useState(serverDate.slice(0, 7));
   const start = today ? serverDate : month + "-01";
   const end = today
@@ -131,9 +142,20 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
             aria-hidden="true"
           />
           <div className="raizes-hero-copy">
-            <span className="eyebrow">RH · TURMA 16807</span>
-            <h2>Raizes Do Futuro</h2>
-            <p>Datasul desenvolvido para Gestão Do Rh</p>
+            <span className="eyebrow">SUA JORNADA NO RAÍZES</span>
+            <h2>
+              {greeting}
+              {firstName ? `, ${firstName}` : ""}.
+            </h2>
+            <p>Um olhar sobre a turma e os próximos passos.</p>
+            <span className="hero-date">
+              {new Intl.DateTimeFormat("pt-BR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                timeZone: "America/Sao_Paulo",
+              }).format(serverNow)}
+            </span>
           </div>
         </section>
       )}
@@ -184,7 +206,10 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
               <TriangleAlert size={19} />
               <div>
                 <strong>Importante sobre o histórico</strong>
-                <span>Os dados antigos vieram da planilha. Se um nome não aparece em um dia, isso não quer dizer que a pessoa estava presente.</span>
+                <span>
+                  Os dados antigos vieram da planilha. Se um nome não aparece em
+                  um dia, isso não quer dizer que a pessoa estava presente.
+                </span>
               </div>
             </div>
             <section className="attendance-banner dashboard-priority-band">
@@ -195,8 +220,13 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 <h2>Chamada da turma</h2>
                 <p>Terças-feiras · 08:00 às 14:00</p>
               </div>
-              <Link to="/chamada" className="button primary">
-                Abrir chamada
+              <Link
+                to={can("attendance.manage") ? "/chamada" : "/presenca"}
+                className="button primary"
+              >
+                {can("attendance.manage")
+                  ? "Abrir chamada"
+                  : "Ver minha presença"}
                 <ArrowUpRight size={17} />
               </Link>
             </section>
@@ -212,7 +242,10 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 {data.data?.snapshot.series.length ? (
                   <ResponsiveContainer width="100%" height={265}>
                     <BarChart data={data.data.snapshot.series} barGap={6}>
-                      <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+                      <CartesianGrid
+                        vertical={false}
+                        stroke="var(--chart-grid)"
+                      />
                       <XAxis
                         dataKey="month"
                         tickFormatter={(v) => String(v).slice(5)}
@@ -318,18 +351,24 @@ export default function Dashboard({ today = false }: { today?: boolean }) {
                 </Link>
                 <div className="quick-actions">
                   <h3>Ações rápidas</h3>
-                  <Link to="/colaboradores">
-                    <Plus size={17} />
-                    Novo colaborador
-                  </Link>
-                  <Link to="/feedbacks">
-                    <Plus size={17} />
-                    Novo feedback
-                  </Link>
-                  <Link to="/notas">
-                    <Plus size={17} />
-                    Nova nota
-                  </Link>
+                  {can("employee.manage") && (
+                    <Link to="/colaboradores">
+                      <Plus size={17} />
+                      Novo colaborador
+                    </Link>
+                  )}
+                  {can("feedback.manage") && (
+                    <Link to="/feedbacks">
+                      <Plus size={17} />
+                      Novo feedback
+                    </Link>
+                  )}
+                  {can("performance.grade") && (
+                    <Link to="/notas">
+                      <Plus size={17} />
+                      Nova nota
+                    </Link>
+                  )}
                 </div>
               </section>
             </div>

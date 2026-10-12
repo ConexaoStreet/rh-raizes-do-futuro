@@ -22,12 +22,14 @@ import {
 } from "lucide-react";
 import { useAuth } from "./auth";
 import { client, rpc, runAction, useAsync, useDebounce } from "./api";
-import { Brand, Loading, Modal } from "./components";
+import { Brand, ErrorState, Loading, Modal } from "./components";
 import { captureNavigation } from "./telemetry";
 import { ThemeToggle } from "./theme";
 import { enablePushNotifications, pushSupported } from "./push";
 import { rhNavGroups } from "./layout/RhNavigation";
-import DeveloperAvailabilityNotice from "./DeveloperAvailabilityNotice";
+import { watchNotifications } from "./notifications";
+import { useSiteStatus } from "./site-status";
+import MaintenanceNotice from "./MaintenanceNotice";
 const Dashboard = lazy(() => import("./Dashboard"));
 const Attendance = lazy(() => import("./Attendance"));
 const People = lazy(() => import("./People"));
@@ -38,6 +40,9 @@ const Administration = lazy(() => import("./Administration"));
 const Calendar = lazy(() => import("./Calendar"));
 const EntitySettings = lazy(() => import("./EntitySettings"));
 const SupportTickets = lazy(() => import("./SupportTickets"));
+const SectorWorkspace = lazy(() => import("./SectorWorkspace"));
+const OverviewWorkspace = lazy(() => import("./OverviewWorkspace"));
+const Chat = lazy(() => import("./Chat"));
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{
@@ -66,12 +71,39 @@ function Guard({
 }
 export default function Shell() {
   const { user, can } = useAuth();
+  const siteStatus = useSiteStatus();
   const location = useLocation();
-  useEffect(() => { captureNavigation(location.pathname); }, [location.pathname]);
+  useEffect(() => {
+    captureNavigation(location.pathname);
+  }, [location.pathname]);
   const [mobile, setMobile] = useState(false);
   const [account, setAccount] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
+    null,
+  );
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen((value) => !value);
+      }
+      if (event.key === "Escape") {
+        setMobile(false);
+        setAccount(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  useEffect(() => {
+    if (!mobile) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [mobile]);
   useEffect(() => {
     const onPrompt = (event: Event) => {
       event.preventDefault();
@@ -89,13 +121,33 @@ export default function Shell() {
     const { count, error } = await client()
       .from("notifications")
       .select("id", { count: "exact", head: true })
+      .eq("user_id", user.profile.id)
+      .eq("scope", "rh")
       .is("read_at", null);
     if (error) throw error;
-    return count || 0;
-  }, []);
+    return { owner: user.profile.id, count: count || 0 };
+  }, [user.profile.id]);
+  const unreadCount =
+    notifications.data?.owner === user.profile.id
+      ? notifications.data.count
+      : 0;
+  useEffect(
+    () => watchNotifications(client(), user.profile.id, notifications.reload),
+    [user.profile.id, notifications.reload],
+  );
+  const currentPage =
+    rhNavGroups
+      .flatMap((group) => group.items)
+      .find((item) => item.path === location.pathname)?.name ||
+    (location.pathname.startsWith("/colaboradores/") ? "Perfil" : "Meu espaço");
+  useEffect(() => {
+    document.title = `${currentPage} | Raízes do Futuro`;
+  }, [currentPage]);
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#main-content">Pular para o conteúdo</a>
+      <a className="skip-link" href="#main-content">
+        Pular para o conteúdo
+      </a>
       {mobile && (
         <button
           className="sidebar-scrim"
@@ -114,34 +166,13 @@ export default function Shell() {
             <X size={20} />
           </button>
         </div>
-        <div
-          className="workspace-label"
-          style={{
-            overflow: "hidden",
-            background:
-              "radial-gradient(circle at 14% 50%, rgba(105,230,148,.14), transparent 30%), linear-gradient(115deg, rgba(20,58,43,.96), rgba(10,35,26,.97))",
-          }}
-        >
-          <span
-            className="workspace-icon"
-            aria-hidden="true"
-            style={{
-              overflow: "hidden",
-              borderColor: "rgba(173,235,190,.15)",
-              background:
-                "radial-gradient(circle, rgba(77,154,102,.32), rgba(17,61,43,.74) 70%)",
-              boxShadow: "inset 0 0 12px rgba(88,214,132,.09)",
-            }}
-          >
+        <div className="workspace-label">
+          <span className="workspace-icon" aria-hidden="true">
             <img
               src="/brand/raizes-logo-mark.png"
               alt=""
               width={28}
               height={28}
-              style={{
-                filter: "brightness(2.05) contrast(1.12)",
-                opacity: 0.96,
-              }}
             />
           </span>
           <div className="workspace-copy">
@@ -149,7 +180,7 @@ export default function Shell() {
             <small>Raízes do Futuro · Turma 16807</small>
           </div>
         </div>
-        <nav aria-label="Navegação principal do RH">
+        <nav id="rh-navigation" aria-label="Navegação principal do RH">
           {!can("dashboard.view") && (
             <NavLink to="/" end onClick={() => setMobile(false)}>
               <UserCircle size={18} />
@@ -189,19 +220,29 @@ export default function Shell() {
         </nav>
       </aside>
       <div className="main-column">
-        <DeveloperAvailabilityNotice placement="shell" />
+        <MaintenanceNotice
+          maintenance={
+            siteStatus.data?.maintenance || {
+              enabled: Boolean(user.maintenance.enabled),
+              title: user.maintenance.title,
+              message: user.maintenance.message,
+            }
+          }
+        />
         <header className="topbar">
           <div className="topbar-left">
             <button
               className="mobile-only icon-button"
               aria-label="Abrir menu"
+              aria-expanded={mobile}
+              aria-controls="rh-navigation"
               onClick={() => setMobile(true)}
             >
               <Menu />
             </button>
             <div className="topbar-context desktop-only">
               <span>Raízes do Futuro</span>
-              <strong>Gestão de RH</strong>
+              <strong>{currentPage}</strong>
             </div>
           </div>
           <div className="topbar-actions">
@@ -213,14 +254,21 @@ export default function Shell() {
             >
               <Search size={18} />
               <span>Buscar no RH</span>
+              <kbd>Ctrl K</kbd>
             </button>
             <Link
               to="/notificacoes"
               className="icon-button notification-bell"
-              aria-label="Notificações"
+              aria-label={
+                unreadCount
+                  ? `Notificações: ${unreadCount} não lidas`
+                  : "Notificações"
+              }
             >
               <Bell size={19} />
-              {Boolean(notifications.data) && <span>{notifications.data}</span>}
+              {Boolean(unreadCount) && (
+                <span>{unreadCount > 99 ? "99+" : unreadCount}</span>
+              )}
             </Link>
             <div className="account-wrapper">
               <button
@@ -327,6 +375,38 @@ export default function Shell() {
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route
+                path="/meu-setor"
+                element={
+                  <Guard permission="workspace.view">
+                    <SectorWorkspace />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/gestores"
+                element={
+                  <Guard permission="workspace.overview">
+                    <OverviewWorkspace />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/instrutor"
+                element={
+                  <Guard permission="workspace.instructor">
+                    <OverviewWorkspace instructor />
+                  </Guard>
+                }
+              />
+              <Route
+                path="/conversas"
+                element={
+                  <Guard permission="chat.use">
+                    <Chat />
+                  </Guard>
+                }
+              />
+              <Route
                 path="/"
                 element={
                   can("dashboard.view") ? (
@@ -392,7 +472,7 @@ export default function Shell() {
                   </Guard>
                 }
               />
-               <Route
+              <Route
                 path="/notificacoes"
                 element={<Administration mode="notifications" />}
               />
@@ -427,7 +507,10 @@ export default function Shell() {
                   }
                 />
               ))}
-              <Route path="/configuracoes/:entity" element={<EntitySettings />} />
+              <Route
+                path="/configuracoes/:entity"
+                element={<EntitySettings />}
+              />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
@@ -452,32 +535,59 @@ function GlobalSearch({
     if (!open || query.trim().length < 2) return [];
     const clean = query.replace(/[%_]/g, "");
     const requests = [
-      ["employees", "full_name", "Colaborador", "/colaboradores/", can("employee.view")],
+      [
+        "employees",
+        "full_name",
+        "Colaborador",
+        "/colaboradores/",
+        can("employee.view"),
+      ],
       ["feedbacks", "title", "Feedback", "/feedbacks", can("feedback.view")],
       ["reports", "title", "Relatório", "/relatorios", can("report.view")],
-      ["events", "title", "Evento", "/configuracoes/eventos", can("calendar.manage")],
-      ["manager_review_cycles", "title", "Avaliação", "/gestao", can("review.manage") || can("review.results")],
+      [
+        "events",
+        "title",
+        "Evento",
+        "/configuracoes/eventos",
+        can("calendar.manage"),
+      ],
+      [
+        "manager_review_cycles",
+        "title",
+        "Avaliação",
+        "/gestao",
+        can("review.manage") || can("review.results"),
+      ],
     ] as const;
     const response = await Promise.all(
       requests
         .filter(([, , , , allowed]) => allowed)
         .map(async ([table, column, type, path]) => {
-        const { data, error } = await client()
-          .from(table)
-          .select("*")
-          .ilike(column, `%${clean}%`)
-          .limit(6);
-        if (error) throw error;
-        return (data as unknown as Record<string, string>[]).map((row) => ({
-          id: row.id,
-          name: row[column],
-          type,
-          path: table === "employees" ? path + row.id : path,
-        }));
+          const { data, error } = await client()
+            .from(table)
+            .select("*")
+            .ilike(column, `%${clean}%`)
+            .limit(6);
+          if (error) throw error;
+          return (data as unknown as Record<string, string>[]).map((row) => ({
+            id: row.id,
+            name: row[column],
+            type,
+            path: table === "employees" ? path + row.id : path,
+          }));
         }),
     );
     return response.flat();
-  }, [query, open, can("employee.view"), can("feedback.view"), can("report.view"), can("calendar.manage"), can("review.manage"), can("review.results")]);
+  }, [
+    query,
+    open,
+    can("employee.view"),
+    can("feedback.view"),
+    can("report.view"),
+    can("calendar.manage"),
+    can("review.manage"),
+    can("review.results"),
+  ]);
   return (
     <Modal title="Busca global" open={open} onClose={onClose}>
       <div className="search-input">
@@ -493,6 +603,8 @@ function GlobalSearch({
       <div className="search-results">
         {results.loading && query.length >= 2 ? (
           <Loading />
+        ) : results.error && query.length >= 2 ? (
+          <ErrorState retry={results.reload} />
         ) : (
           results.data?.map((item) => (
             <button
@@ -507,9 +619,10 @@ function GlobalSearch({
             </button>
           ))
         )}
-        {query.length >= 2 && !results.loading && !results.data?.length && (
-          <p>Nenhum registro encontrado.</p>
-        )}
+        {query.length >= 2 &&
+          !results.loading &&
+          !results.error &&
+          !results.data?.length && <p>Nenhum registro encontrado.</p>}
       </div>
     </Modal>
   );

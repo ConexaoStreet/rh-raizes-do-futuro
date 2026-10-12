@@ -177,7 +177,13 @@ await test("Tabelas sensíveis não concedem privilégios ao papel anon", async 
     "public.ti_support_tickets",
     "public.user_role_history",
   ]) {
-    for (const privilege of ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]) {
+    for (const privilege of [
+      "SELECT",
+      "INSERT",
+      "UPDATE",
+      "DELETE",
+      "TRUNCATE",
+    ]) {
       assert.equal(
         await value(
           await root("select has_table_privilege('anon',$1,$2)", [
@@ -190,6 +196,62 @@ await test("Tabelas sensíveis não concedem privilégios ao papel anon", async 
       );
     }
   }
+});
+await test("Notificações do RH respeitam usuário e escopo", async () => {
+  const notices = (
+    await root(
+      "insert into public.notifications(user_id,title,body,path,scope) values($1,'Aviso RH','Atualização','/notas','rh'),($1,'Aviso TI','Atualização','/suporte-ti','ti'),($2,'Outro usuário','Atualização','/notas','rh') returning id,user_id,scope",
+      [users.collaborator, users.second],
+    )
+  ).rows;
+  const ids = notices.map((row) => row.id);
+  const expected = notices
+    .filter((row) => row.user_id === users.collaborator && row.scope === "rh")
+    .map((row) => row.id);
+  const visible = await as(
+    "collaborator",
+    "select id from public.notifications where scope='rh' and id=any($1::uuid[])",
+    [ids],
+  );
+  assert.deepEqual(
+    visible.rows.map((row) => row.id),
+    expected,
+  );
+  const pending = await as(
+    "pending",
+    "select id from public.notifications where id=any($1::uuid[])",
+    [ids],
+  );
+  assert.equal(pending.rows.length, 0);
+});
+await test("Realtime de notificações é aditivo e pode ser aplicado duas vezes", async () => {
+  await root("select 1");
+  await db.exec("create publication supabase_realtime");
+  const filename = (await fs.readdir("supabase/migrations")).find((file) =>
+    file.endsWith("_notification_realtime.sql"),
+  );
+  const migration = await fs.readFile(
+    `supabase/migrations/${filename}`,
+    "utf8",
+  );
+  await db.exec(migration);
+  await db.exec(migration);
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='notifications'",
+      ),
+    ),
+    1,
+  );
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from pg_index where indexrelid='public.notifications_rh_unread_owner'::regclass and indisvalid",
+      ),
+    ),
+    1,
+  );
 });
 await test("Colaborador só lê seu próprio cadastro", async () => {
   const rows = await as("collaborator", "select id from public.employees");
@@ -216,11 +278,14 @@ await test("Colaborador não chama endpoint administrativo", async () =>
   ));
 await test("Colaborador não consegue lançar ou editar notas", async () =>
   blocked(
-    as(
-      "collaborator",
-      "select public.save_performance($1,$2,$3,$4,$5,$6)",
-      [employeeId, uid(999), JSON.stringify([]), "", false, null],
-    ),
+    as("collaborator", "select public.save_performance($1,$2,$3,$4,$5,$6)", [
+      employeeId,
+      uid(999),
+      JSON.stringify([]),
+      "",
+      false,
+      null,
+    ]),
   ));
 await test("Gestor não promove a si mesmo", async () =>
   blocked(
@@ -525,6 +590,338 @@ await test("Relatório usa dados finais e contabiliza manutenção", async () =>
   assert.equal(r.metrics.records, 57);
   assert.equal(r.metrics.absent, 1);
   assert.equal(r.records[0].maintenance_count, 2);
+});
+await test("Boletim salva, publica para o titular e protege edições concorrentes", async () => {
+  const cycle = await value(
+    await as(
+      "rafaella",
+      "select public.save_entity('performance_cycles',$1,null)",
+      [
+        JSON.stringify({
+          title: "Ciclo de validação",
+          start_date: "2026-09-01",
+          end_date: "2026-09-30",
+          status: "open",
+        }),
+      ],
+    ),
+  );
+  const criteria = (
+    await root("select id from public.performance_criteria where active")
+  ).rows;
+  const scores = criteria.map((c) => ({ criterion_id: c.id, score: 9 }));
+  const review = await value(
+    await as(
+      "rafaella",
+      "select public.save_performance($1,$2,$3,$4,false,null)",
+      [employeeId, cycle, JSON.stringify(scores), "Acompanhamento de teste"],
+    ),
+  );
+  assert.equal(
+    (
+      await as(
+        "collaborator",
+        "select id from public.performance_reviews where id=$1",
+        [review],
+      )
+    ).rows.length,
+    0,
+  );
+  await as("rafaella", "select public.save_performance($1,$2,$3,$4,true,1)", [
+    employeeId,
+    cycle,
+    JSON.stringify(scores),
+    "Publicado",
+  ]);
+  assert.equal(
+    (
+      await as(
+        "collaborator",
+        "select id from public.performance_reviews where id=$1",
+        [review],
+      )
+    ).rows.length,
+    1,
+  );
+  assert.equal(
+    (
+      await as(
+        "second",
+        "select id from public.performance_reviews where id=$1",
+        [review],
+      )
+    ).rows.length,
+    0,
+  );
+  await blocked(
+    as("rafaella", "select public.save_performance($1,$2,$3,$4,true,1)", [
+      employeeId,
+      cycle,
+      JSON.stringify(scores),
+      "Edição antiga",
+    ]),
+    /CONFLICT/,
+  );
+});
+await test("Feedback publicado pode ser lido e respondido apenas pelo titular", async () => {
+  const feedback = await value(
+    await as("rafaella", "select public.save_entity('feedbacks',$1,null)", [
+      JSON.stringify({
+        employee_id: employeeId,
+        title: "Retorno da atividade",
+        kind: "development",
+        description: "Preparar a próxima atividade",
+        released: false,
+        allow_response: true,
+      }),
+    ]),
+  );
+  assert.equal(
+    (
+      await as("collaborator", "select id from public.feedbacks where id=$1", [
+        feedback,
+      ])
+    ).rows.length,
+    0,
+  );
+  await as("rafaella", "select public.save_entity('feedbacks',$1,1)", [
+    JSON.stringify({ id: feedback, employee_id: employeeId, released: true }),
+  ]);
+  await as("collaborator", "select public.feedback_reply($1,$2,true)", [
+    feedback,
+    "Recebi e vou acompanhar",
+  ]);
+  assert.ok(
+    await value(
+      await root("select read_at from public.feedbacks where id=$1", [
+        feedback,
+      ]),
+    ),
+  );
+  assert.equal(
+    (
+      await as(
+        "collaborator",
+        "select id from public.feedback_followups where feedback_id=$1",
+        [feedback],
+      )
+    ).rows.length,
+    1,
+  );
+  await blocked(
+    as("second", "select public.feedback_reply($1,$2,true)", [
+      feedback,
+      "Tentativa indevida",
+    ]),
+  );
+});
+await test("Justificativa chega ao RH e a análise respeita a versão do registro", async () => {
+  const member = await value(
+    await root(
+      "select id from public.attendance_members where employee_id=$1 and status='absent' order by created_at limit 1",
+      [secondEmployee],
+    ),
+  );
+  const category = await value(
+    await root(
+      "select id from public.justification_categories where active order by name limit 1",
+    ),
+  );
+  const justification = await value(
+    await as("second", "select public.submit_justification($1,$2,$3)", [
+      member,
+      category,
+      "Comparecimento à consulta",
+    ]),
+  );
+  await blocked(
+    as("collaborator", "select public.submit_justification($1,$2,$3)", [
+      member,
+      category,
+      "Tentativa indevida",
+    ]),
+  );
+  await as(
+    "rafaella",
+    "select public.review_justification($1,'accepted',$2,1)",
+    [justification, "Documento analisado"],
+  );
+  assert.equal(
+    await value(
+      await as(
+        "second",
+        "select status from public.absence_justifications where id=$1",
+        [justification],
+      ),
+    ),
+    "accepted",
+  );
+  await blocked(
+    as("rafaella", "select public.review_justification($1,'rejected',$2,1)", [
+      justification,
+      "Edição antiga",
+    ]),
+    /CONFLICT/,
+  );
+});
+await test("Importações de colaboradores e calendário são atômicas", async () => {
+  const count = await value(
+    await as("rafaella", "select public.import_employees($1)", [
+      JSON.stringify([
+        {
+          full_name: "Pessoa importada",
+          registration: "IMPORT-OK",
+          class_id: classId,
+        },
+      ]),
+    ]),
+  );
+  assert.equal(count, 1);
+  await blocked(
+    as("rafaella", "select public.import_employees($1)", [
+      JSON.stringify([
+        { full_name: "Pessoa rollback", registration: "IMPORT-ROLLBACK" },
+        {
+          full_name: "Pessoa inválida",
+          registration: "IMPORT-INVALID",
+          profile_id: users.second,
+        },
+      ]),
+    ]),
+  );
+  assert.equal(
+    await value(
+      await root(
+        "select count(*)::int from public.employees where registration='IMPORT-ROLLBACK'",
+      ),
+    ),
+    0,
+  );
+  assert.equal(
+    await value(
+      await as("rafaella", "select public.import_calendar($1)", [
+        JSON.stringify([
+          {
+            class_id: classId,
+            scheduled_date: "2026-09-10",
+            has_course: true,
+            kind: "replacement",
+            reason: "Reposição de validação",
+          },
+        ]),
+      ]),
+    ),
+    1,
+  );
+  const status = await value(
+    await as("collaborator", "select public.course_status($1,'2026-09-10')", [
+      classId,
+    ]),
+  );
+  assert.equal(status.has_course, true);
+});
+await test("Arquivo de relatório é registrado e continua privado", async () => {
+  const report = await value(
+    await as("rafaella", "select public.register_report($1)", [
+      JSON.stringify({
+        title: "Relatório de validação",
+        kind: "attendance",
+        period_start: "2026-09-01",
+        period_end: "2026-09-30",
+      }),
+    ]),
+  );
+  const path = `${users.rafaella}/validacao.pdf`;
+  await as(
+    "rafaella",
+    "insert into storage.objects(bucket_id,name) values('exports',$1)",
+    [path],
+  );
+  assert.ok(
+    await value(
+      await as("rafaella", "select public.register_export($1,'pdf',$2)", [
+        report,
+        path,
+      ]),
+    ),
+  );
+  assert.equal(
+    (
+      await as(
+        "rafaella",
+        "select id from storage.objects where bucket_id='exports' and name=$1",
+        [path],
+      )
+    ).rows.length,
+    1,
+  );
+  assert.equal(
+    (
+      await as(
+        "collaborator",
+        "select id from storage.objects where bucket_id='exports' and name=$1",
+        [path],
+      )
+    ).rows.length,
+    0,
+  );
+});
+await test("Avaliação da gestão aceita um voto e preserva o mínimo de anonimato", async () => {
+  const manager = await value(
+    await root(
+      "select id from public.managers where active order by full_name limit 1",
+    ),
+  );
+  const cycle = await value(
+    await as("rafaella", "select public.save_review_cycle($1,$2,null)", [
+      JSON.stringify({
+        title: "Ciclo anônimo de validação",
+        start_date: "2026-09-01",
+        end_date: "2026-09-30",
+        minimum_responses: 5,
+      }),
+      [manager],
+    ]),
+  );
+  await as("rafaella", "select public.set_review_cycle_status($1,'open',1)", [
+    cycle,
+  ]);
+  const criteria = (
+    await root(
+      "select criterion_id from public.manager_cycle_criteria where cycle_id=$1",
+      [cycle],
+    )
+  ).rows;
+  const scores = Object.fromEntries(criteria.map((c) => [c.criterion_id, 4]));
+  await as(
+    "collaborator",
+    "select public.submit_manager_review($1,$2,$3,$4,$5,$6)",
+    [
+      cycle,
+      manager,
+      JSON.stringify(scores),
+      "Comunicação clara",
+      "Organização",
+      "Apoio",
+    ],
+  );
+  await blocked(
+    as(
+      "collaborator",
+      "select public.submit_manager_review($1,$2,$3,$4,$5,$6)",
+      [cycle, manager, JSON.stringify(scores), "", "", ""],
+    ),
+    /DUPLICATE_VOTE/,
+  );
+  await as("rafaella", "select public.set_review_cycle_status($1,'closed',2)", [
+    cycle,
+  ]);
+  const result = await value(
+    await as("rafaella", "select public.manager_results($1)", [cycle]),
+  );
+  assert.equal(result.available, true);
+  assert.equal(result.managers[0].available, false);
+  assert.equal(JSON.stringify(result).includes("Comunicação clara"), false);
 });
 await test("Usuário suspenso perde acesso com a mesma sessão", async () => {
   await root("update public.profiles set status='suspended' where id=$1", [

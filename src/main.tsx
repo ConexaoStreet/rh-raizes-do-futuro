@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import App from "./App";
 import "./styles.css";
 import "./styles/rh-redesign.css";
+import "./styles/rh-evolution.css";
 import { capture, captureError, observeWebVitals } from "./telemetry";
 import { initializeTheme } from "./theme";
 import ErrorBoundary from "./ErrorBoundary";
@@ -27,8 +28,12 @@ window.setTimeout(() => {
   } catch {}
 }, 10000);
 
-window.addEventListener("error", (event) => captureError("window", event.error));
-window.addEventListener("unhandledrejection", (event) => captureError("promise", event.reason));
+window.addEventListener("error", (event) =>
+  captureError("window", event.error),
+);
+window.addEventListener("unhandledrejection", (event) =>
+  captureError("promise", event.reason),
+);
 window.addEventListener("load", () => {
   window.setTimeout(() => {
     const navigation = performance.getEntriesByType("navigation")[0] as
