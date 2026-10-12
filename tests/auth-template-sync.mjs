@@ -65,6 +65,13 @@ globalThis.fetch = async (url, options) => {
   if (options?.method !== "PATCH") {
     throw new Error("Unexpected method: " + String(options?.method));
   }
+  const payload = JSON.parse(options.body);
+  if (payload.mailer_subjects_confirmation !== "Confirme seu e-mail | Raízes do Futuro") {
+    throw new Error("Confirmation subject must support every email provider.");
+  }
+  if (/gmail/i.test(payload.mailer_templates_confirmation_content)) {
+    throw new Error("Confirmation message must not require Gmail.");
+  }
   return { ok: true, text: async () => "" };
 };
 await import(${JSON.stringify(scriptUrl)});

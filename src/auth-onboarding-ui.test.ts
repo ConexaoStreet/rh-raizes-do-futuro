@@ -18,8 +18,8 @@ describe("RH first-access redesign", () => {
     expect(auth).toContain("continueSignupCredentials");
   });
 
-  it("preserves Gmail, pre-registration and password validations", () => {
-    expect(auth).toContain('/^[^\\s@]+@gmail\\.com$/i');
+  it("preserves email, pre-registration and password validations", () => {
+    expect(auth).toContain("validEmailAddress(email)");
     expect(auth).toContain("nameMatch.result?.matched");
     expect(auth).toContain("strongPassword(signupDraft.password)");
     expect(auth).toContain("signupDraft.password !== signupDraft.confirmation");

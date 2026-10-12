@@ -1,13 +1,10 @@
 {
-  "pack": 4,
+  "pack": 6,
   "changes": [
-    "O Datasul agora apresenta os dados do próprio Raízes, com pessoas por setor, turmas e chamadas, sem pedir conexão com outro sistema.",
-    "Corrigimos a troca entre Turma e Equipe de RH para abrir a primeira página do grupo escolhido.",
-    "Calendário, documentos e feedbacks explicam falhas de carregamento e permitem tentar novamente, sem parecer vazios.",
-    "A importação do calendário recusa datas impossíveis e motivos vazios; os arquivos PowerPoint são enviados com o formato correto.",
-    "Cancelar ações na TI não mostra mais sucesso, e o painel se adapta melhor às telas pequenas.",
-    "As configurações da TI são salvas com verificação de acesso; contas bloqueadas não conseguem usar chamados e anexos.",
-    "A limpeza de envios incompletos preserva os arquivos já registrados, e o histórico informa quando um chamado foi resolvido.",
-    "A TI permite renovar a confirmação de identidade sem perder o rascunho, e o Datasul explica quando a conta não pode consultar os cadastros."
+    "A verificação de segurança só avança quando o serviço confirma o sucesso. Respostas recusadas ou incompletas mantêm a tela de conferência aberta.",
+    "As mensagens explicam quando o envio de e-mails atingiu um limite temporário ou precisa ser configurado pelo responsável pelo site.",
+    "Os códigos de segurança agora distinguem falha de envio, limite temporário e configuração pendente, sem mostrar detalhes privados do provedor.",
+    "Conferimos os setores, tarefas, conversas, planilhas, documentos, feedbacks, notas e relatórios com contas de auditoria nos serviços publicados.",
+    "A entrega dos códigos e os cadastros restantes continuam pendentes da configuração de envio. Esta rodada não declara o site 100% aprovado."
   ]
 }

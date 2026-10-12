@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { isBrazilRequest, requestFingerprint } from "../_shared/request-security.ts";
+import { validEmailAddress } from "../../../shared/email-address.ts";
 
 const required = (name: string) => {
   const value = Deno.env.get(name);
@@ -82,8 +83,8 @@ Deno.serve(async (request) => {
 
     if (activationCode.length < 10)
       return respond(origin, { error: "INVALID_ACTIVATION" }, 400);
-    if (!/^[^\s@]+@gmail\.com$/i.test(email))
-      return respond(origin, { error: "GMAIL_REQUIRED" }, 400);
+    if (!validEmailAddress(email))
+      return respond(origin, { error: "INVALID_EMAIL" }, 400);
     if (!strongPassword(password))
       return respond(origin, { error: "WEAK_PASSWORD" }, 400);
     if (body.terms !== true)
