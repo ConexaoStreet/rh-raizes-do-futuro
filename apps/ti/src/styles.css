@@ -132,7 +132,6 @@ button:hover:not(:disabled),
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -142,8 +141,6 @@ button:hover:not(:disabled),
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 18px 14px 14px;
-  background: #09130f;
   border-right: 1px solid var(--border);
 }
 
@@ -182,16 +179,13 @@ button:hover:not(:disabled),
 }
 
 .environment {
-  margin: 20px 0 18px;
   min-height: 38px;
   border: 1px solid var(--border);
   padding: 7px 9px;
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #b4c5bc;
   font-size: .67rem;
-  font-weight: 800;
 }
 
 .environment small {
