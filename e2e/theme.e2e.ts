@@ -253,7 +253,7 @@ test("first access starts with searchable preregistration identity", async ({ pa
   await expect(page.getByLabel("Quem é você?")).toBeVisible();
   await expect(page.getByPlaceholder("Pesquise seu nome")).toBeVisible();
   await expect(page.getByText("Selecione seu nome")).toBeVisible();
-  await expect(page.getByLabel("Gmail")).toHaveCount(0);
+  await expect(page.getByLabel("E-mail", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Telefone")).toHaveCount(0);
   await expect(page.getByLabel("Senha", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Turma")).toHaveCount(0);

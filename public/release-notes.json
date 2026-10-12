@@ -1,13 +1,10 @@
 {
-  "pack": 4,
+  "pack": 5,
   "changes": [
-    "O Datasul agora apresenta os dados do próprio Raízes, com pessoas por setor, turmas e chamadas, sem pedir conexão com outro sistema.",
-    "Corrigimos a troca entre Turma e Equipe de RH para abrir a primeira página do grupo escolhido.",
-    "Calendário, documentos e feedbacks explicam falhas de carregamento e permitem tentar novamente, sem parecer vazios.",
-    "A importação do calendário recusa datas impossíveis e motivos vazios; os arquivos PowerPoint são enviados com o formato correto.",
-    "Cancelar ações na TI não mostra mais sucesso, e o painel se adapta melhor às telas pequenas.",
-    "As configurações da TI são salvas com verificação de acesso; contas bloqueadas não conseguem usar chamados e anexos.",
-    "A limpeza de envios incompletos preserva os arquivos já registrados, e o histórico informa quando um chamado foi resolvido.",
-    "A TI permite renovar a confirmação de identidade sem perder o rascunho, e o Datasul explica quando a conta não pode consultar os cadastros."
+    "O cadastro do RH aceita e-mails de qualquer provedor, incluindo Outlook, Yahoo, empresas e endereços temporários. A exigência de Gmail foi retirada.",
+    "A ativação de gestores também aceita outros provedores. A senha forte, o convite de uso único e a segunda etapa de segurança continuam obrigatórios.",
+    "Os campos e as orientações agora dizem e-mail. A mensagem de confirmação também foi ajustada para qualquer provedor.",
+    "Ao concluir o cadastro, o RH mantém o cargo, o setor e a turma do pré-cadastro autorizado e mostra o nome da turma correta.",
+    "Continuamos exigindo a confirmação do endereço. Um e-mail válido sozinho não dá acesso sem pré-cadastro, termos aceitos e sessão válida."
   ]
 }

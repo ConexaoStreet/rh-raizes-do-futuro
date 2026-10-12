@@ -42,7 +42,7 @@ A leitura remota confirmou as cinco políticas novas, a RPC acessível a authent
 
 ## Limites e pendência real
 
-O envio de e-mails automáticos do sistema, inclusive códigos por e-mail, ainda depende de um domínio de envio verificado no Resend: a conexão retornou “No domains found.” Os projetos RH e TI têm somente seus endereços vercel.app. Os e-mails de progresso foram enviados pelo Gmail em HTML no corpo, sem anexo; essa entrega não configura o remetente do backend.
+A conexão Resend retornou “No domains found.” Os projetos RH e TI têm somente seus endereços vercel.app. Os e-mails de progresso foram enviados pelo Gmail em HTML no corpo, sem anexo; essa entrega não configura o remetente do backend. Na auditoria real iniciada após este pacote, o envio e a confirmação de cadastro foram comprovados com uma caixa privada temporária e requisições reais ao serviço de autenticação. Portanto, a ausência de domínios nessa conexão não deve ser usada sozinha para afirmar que todos os e-mails do sistema estão indisponíveis. Códigos para cargos ativados e notificações de negócio ainda precisam ser conferidos no fluxo real; ver `2026-10-11-real-rh-audit.md`.
 
 Os testes locais não comprovam login real com código, entrega push a um dispositivo, binários do Storage em produção ou operação de APIs externas com credenciais. GitHub e Vercel são conferidos pelas conexões e pelos deploys; os diagnósticos opcionais dentro da TI podem solicitar credenciais próprias. Não foram removidas proteções de autenticação para contornar essas dependências. O aviso preexistente de proteção contra senhas vazadas desativada continua documentado.
 

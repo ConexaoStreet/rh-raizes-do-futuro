@@ -55,7 +55,7 @@ subject = "Seu acesso ao Raízes do Futuro"
 content_path = "./templates/invite.html"
 
 [auth.email.template.confirmation]
-subject = "Confirme seu Gmail | Raízes do Futuro"
+subject = "Confirme seu e-mail | Raízes do Futuro"
 content_path = "./templates/confirmation.html"
 
 [auth.email.template.recovery]
