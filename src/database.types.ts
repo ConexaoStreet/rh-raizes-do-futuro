@@ -1460,6 +1460,10 @@ export type Database = {
         Returns: undefined;
       };
       bootstrap: { Args: Record<string, never>; Returns: Json };
+      confirm_authenticator_session: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
       complete_profile: { Args: { payload: Json | null }; Returns: undefined };
       course_status: {
         Args: { class_identifier: string | null; day: string | null };

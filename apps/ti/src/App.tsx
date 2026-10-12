@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { client, rpc, updateSetting } from "./api";
 import { useAuth, Verification } from "./auth";
+import { sessionIdentity } from "../../../shared/verification-session";
 import { LoginMascot } from "./LoginMascot";
 import { TiShell } from "./Shell";
 import { StatusTile } from "./components/StatusTile";
@@ -278,7 +279,7 @@ function toneFor(value: unknown) {
 }
 
 export default function App() {
-  const { user, can, refresh } = useAuth();
+  const { user, session, can, refresh } = useAuth();
   const [view, setView] = useState<TiView>("overview");
   const [settings, setSettings] = useState<Record<string, JsonObject>>({});
   const [snapshot, setSnapshot] = useState<Snapshot>({});
@@ -908,14 +909,22 @@ export default function App() {
       {pendingAction && (
         <Verification
           onCancel={() => setPendingAction(null)}
-          onDone={async () => {
+          onDone={async (isCurrent) => {
+            const original = sessionIdentity(session);
+            if (!original || !isCurrent()) return;
             const verified = (await rpc("bootstrap")) as {
               ready?: boolean;
               recently_verified?: boolean;
             };
+            if (!isCurrent()) return;
             if (!verified.ready || !verified.recently_verified)
               throw new Error("VERIFICATION_REQUIRED");
             await refresh();
+            if (!isCurrent()) return;
+            const {
+              data: { session: current },
+            } = await client().auth.getSession();
+            if (!isCurrent() || sessionIdentity(current) !== original) return;
             setPendingAction(null);
             await run(
               pendingAction.key,

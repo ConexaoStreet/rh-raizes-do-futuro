@@ -36,6 +36,8 @@ import type { Row } from "./database.types";
 import { Link } from "react-router-dom";
 import { useSiteStatus } from "./site-status";
 import MaintenanceNotice from "./MaintenanceNotice";
+import NativeAuthenticator from "../shared/NativeAuthenticator";
+import { createNativeAuthenticatorApi } from "../shared/native-authenticator";
 export type Bootstrap = {
   profile: Row<"profiles">;
   roles: string[];
@@ -119,6 +121,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
+      if (event === "MFA_CHALLENGE_VERIFIED") return;
       if (event === "SIGNED_OUT") setUser(null);
       if (event === "PASSWORD_RECOVERY") setRecovery(true);
       setTimeout(() => void refresh(), 0);
@@ -1554,13 +1557,26 @@ export function Verification({
   onDone,
   onCancel,
 }: {
-  onDone: () => Promise<void>;
+  onDone: (isCurrent: () => boolean) => Promise<void>;
   onCancel?: () => void;
 }) {
   const [sent, setSent] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState("");
+  const [native, setNative] = useState(false);
+  const verificationActive = useRef(false);
+  useEffect(() => {
+    verificationActive.current = true;
+    return () => {
+      verificationActive.current = false;
+    };
+  }, []);
+  const [authenticator] = useState(() =>
+    createNativeAuthenticatorApi(client().auth.mfa, () =>
+      rpc("confirm_authenticator_session", {}),
+    ),
+  );
   useEffect(() => {
     if (seconds <= 0) return;
     const timer = setTimeout(() => setSeconds((s) => s - 1), 1000);
@@ -1612,59 +1628,35 @@ export function Verification({
         <ShieldCheck size={28} />
       </div>
       <h1>Verificação de segurança</h1>
-      {sent ? (
+      {native ? (
+        <p>Confirme o acesso com seu aplicativo.</p>
+      ) : sent ? (
         <p>Enviamos um código de 6 dígitos para {email}.</p>
       ) : (
         <p>Confirme o acesso pelo seu e-mail.</p>
       )}
-      <form
-        className="form-stack"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          try {
-            const code = String(new FormData(e.currentTarget).get("code"));
-            await invoke({ action: "verify", code });
-            capture("security_verification_success");
-            await onDone();
-          } catch (e) {
-            toast.error((e as Error).message);
-          } finally {
+      {native ? (
+        <NativeAuthenticator
+          api={authenticator}
+          onDone={onDone}
+          onBusyChange={setBusy}
+          onBack={() => {
+            setNative(false);
             setBusy(false);
-          }
-        }}
-      >
-        {sent && (
-          <>
-            <Field label="Código">
-              <input
-                className="otp-input"
-                name="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                minLength={6}
-                maxLength={6}
-                required
-                autoFocus
-              />
-            </Field>
-            <button className="primary" disabled={busy}>
-              Verificar
-            </button>
-          </>
-        )}
-        <button
-          type="button"
-          disabled={busy || seconds > 0}
-          onClick={async () => {
+          }}
+        />
+      ) : (
+        <form
+          className="form-stack"
+          onSubmit={async (e) => {
+            e.preventDefault();
             setBusy(true);
             try {
-              const result = await invoke({ action: "send" });
-              capture("security_code_requested");
-              setEmail(result.masked_email);
-              setSent(true);
-              setSeconds(60);
+              const code = String(new FormData(e.currentTarget).get("code"));
+              await invoke({ action: "verify", code });
+              capture("security_verification_success");
+              if (verificationActive.current)
+                await onDone(() => verificationActive.current);
             } catch (e) {
               toast.error((e as Error).message);
             } finally {
@@ -1672,23 +1664,71 @@ export function Verification({
             }
           }}
         >
-          {seconds > 0
-            ? `Reenviar em ${seconds}s`
-            : sent
-              ? "Reenviar código"
-              : "Enviar código"}
-        </button>
-        <button
-          type="button"
-          className="text-button"
-          onClick={() => {
-            if (onCancel) onCancel();
-            else void client().auth.signOut();
-          }}
-        >
-          {onCancel ? "Cancelar" : "Voltar ao login"}
-        </button>
-      </form>
+          {sent && (
+            <>
+              <Field label="Código">
+                <input
+                  className="otp-input"
+                  name="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  minLength={6}
+                  maxLength={6}
+                  required
+                  autoFocus
+                />
+              </Field>
+              <button className="primary" disabled={busy}>
+                Verificar
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            disabled={busy || seconds > 0}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const result = await invoke({ action: "send" });
+                capture("security_code_requested");
+                setEmail(result.masked_email);
+                setSent(true);
+                setSeconds(60);
+              } catch (e) {
+                toast.error((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {seconds > 0
+              ? `Reenviar em ${seconds}s`
+              : sent
+                ? "Reenviar código"
+                : "Enviar código"}
+          </button>
+          <button
+            type="button"
+            className="text-button"
+            disabled={busy}
+            onClick={() => setNative(true)}
+          >
+            Usar aplicativo de códigos
+          </button>
+        </form>
+      )}
+      <button
+        type="button"
+        className="text-button"
+        disabled={busy}
+        onClick={() => {
+          if (onCancel) onCancel();
+          else void client().auth.signOut();
+        }}
+      >
+        {onCancel ? "Cancelar" : "Voltar ao login"}
+      </button>
     </AuthFrame>
   );
 }

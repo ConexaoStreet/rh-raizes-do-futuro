@@ -21,6 +21,8 @@ type ApiCall = { key: string; method: string; url: string; body: JsonRecord };
 type Failure = { status: number; message: string };
 type Reply = { status: number; json: unknown };
 type TiState = {
+  nativeFactors: JsonRecord[];
+  nativeCodeAccepted: boolean;
   permissions: string[];
   recentlyVerified: boolean;
   settings: Record<string, JsonRecord>;
@@ -62,6 +64,15 @@ function record(value: unknown): JsonRecord {
 
 function initialState(): TiState {
   return {
+    nativeFactors: [
+      {
+        id: "fixture-native-factor",
+        factor_type: "totp",
+        status: "verified",
+        friendly_name: "Aplicativo de teste",
+      },
+    ],
+    nativeCodeAccepted: false,
     permissions: [
       "ti.view",
       "ti.manage",
@@ -277,14 +288,14 @@ const roles = [
 
 async function seedSession(page: Page) {
   await page.addInitScript(
-    ({ ownerId }) => {
+    ({ ownerId, currentSessionId }) => {
       const exp = Math.floor(Date.now() / 1000) + 3600;
       const encode = (value: unknown) =>
         btoa(JSON.stringify(value))
           .replaceAll("=", "")
           .replaceAll("+", "-")
           .replaceAll("/", "_");
-      const token = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: ownerId, aud: "authenticated", role: "authenticated", exp })}.c2lnbmF0dXJl`;
+      const token = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: ownerId, aud: "authenticated", role: "authenticated", session_id: currentSessionId, exp })}.c2lnbmF0dXJl`;
       localStorage.setItem(
         "sb-127-auth-token",
         JSON.stringify({
@@ -306,7 +317,7 @@ async function seedSession(page: Page) {
       );
       sessionStorage.setItem("raizes-ti-intro-seen", "1");
     },
-    { ownerId },
+    { ownerId, currentSessionId },
   );
 }
 
@@ -465,10 +476,94 @@ const test = base.extend<{ ti: TiHarness }>({
           app_metadata: {},
           user_metadata: {},
           created_at: when,
+          factors: state.nativeFactors,
         });
         return;
       }
+      if (path === "/auth/v1/logout") {
+        await route.fulfill({ status: 204, body: "" });
+        return;
+      }
+      if (path === "/auth/v1/factors" && request.method() === "POST") {
+        state.nativeFactors.push({
+          id: "fixture-pending-factor",
+          factor_type: "totp",
+          status: "unverified",
+        });
+        await fulfill(route, {
+          id: "fixture-pending-factor",
+          type: "totp",
+          totp: {
+            qr_code:
+              '<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" /></svg>',
+            secret: "FIXTUREKEY",
+          },
+        });
+        return;
+      }
+      if (path.startsWith("/auth/v1/factors/") && path.endsWith("/challenge")) {
+        await fulfill(route, {
+          id: "fixture-challenge",
+          type: "totp",
+          expires_at: Math.floor(Date.now() / 1000) + 300,
+        });
+        return;
+      }
+      if (path.startsWith("/auth/v1/factors/") && path.endsWith("/verify")) {
+        state.nativeCodeAccepted = true;
+        const factor = state.nativeFactors.find((f) =>
+          path.includes(String(f.id)),
+        );
+        if (factor) factor.status = "verified";
+        const exp = Math.floor(Date.now() / 1000) + 3600;
+        const token =
+          Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString(
+            "base64url",
+          ) +
+          "." +
+          Buffer.from(
+            JSON.stringify({
+              sub: ownerId,
+              role: "authenticated",
+              aud: "authenticated",
+              exp,
+              aal: "aal2",
+              session_id: currentSessionId,
+            }),
+          ).toString("base64url") +
+          ".c2lnbmF0dXJl";
+        await fulfill(route, {
+          access_token: token,
+          refresh_token: "fixture-refresh",
+          expires_in: 3600,
+          token_type: "bearer",
+          user: {
+            id: ownerId,
+            aud: "authenticated",
+            role: "authenticated",
+            email: "operator@example.test",
+            created_at: when,
+            factors: state.nativeFactors,
+          },
+        });
+        return;
+      }
+      if (
+        path.startsWith("/auth/v1/factors/") &&
+        request.method() === "DELETE"
+      ) {
+        state.nativeFactors = state.nativeFactors.filter(
+          (f) => !path.endsWith(String(f.id)),
+        );
+        await fulfill(route, {});
+        return;
+      }
       if (path.startsWith("/rest/v1/rpc/")) {
+        if (resource === "confirm_authenticator_session") {
+          state.recentlyVerified = state.nativeCodeAccepted;
+          await fulfill(route, { ok: state.nativeCodeAccepted });
+          return;
+        }
         if (resource === "bootstrap") {
           await fulfill(route, {
             profile: {
@@ -1467,6 +1562,227 @@ test("integration transport failures allow retry without displaying a successful
     page.getByRole("region", { name: "Diagnóstico de GitHub e Vercel" }),
   ).toContainText("fixture-deploy");
   expect(ti.callsFor("FUNCTION platform-bridge:status")).toHaveLength(2);
+});
+
+test("native authenticator keeps the TI draft on rejected proof and resumes it once at 320px", async ({
+  page,
+  ti,
+}) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  const draft = await startMaintenanceVerification(
+    page,
+    ti,
+    "Confirmação por aplicativo",
+    "Rascunho de auditoria local.",
+  );
+  const dialog = draft.dialog;
+  await dialog
+    .getByRole("button", { name: "Usar aplicativo de códigos", exact: true })
+    .click();
+  await expect(dialog.getByLabel("Código do aplicativo")).toBeVisible();
+  expect(ti.callsFor("POST /auth/v1/factors")).toHaveLength(0);
+  await dialog.getByLabel("Código do aplicativo").fill("123456");
+  ti.replyNext("RPC confirm_authenticator_session", { ok: false });
+  await dialog
+    .getByRole("button", { name: "Confirmar acesso", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "Não foi possível confirmar o acesso",
+  );
+  await draft.expectUnsaved();
+  await dialog
+    .getByRole("button", { name: "Confirmar acesso", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  expect(ti.state.settingWrites).toEqual([draft.payload]);
+  expect(ti.callsFor("RPC confirm_authenticator_session")).toHaveLength(2);
+  expect(ti.callsFor("FUNCTION email-2fa:send")).toHaveLength(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("native setup is explicit and cancelling only discards the pending factor", async ({
+  page,
+  ti,
+}) => {
+  ti.state.nativeFactors = [];
+  const draft = await startMaintenanceVerification(
+    page,
+    ti,
+    "Configuração local",
+    "Rascunho preservado ao voltar.",
+  );
+  const dialog = draft.dialog;
+  await dialog
+    .getByRole("button", { name: "Usar aplicativo de códigos", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", { name: "Configurar aplicativo", exact: true }),
+  ).toBeVisible();
+  expect(ti.callsFor("POST /auth/v1/factors")).toHaveLength(0);
+  await dialog
+    .getByRole("button", { name: "Configurar aplicativo", exact: true })
+    .click();
+  const qr = dialog.getByRole("img", {
+    name: "Código QR para configurar seu aplicativo",
+  });
+  await expect(qr).toBeVisible();
+  expect(await qr.getAttribute("src")).toMatch(
+    /^data:image\/svg\+xml;charset=utf-8,%3Csvg/,
+  );
+  await dialog
+    .getByRole("button", { name: "Usar e-mail", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", { name: "Enviar código", exact: true }),
+  ).toBeVisible();
+  expect(ti.state.nativeFactors).toEqual([]);
+  await draft.expectUnsaved();
+  await dialog
+    .getByRole("button", { name: "Cancelar verificação", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  expect(ti.state.settingWrites).toEqual([]);
+});
+
+test("native confirmation blocks cancelling while busy and keeps a verified factor after rejected app proof", async ({
+  page,
+  ti,
+}) => {
+  const draft = await startMaintenanceVerification(
+    page,
+    ti,
+    "Cancelamento local",
+    "Não retomar sem prova do aplicativo.",
+  );
+  const dialog = draft.dialog;
+  await dialog
+    .getByRole("button", { name: "Usar aplicativo de códigos", exact: true })
+    .click();
+  await dialog.getByLabel("Código do aplicativo").fill("123456");
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(
+    "**/rest/v1/rpc/confirm_authenticator_session",
+    async (route) => {
+      await gate;
+      await route.fulfill({ status: 200, json: { ok: false } });
+    },
+  );
+  await dialog
+    .getByRole("button", { name: "Confirmar acesso", exact: true })
+    .click();
+  await expect(
+    dialog.getByRole("button", { name: "Cancelar verificação", exact: true }),
+  ).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
+  release();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "Não foi possível confirmar o acesso",
+  );
+  await dialog
+    .getByRole("button", { name: "Cancelar verificação", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await draft.expectUnsaved();
+  expect(ti.state.nativeFactors[0].status).toBe("verified");
+  expect(
+    ti.callsFor("DELETE /auth/v1/factors/fixture-native-factor"),
+  ).toHaveLength(0);
+});
+
+test("TI email verification rejects a missing recipient and explains delivery configuration", async ({
+  page,
+  ti,
+}) => {
+  const draft = await startMaintenanceVerification(
+    page,
+    ti,
+    "Envio de código local",
+    "Não avançar com resposta incompleta.",
+  );
+  const dialog = draft.dialog;
+  ti.replyNext("FUNCTION email-2fa:send", { ok: true });
+  await dialog
+    .getByRole("button", { name: "Enviar código", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toHaveText(
+    "Não foi possível enviar o código.",
+  );
+  await expect(
+    dialog.getByRole("textbox", { name: "Código de verificação", exact: true }),
+  ).toHaveCount(0);
+  ti.replyNext(
+    "FUNCTION email-2fa:send",
+    { ok: false, error: "EMAIL_CONFIGURATION_REQUIRED" },
+    503,
+  );
+  await dialog
+    .getByRole("button", { name: "Enviar código", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toHaveText(
+    "O envio de e-mails precisa ser configurado. Você pode usar o aplicativo de códigos para continuar.",
+  );
+  await draft.expectUnsaved();
+});
+
+test("native continuation never replays the TI draft after sign-out during its final bootstrap", async ({
+  page,
+  ti,
+  context,
+}) => {
+  const draft = await startMaintenanceVerification(
+    page,
+    ti,
+    "Não retomar depois de sair",
+    "Interrupção durante a leitura final da conta.",
+  );
+  await draft.dialog
+    .getByRole("button", { name: "Usar aplicativo de códigos", exact: true })
+    .click();
+  await draft.dialog.getByLabel("Código do aplicativo").fill("123456");
+  let release: () => void = () => undefined;
+  let arrived: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const reached = new Promise<void>((resolve) => {
+    arrived = resolve;
+  });
+  await page.route("**/rest/v1/rpc/bootstrap", async (route) => {
+    arrived();
+    await gate;
+    await route.fulfill({
+      status: 200,
+      json: { ready: true, recently_verified: true },
+    });
+  });
+  await draft.dialog
+    .getByRole("button", { name: "Confirmar acesso", exact: true })
+    .click();
+  await reached;
+  const other = await context.newPage();
+  try {
+    await other.setViewportSize({ width: 1440, height: 1000 });
+    await other.goto(tiOrigin);
+    await other.getByRole("button", { name: "Sair", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: /Entrar na Central/ }),
+    ).toBeVisible();
+    release();
+    await page.waitForTimeout(300);
+    expect(ti.callsFor("RPC ti_update_setting")).toHaveLength(1);
+    expect(ti.state.settingWrites).toEqual([]);
+  } finally {
+    release();
+    await other.close();
+  }
 });
 
 async function startMaintenanceVerification(

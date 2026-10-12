@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { client, json, rpc, runAction, useAsync } from "./api";
 import { useAuth, Verification } from "./auth";
+import { sessionIdentity } from "../shared/verification-session";
 import {
   Badge,
   Empty,
@@ -258,7 +259,7 @@ function ClipboardSymbol() {
   return <CheckCheck size={26} />;
 }
 function AttendanceSession({ id, onBack }: { id: string; onBack: () => void }) {
-  const { user, can, refresh } = useAuth();
+  const { user, session: authSession, can, refresh } = useAuth();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
@@ -316,7 +317,10 @@ function AttendanceSession({ id, onBack }: { id: string; onBack: () => void }) {
     return () => window.removeEventListener("beforeunload", listener);
   }, []);
   async function save(changes: Record<string, unknown>[]) {
-    if (data.data?.session.status === "maintenance" && !user.recently_verified) {
+    if (
+      data.data?.session.status === "maintenance" &&
+      !user.recently_verified
+    ) {
       setSecurityOpen(true);
       return false;
     }
@@ -332,7 +336,10 @@ function AttendanceSession({ id, onBack }: { id: string; onBack: () => void }) {
     );
     setBusy(false);
     savingRef.current = false;
-    if (ok) capture("attendance_saved", { maintenance: data.data?.session.status === "maintenance" });
+    if (ok)
+      capture("attendance_saved", {
+        maintenance: data.data?.session.status === "maintenance",
+      });
     data.reload();
     return ok;
   }
@@ -340,8 +347,28 @@ function AttendanceSession({ id, onBack }: { id: string; onBack: () => void }) {
     return (
       <Verification
         onCancel={() => setSecurityOpen(false)}
-        onDone={async () => {
+        onDone={async (isCurrent) => {
+          const original = sessionIdentity(authSession);
+          if (!isCurrent()) return;
+          const verified = (await rpc("bootstrap", {})) as unknown as {
+            ready?: boolean;
+            recently_verified?: boolean;
+          };
+          if (!isCurrent()) return;
+          if (
+            !original ||
+            verified.ready !== true ||
+            verified.recently_verified !== true
+          )
+            throw new Error(
+              "Não foi possível confirmar seu acesso. Tente novamente.",
+            );
           await refresh();
+          if (!isCurrent()) return;
+          const {
+            data: { session: current },
+          } = await client().auth.getSession();
+          if (!isCurrent() || sessionIdentity(current) !== original) return;
           setSecurityOpen(false);
           capture("attendance_reauthentication_success");
         }}
@@ -390,7 +417,13 @@ function AttendanceSession({ id, onBack }: { id: string; onBack: () => void }) {
         {can("attendance.maintenance") &&
           session.status !== "maintenance" &&
           (session.status !== "editing" || !course.can_open) && (
-            <button onClick={() => user.recently_verified ? setReasonOpen(true) : setSecurityOpen(true)}>
+            <button
+              onClick={() =>
+                user.recently_verified
+                  ? setReasonOpen(true)
+                  : setSecurityOpen(true)
+              }
+            >
               <Settings2 size={17} />
               Manutenção
             </button>
@@ -400,7 +433,10 @@ function AttendanceSession({ id, onBack }: { id: string; onBack: () => void }) {
             className="primary"
             disabled={busy}
             onClick={() => {
-              if (!user.recently_verified) { setSecurityOpen(true); return; }
+              if (!user.recently_verified) {
+                setSecurityOpen(true);
+                return;
+              }
               void runAction(async () => {
                 await rpc("end_maintenance", { session_identifier: id });
                 capture("attendance_maintenance_closed");
