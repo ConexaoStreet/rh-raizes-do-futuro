@@ -12,6 +12,7 @@ A confirmação por aplicativo de códigos foi instalada no serviço e conferida
 - A chamada do RH mantém a conferência aberta quando o serviço não confirma que o acesso está pronto.
 - A T.I. só anuncia envio de código quando recebe uma confirmação completa. As mensagens de falha de entrega usam linguagem simples e oferecem a alternativa por aplicativo.
 - O histórico explica a confirmação por aplicativo com uma frase comum.
+- A publicação da T.I. foi testada também com uma instalação independente, sem depender dos pacotes do RH; a falha encontrada nesse preparo foi reproduzida e corrigida.
 
 ## Verificações automáticas
 
@@ -32,8 +33,8 @@ A revisão independente identificou duas falhas durante interrupções e um anú
 
 | Parte                       | Resultado comprovado                                                                                                                                                                                  |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contas separadas            | Colaboradores A e B, gestor, instrutor, T.I. e administração tiveram envio, recebimento, confirmação de e-mail, login por senha e ativação reais                                                      |
-| Aplicativo de códigos       | T.I., administração e colaborador B tiveram o código aceito e a confirmação registrada pelo próprio serviço; repetir a confirmação manteve os prazos                                                  |
+| Contas separadas            | Os sete cargos, incluindo diretor, tiveram envio, recebimento, confirmação de e-mail, login por senha e ativação reais                                                                                |
+| Aplicativo de códigos       | T.I., administração, diretor e colaborador B tiveram o código aceito e a confirmação registrada pelo próprio serviço; repetir a confirmação manteve os prazos                                         |
 | Permissões                  | O colaborador continuou sem acesso administrativo após confirmar o código                                                                                                                             |
 | Instrutor                   | A conta própria recebeu a visão geral e conseguiu consultar os dois setores de auditoria                                                                                                              |
 | Chamadas do RH              | Uma chamada somente da turma fictícia foi aberta no horário real permitido; suas duas pessoas elegíveis foram salvas e lidas novamente; conflito, repetição e edição após finalização foram recusados |
@@ -53,7 +54,6 @@ Os testes reais de autenticação usaram as interfaces oficiais do serviço. O n
 
 ## O que ainda impede aprovação completa
 
-- O cadastro separado de diretor atingiu o limite real de envio. Não foi confirmado artificialmente.
 - Inventário de arquivos, consulta das integrações e exclusão administrativa de arquivo retornaram uma recusa de origem. O histórico do provedor registra Brasil nos pedidos comuns e nos pedidos enviados pela infraestrutura do projeto em São Paulo; a causa interna ainda não foi comprovada. Nenhum cabeçalho de país foi acrescentado para forçar sucesso.
 - A conferência de envio de foto e os demais fluxos que dependem desses serviços de origem continuam pendentes de uma verificação real bem-sucedida.
 - O envio personalizado de e-mails continua dependendo da configuração do remetente. A opção por aplicativo permite confirmar acesso sem depender desse envio.
