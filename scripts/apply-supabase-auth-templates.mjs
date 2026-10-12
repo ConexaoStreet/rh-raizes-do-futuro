@@ -15,7 +15,7 @@ if (!projectRef) {
 const read = (name) => fs.readFileSync(new URL("../supabase/templates/" + name, import.meta.url), "utf8");
 
 const payload = {
-  mailer_subjects_confirmation: "Confirme seu Gmail | Raízes do Futuro",
+  mailer_subjects_confirmation: "Confirme seu e-mail | Raízes do Futuro",
   mailer_templates_confirmation_content: read("confirmation.html"),
   mailer_subjects_magic_link: "Seu acesso seguro | Raízes do Futuro",
   mailer_templates_magic_link_content: read("magic_link.html"),

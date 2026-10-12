@@ -31,6 +31,7 @@ import { shouldRefreshExpiredJwt } from "./auth-errors";
 import { ThemeToggle } from "./theme";
 import { LoginMascot, type MascotMood } from "./LoginMascot";
 import { PASSWORD_POLICY_MESSAGE, strongPassword } from "./password-policy";
+import { validEmailAddress } from "../shared/email-address";
 import type { Row } from "./database.types";
 import { Link } from "react-router-dom";
 import { useSiteStatus } from "./site-status";
@@ -448,8 +449,8 @@ function Login({ configured: ready }: { configured: boolean }) {
 
   function continueSignupCredentials() {
     const email = signupDraft.email.trim().toLowerCase();
-    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-      toast.error("Use um endereço @gmail.com válido.");
+    if (!validEmailAddress(email)) {
+      toast.error("Informe um endereço de e-mail válido.");
       setMascotMood("error");
       return;
     }
@@ -532,8 +533,8 @@ function Login({ configured: ready }: { configured: boolean }) {
         const phone = signupDraft.phone.trim();
         const departmentId = signupDraft.departmentId.trim();
 
-        if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-          toast.error("Use um endereço @gmail.com válido.");
+        if (!validEmailAddress(email)) {
+          toast.error("Informe um endereço de e-mail válido.");
           setMascotMood("error");
           return;
         }
@@ -735,7 +736,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                 <div className="notice">
                   {mode === "recover"
                     ? "Confira seu e-mail para redefinir a senha."
-                    : "Confira seu Gmail e abra o link de verificação. Depois entre com seu e-mail e senha."}
+                    : "Confira seu e-mail e abra o link de verificação. Depois entre com seu e-mail e senha."}
                 </div>
                 {verificationEmail && mode !== "recover" && (
                   <button
@@ -890,13 +891,13 @@ function Login({ configured: ready }: { configured: boolean }) {
                       Confirme seus contatos e crie uma senha exclusiva para o
                       RH.
                     </span>
-                    <Field label="Gmail">
+                    <Field label="E-mail">
                       <input
                         name="email"
                         type="email"
                         autoComplete="email"
                         inputMode="email"
-                        placeholder="seunome@gmail.com"
+                        placeholder="seu@email.com"
                         value={signupDraft.email}
                         onChange={(event) =>
                           setSignupDraft((current) => ({
@@ -1023,7 +1024,7 @@ function Login({ configured: ready }: { configured: boolean }) {
                           !signupDraft.departmentId
                         }
                       >
-                        {busy ? "Aguarde..." : "Verificar Gmail e ativar"}
+                        {busy ? "Aguarde..." : "Verificar e-mail e ativar"}
                         <ArrowRight size={18} />
                       </button>
                     </div>
@@ -1114,8 +1115,8 @@ function ManagerActivation({
     const email = String(form.get("manager_email")).trim().toLowerCase();
     const password = String(form.get("manager_password"));
     const confirmation = String(form.get("manager_confirmation"));
-    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-      toast.error("Informe um endereço @gmail.com válido.");
+    if (!validEmailAddress(email)) {
+      toast.error("Informe um endereço de e-mail válido.");
       return;
     }
     if (!strongPassword(password)) {
@@ -1150,13 +1151,13 @@ function ManagerActivation({
           if (detail?.error === "ACTIVATION_IN_PROGRESS")
             message =
               "Esta ativação já está em andamento. Tente novamente em instantes.";
-          if (detail?.error === "GMAIL_REQUIRED")
-            message = "Informe um endereço @gmail.com válido.";
+          if (detail?.error === "INVALID_EMAIL")
+            message = "Informe um endereço de e-mail válido.";
           if (detail?.error === "WEAK_PASSWORD")
             message =
               "A senha precisa ter 12 caracteres, maiúscula, minúscula, número e símbolo.";
           if (detail?.error === "EMAIL_UNAVAILABLE")
-            message = "Este Gmail já está vinculado a outra conta.";
+            message = "Este e-mail já está vinculado a outra conta.";
           if (detail?.error === "TERMS_REQUIRED")
             message = "É necessário aceitar o uso dos dados para concluir.";
         }
@@ -1219,7 +1220,7 @@ function ManagerActivation({
           <div className="eyebrow">ACESSO EXCLUSIVO DE GESTOR</div>
           <h1>Ative seu acesso de gestão</h1>
           <p>
-            Este fluxo é de uso único. Depois da ativação, seu Gmail e sua nova
+            Este fluxo é de uso único. Depois da ativação, seu e-mail e sua nova
             senha serão usados no login normal, sempre com verificação em duas
             etapas.
           </p>
@@ -1282,19 +1283,19 @@ function ManagerActivation({
         </form>
       ) : (
         <form className="form-stack" onSubmit={activate}>
-          <Field label="Gmail de segurança">
+          <Field label="E-mail de segurança">
             <input
               name="manager_email"
               type="email"
               inputMode="email"
               autoComplete="email"
-              placeholder="seunome@gmail.com"
+              placeholder="seu@email.com"
               required
               autoFocus
             />
           </Field>
           <div className="manager-security-note emphasized">
-            Este Gmail receberá o código de 6 dígitos da verificação em duas
+            Este e-mail receberá o código de 6 dígitos da verificação em duas
             etapas.
           </div>
           <Field label="Crie sua nova senha">
@@ -1315,7 +1316,7 @@ function ManagerActivation({
           <details className="privacy">
             <summary>Uso dos seus dados</summary>
             <p>
-              O Gmail será usado para autenticação, recuperação de acesso e
+              O e-mail será usado para autenticação, recuperação de acesso e
               códigos de segurança. Seu perfil de gestor acessa apenas os
               recursos autorizados pelo cargo e todas as ações administrativas
               permanecem auditadas.
@@ -1393,7 +1394,7 @@ function Onboarding({
       else if (message.includes("PRE_REGISTRATION_ALREADY_LINKED"))
         toast.error("Esse cadastro já está vinculado a outra conta.");
       else if (message.includes("EMAIL_NOT_VERIFIED"))
-        toast.error("Verifique seu Gmail antes de concluir.");
+        toast.error("Verifique seu e-mail antes de concluir.");
       else if (message.includes("INVALID_DEPARTMENT"))
         toast.error("Selecione um departamento válido.");
       else if (message.includes("INVALID_PHONE"))
@@ -1420,7 +1421,7 @@ function Onboarding({
       <div className="eyebrow">PRIMEIRO ACESSO</div>
       <h1>Confirme seus dados</h1>
       <div className="steps">
-        <span className="done">1. Gmail verificado</span>
+        <span className="done">1. E-mail verificado</span>
         <span className="active">2. Identificação</span>
         <span>3. Acesso</span>
       </div>
@@ -1469,7 +1470,7 @@ function Onboarding({
           </span>
         )}
 
-        <Field label="Gmail">
+        <Field label="E-mail">
           <input value={user.profile.email} readOnly aria-readonly="true" />
         </Field>
 
