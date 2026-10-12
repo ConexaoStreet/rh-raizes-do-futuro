@@ -47,7 +47,6 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: var(--bg);
 }
 
 button,
@@ -111,9 +110,6 @@ button:hover:not(:disabled),
 }
 
 .primary-button {
-  background: linear-gradient(135deg, #8fc4a3, #b8dbc4);
-  color: #0b1813;
-  border-color: transparent;
   font-weight: 800;
 }
 
