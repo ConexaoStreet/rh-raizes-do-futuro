@@ -19,6 +19,22 @@
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
 }
 
+.ti-skip-link {
+  position: fixed;
+  top: -80px;
+  left: 16px;
+  z-index: 10000;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--green-strong);
+  color: var(--bg);
+  font-weight: 700;
+}
+
+.ti-skip-link:focus {
+  top: max(16px, env(safe-area-inset-top));
+}
+
 * {
   box-sizing: border-box;
 }
@@ -838,9 +854,7 @@ html[data-theme="light"] .topbar {
 html[data-theme="light"] .panel,
 html[data-theme="light"] .login-card,
 html[data-theme="light"] .access-card {
-  background: rgba(255,255,255,.94);
   color: var(--text);
-  border-color: var(--border);
 }
 html[data-theme="light"] .panel-icon {
   color: #477961;
@@ -898,10 +912,6 @@ html[data-theme="light"] .badge.warn {
 html[data-theme="light"] .badge.error {
   background: #fbe7e4;
   color: #a34f47;
-}
-html[data-theme="light"] .login-panel,
-html[data-theme="light"] .access-page {
-  background: #eef3ef;
 }
 .login-theme-control,
 .access-theme-control {
