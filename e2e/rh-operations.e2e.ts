@@ -85,6 +85,7 @@ type Fixture = {
   reports: JsonObject[];
   uploads: Upload[];
   exports: ExportRow[];
+  securityResponses: { status: number; body: JsonObject }[];
 };
 const fixtures = new WeakMap<Page, Fixture>();
 
@@ -147,6 +148,7 @@ function fixture(): Fixture {
     reports: [],
     uploads: [],
     exports: [],
+    securityResponses: [],
   };
 }
 
@@ -314,7 +316,19 @@ async function setup(page: Page, state = fixture()) {
     }
     let response: unknown = [];
     let known = true;
-    if (path.endsWith("/rpc/bootstrap")) {
+    if (path === "/functions/v1/email-2fa") {
+      const reply = state.securityResponses.shift();
+      if (!reply) {
+        state.unexpected.push(`${request.method()} ${path}`);
+        await route.fulfill({
+          status: 500,
+          json: { error: "UNEXPECTED_FIXTURE_REQUEST" },
+        });
+        return;
+      }
+      await route.fulfill({ status: reply.status, json: reply.body });
+      return;
+    } else if (path.endsWith("/rpc/bootstrap")) {
       response = {
         profile: {
           id: owner,
@@ -934,6 +948,88 @@ test("route guards block attendance management and reports before operational re
       /attendance_sessions|register_report|register_export/.test(call.path),
     ),
   ).toHaveLength(0);
+});
+
+test("security explains delivery configuration and keeps the code form closed", async ({
+  page,
+}) => {
+  const state = fixture();
+  seedSession(state, "maintenance");
+  state.recentlyVerified = false;
+  state.securityResponses = [
+    { status: 503, body: { error: "EMAIL_CONFIGURATION_REQUIRED" } },
+  ];
+  await openSeededSession(page, state);
+  await page
+    .getByRole("button", { name: "Presente: Ana Auditoria", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Enviar código", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "O envio de e-mails precisa ser configurado pelo responsável pelo site.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(page.getByLabel("Código", { exact: true })).toHaveCount(0);
+  expect(rpcCalls(state, "save_attendance")).toHaveLength(0);
+});
+
+test("security rejects a failed send returned with HTTP success", async ({
+  page,
+}) => {
+  const state = fixture();
+  seedSession(state, "maintenance");
+  state.recentlyVerified = false;
+  state.securityResponses = [
+    { status: 200, body: { ok: false, error: "EMAIL_DELIVERY_FAILED" } },
+  ];
+  await openSeededSession(page, state);
+  await page
+    .getByRole("button", { name: "Presente: Ana Auditoria", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Enviar código", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "Não foi possível enviar o código. Tente novamente mais tarde.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(page.getByLabel("Código", { exact: true })).toHaveCount(0);
+});
+
+test("security keeps verification open when a successful HTTP response rejects the code", async ({
+  page,
+}) => {
+  const state = fixture();
+  seedSession(state, "maintenance");
+  state.recentlyVerified = false;
+  state.securityResponses = [
+    { status: 200, body: { ok: true, masked_email: "a***@example.test" } },
+    { status: 200, body: { ok: false, error: "INVALID_CODE" } },
+  ];
+  await openSeededSession(page, state);
+  await page
+    .getByRole("button", { name: "Presente: Ana Auditoria", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Enviar código", exact: true })
+    .click();
+  await page.getByLabel("Código", { exact: true }).fill("123456");
+  await page.getByRole("button", { name: "Verificar", exact: true }).click();
+  await expect(
+    page.getByText("Código inválido ou expirado.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Verificação de segurança",
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(rpcCalls(state, "save_attendance")).toHaveLength(0);
 });
 
 test("attendance viewers can inspect history without editing or opening maintenance", async ({

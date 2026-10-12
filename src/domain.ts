@@ -116,10 +116,23 @@ export function errorMessage(error: unknown) {
         ? String(error.message)
         : "";
   const known: Record<string, string> = {
+    over_email_send_rate_limit:
+      "O envio de e-mails atingiu o limite temporário. Aguarde para tentar novamente.",
+    over_request_rate_limit:
+      "Muitas tentativas seguidas. Aguarde para tentar novamente.",
+    EMAIL_CONFIGURATION_REQUIRED:
+      "O envio de e-mails precisa ser configurado pelo responsável pelo site.",
+    EMAIL_DELIVERY_FAILED:
+      "Não foi possível enviar o código. Tente novamente mais tarde.",
+    EMAIL_RATE_LIMITED:
+      "O envio de e-mails atingiu o limite temporário. Aguarde para tentar novamente.",
+    RATE_LIMITED: "Aguarde antes de tentar novamente.",
     INVALID_FILE: "Escolha um arquivo permitido, com até 10 MB e nome válido.",
     INVALID_MESSAGE: "Confira o texto e os anexos antes de enviar.",
-    INVALID_ATTACHMENT: "Não foi possível confirmar este anexo. Remova-o e selecione o arquivo novamente.",
-    ATTACHMENT_LIMIT: "Há anexos pendentes. Remova os que não vai enviar antes de acrescentar outros.",
+    INVALID_ATTACHMENT:
+      "Não foi possível confirmar este anexo. Remova-o e selecione o arquivo novamente.",
+    ATTACHMENT_LIMIT:
+      "Há anexos pendentes. Remova os que não vai enviar antes de acrescentar outros.",
     INVALID_ASSIGNEE: "Escolha uma pessoa com conta ativa neste setor.",
     RATE_LIMIT: "Aguarde alguns segundos antes de enviar outra mensagem.",
     FORBIDDEN: "Você não tem permissão.",
@@ -132,15 +145,22 @@ export function errorMessage(error: unknown) {
     DUPLICATE_VOTE: "Sua avaliação já foi enviada.",
     MINIMUM_RESPONSES: "Ainda não há respostas suficientes.",
     MFA_REQUIRED: "Conclua a verificação de segurança.",
-    RECENT_VERIFICATION_REQUIRED: "Confirme sua identidade novamente para fazer esta alteração.",
-    ATTENDANCE_NOT_FINALIZED: "A justificativa só pode ser enviada após o encerramento da chamada.",
+    RECENT_VERIFICATION_REQUIRED:
+      "Confirme sua identidade novamente para fazer esta alteração.",
+    ATTENDANCE_NOT_FINALIZED:
+      "A justificativa só pode ser enviada após o encerramento da chamada.",
     NOT_ELIGIBLE: "Este registro não está elegível para justificativa.",
-    DUPLICATE_JUSTIFICATION: "Já existe uma justificativa pendente ou aceita para esta falta.",
+    DUPLICATE_JUSTIFICATION:
+      "Já existe uma justificativa pendente ou aceita para esta falta.",
     INVALID_CODE: "Código inválido ou expirado.",
-    RATE_LIMITED: "Aguarde antes de tentar novamente.",
     INVALID_TRANSITION: "Esta alteração não está disponível.",
     23505: "Já existe um registro com esses dados.",
   };
+  const code =
+    typeof error === "object" && error && "code" in error
+      ? String(error.code || "")
+      : "";
+  if (known[code]) return known[code];
   for (const [key, text] of Object.entries(known))
     if (message.includes(key)) return text;
   if (/Invalid login credentials/i.test(message))
