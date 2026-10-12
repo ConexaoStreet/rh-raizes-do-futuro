@@ -1,10 +1,10 @@
 {
-  "pack": 5,
+  "pack": 6,
   "changes": [
-    "O cadastro do RH aceita e-mails de qualquer provedor, incluindo Outlook, Yahoo, empresas e endereços temporários. A exigência de Gmail foi retirada.",
-    "A ativação de gestores também aceita outros provedores. A senha forte, o convite de uso único e a segunda etapa de segurança continuam obrigatórios.",
-    "Os campos e as orientações agora dizem e-mail. A mensagem de confirmação também foi ajustada para qualquer provedor.",
-    "Ao concluir o cadastro, o RH mantém o cargo, o setor e a turma do pré-cadastro autorizado e mostra o nome da turma correta.",
-    "Continuamos exigindo a confirmação do endereço. Um e-mail válido sozinho não dá acesso sem pré-cadastro, termos aceitos e sessão válida."
+    "A verificação de segurança só avança quando o serviço confirma o sucesso. Respostas recusadas ou incompletas mantêm a tela de conferência aberta.",
+    "As mensagens explicam quando o envio de e-mails atingiu um limite temporário ou precisa ser configurado pelo responsável pelo site.",
+    "Os códigos de segurança agora distinguem falha de envio, limite temporário e configuração pendente, sem mostrar detalhes privados do provedor.",
+    "Conferimos os setores, tarefas, conversas, planilhas, documentos, feedbacks, notas e relatórios com contas de auditoria nos serviços publicados.",
+    "A entrega dos códigos e os cadastros restantes continuam pendentes da configuração de envio. Esta rodada não declara o site 100% aprovado."
   ]
 }

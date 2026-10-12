@@ -1567,24 +1567,43 @@ export function Verification({
     return () => clearTimeout(timer);
   }, [seconds]);
   async function invoke(body: { action: string; code?: string }) {
+    const failureMessage = (code?: string) => {
+      if (code === "PASSWORD_LOGIN_REQUIRED")
+        return "Entre novamente com e-mail e senha.";
+      if (
+        code &&
+        [
+          "INVALID_CODE",
+          "RATE_LIMITED",
+          "EMAIL_CONFIGURATION_REQUIRED",
+          "EMAIL_RATE_LIMITED",
+          "EMAIL_DELIVERY_FAILED",
+        ].includes(code)
+      )
+        return errorMessage({ code });
+      return body.action === "verify"
+        ? "Não foi possível conferir o código. Tente novamente."
+        : "Não foi possível enviar. Tente novamente.";
+    };
     const { data, error } = await client().functions.invoke("email-2fa", {
       body,
     });
     if (error) {
-      let message = "Não foi possível enviar. Tente novamente.";
+      let code: string | undefined;
       if ("context" in error && error.context instanceof Response) {
         const detail = (await error.context.json().catch(() => null)) as {
           error?: string;
         } | null;
-        if (detail?.error === "INVALID_CODE")
-          message = "Código inválido ou expirado.";
-        if (detail?.error === "RATE_LIMITED")
-          message = "Aguarde antes de tentar novamente.";
-        if (detail?.error === "PASSWORD_LOGIN_REQUIRED")
-          message = "Entre novamente com e-mail e senha.";
+        code = detail?.error;
       }
-      throw new Error(message);
+      throw new Error(failureMessage(code));
     }
+    if (
+      data?.ok !== true ||
+      (body.action === "send" &&
+        (typeof data.masked_email !== "string" || !data.masked_email.trim()))
+    )
+      throw new Error(failureMessage(data?.error));
     return data as { masked_email: string };
   }
   return (
