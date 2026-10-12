@@ -8,6 +8,15 @@ import {
 } from "../shared/activity-language";
 
 describe("registros em linguagem simples", () => {
+  it("explica a confirmação por aplicativo sem termos de autenticação", () => {
+    expect(
+      describeActivity({
+        action: "authenticator_verified",
+        module: "security",
+        success: true,
+      }).title,
+    ).toBe("Confirmou o acesso pelo aplicativo de códigos");
+  });
   it("explica quando um chamado foi resolvido", () => {
     expect(
       activityChanges({

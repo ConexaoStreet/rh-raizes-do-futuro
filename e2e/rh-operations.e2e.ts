@@ -259,7 +259,7 @@ async function setup(page: Page, state = fixture()) {
   fixtures.set(page, state);
   await page.clock.setFixedTime(new Date(serverTime));
   await page.addInitScript(
-    ({ owner }) => {
+    ({ owner, sessionId }) => {
       sessionStorage.setItem("raizes-inauguracao-2026-09-29", "1");
       const exp = Math.floor(Date.now() / 1000) + 3600;
       const encode = (value: unknown) =>
@@ -267,7 +267,7 @@ async function setup(page: Page, state = fixture()) {
           .replaceAll("=", "")
           .replaceAll("+", "-")
           .replaceAll("/", "_");
-      const token = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: owner, aud: "authenticated", role: "authenticated", exp })}.c2lnbmF0dXJl`;
+      const token = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: owner, aud: "authenticated", role: "authenticated", session_id: sessionId, exp })}.c2lnbmF0dXJl`;
       localStorage.setItem(
         "sb-127-auth-token",
         JSON.stringify({
@@ -288,7 +288,7 @@ async function setup(page: Page, state = fixture()) {
         }),
       );
     },
-    { owner },
+    { owner, sessionId },
   );
   // No request can reach a cloud backend, telemetry service, or email provider.
   await page.route("**/*", async (route) => {
@@ -924,6 +924,45 @@ test("maintenance requires recent identity verification before a correction or c
   expect(
     state.calls.filter((call) => call.path.startsWith("/functions/")),
   ).toHaveLength(0);
+});
+
+test("RH attendance keeps confirmation open when the final account check is not ready or recent", async ({
+  page,
+}) => {
+  const state = fixture();
+  seedSession(state, "maintenance");
+  state.recentlyVerified = false;
+  await openSeededSession(page, state);
+  await page
+    .getByRole("button", { name: "Presente: Ana Auditoria", exact: true })
+    .click();
+  state.securityResponses.push(
+    { status: 200, body: { ok: true, masked_email: "fixture@example.test" } },
+    { status: 200, body: { ok: true } },
+  );
+  await page
+    .getByRole("button", { name: "Enviar código", exact: true })
+    .click();
+  await page.getByLabel("Código", { exact: true }).fill("123456");
+  await page.route("**/rest/v1/rpc/bootstrap", (route) =>
+    route.fulfill({
+      status: 200,
+      json: { ready: false, recently_verified: false },
+    }),
+  );
+  await page.getByRole("button", { name: "Verificar", exact: true }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Verificação de segurança",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Não foi possível confirmar seu acesso. Tente novamente.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(rpcCalls(state, "save_attendance")).toHaveLength(0);
 });
 
 test("route guards block attendance management and reports before operational requests", async ({

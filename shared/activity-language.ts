@@ -110,6 +110,10 @@ const actions: Record<string, [string, string]> = {
     "Confirmou o acesso com um código",
     "confirmar o acesso com um código",
   ],
+  authenticator_verified: [
+    "Confirmou o acesso pelo aplicativo de códigos",
+    "confirmar o acesso pelo aplicativo de códigos",
+  ],
   otp_failed: [
     "Teve o código de acesso recusado",
     "confirmar o acesso com um código",

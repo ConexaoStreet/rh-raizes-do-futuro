@@ -1,10 +1,11 @@
 {
-  "pack": 6,
+  "pack": 7,
   "changes": [
-    "A verificação de segurança só avança quando o serviço confirma o sucesso. Respostas recusadas ou incompletas mantêm a tela de conferência aberta.",
-    "As mensagens explicam quando o envio de e-mails atingiu um limite temporário ou precisa ser configurado pelo responsável pelo site.",
-    "Os códigos de segurança agora distinguem falha de envio, limite temporário e configuração pendente, sem mostrar detalhes privados do provedor.",
-    "Conferimos os setores, tarefas, conversas, planilhas, documentos, feedbacks, notas e relatórios com contas de auditoria nos serviços publicados.",
-    "A entrega dos códigos e os cadastros restantes continuam pendentes da configuração de envio. Esta rodada não declara o site 100% aprovado."
+    "Agora você pode confirmar o acesso pelo código atual de um aplicativo autenticador no RH e na T.I., sem precisar aguardar um e-mail.",
+    "Na confirmação por aplicativo, seu formulário é mantido quando a conferência falha. Se você sair durante a confirmação, a ação anterior não será enviada depois.",
+    "Aplicativos já confirmados são preservados ao cancelar. Uma configuração ainda incompleta pode ser descartada com segurança.",
+    "A T.I. explica quando o envio de e-mails precisa de configuração e só avança após receber uma confirmação completa do serviço.",
+    "Conferimos contas, permissões, pessoas, chamados com PDF, notificações, cargos, sessões e os dados do Datasul interno usando registros próprios de auditoria.",
+    "Os testes das telas passaram. A investigação da recusa de origem em alguns serviços e a conclusão do cadastro limitado pelo envio de e-mail continuam pendentes; o site inteiro ainda não foi declarado 100% aprovado."
   ]
 }

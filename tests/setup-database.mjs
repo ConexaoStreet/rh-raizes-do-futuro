@@ -8,7 +8,9 @@ export async function createDatabase() {
  create table vault.decrypted_secrets(id uuid primary key,name text unique not null,decrypted_secret text not null);
  create function vault.create_secret(secret text,name text,description text default '') returns uuid language plpgsql as $vault$ declare created_id uuid := gen_random_uuid(); begin insert into vault.secrets(id,secret,name,description) values(created_id,secret,name,description); insert into vault.decrypted_secrets(id,name,decrypted_secret) values(created_id,name,secret); return created_id; end $vault$;
  create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb default '{}');
- create table auth.sessions(id uuid primary key,user_id uuid references auth.users(id),created_at timestamptz default now(),updated_at timestamptz default now(),not_after timestamptz);
+ create table auth.mfa_factors(id uuid primary key,user_id uuid references auth.users(id),factor_type text,status text,created_at timestamptz default now(),updated_at timestamptz default now());
+ create table auth.sessions(id uuid primary key,user_id uuid references auth.users(id),factor_id uuid,aal text not null default 'aal1',created_at timestamptz default now(),updated_at timestamptz default now(),not_after timestamptz);
+ create table auth.mfa_amr_claims(id uuid primary key default gen_random_uuid(),session_id uuid references auth.sessions(id),authentication_method text,created_at timestamptz default now(),updated_at timestamptz default now());
  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claims',true)::jsonb->>'sub','')::uuid $$;
  create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
  grant usage on schema auth to authenticated,anon,service_role; grant execute on all functions in schema auth to authenticated,anon,service_role;
@@ -28,19 +30,17 @@ export async function createDatabase() {
       .replace(/create extension if not exists pg_net\s*;/gi, "")
       .replace(/drop extension(?: if exists)? pg_net\s*;/gi, "")
       .replace(/create extension pg_net(?: with)? schema extensions\s*;/gi, "");
-    await db
-      .exec(source)
-      .catch((error) => {
-        process.stderr.write(
-          JSON.stringify({
-            message: error.message,
-            detail: error.detail,
-            position: error.position,
-            where: error.where,
-          }) + "\n",
-        );
-        process.exit(1);
-      });
+    await db.exec(source).catch((error) => {
+      process.stderr.write(
+        JSON.stringify({
+          message: error.message,
+          detail: error.detail,
+          position: error.position,
+          where: error.where,
+        }) + "\n",
+      );
+      process.exit(1);
+    });
     if (file === "20260924171425_add_web_push_notifications.sql") {
       await db.exec(
         "insert into public.push_config(id,vapid_public_key,vapid_private_key,webhook_secret) values(1,'test-public-key','test-private-key','test-webhook-secret') on conflict(id) do nothing",
@@ -50,5 +50,8 @@ export async function createDatabase() {
       );
     }
   }
+  await db.exec(
+    "update public.settings set value=jsonb_set(value,'{enabled}','false') where key='registration_access_window'",
+  );
   return db;
 }

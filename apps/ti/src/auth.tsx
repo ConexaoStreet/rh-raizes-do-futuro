@@ -14,6 +14,8 @@ import { client, configured, rpc, supabase } from "./api";
 import { ThemeToggle } from "./theme";
 import { LoginMascot } from "./LoginMascot";
 import { PASSWORD_POLICY_MESSAGE, strongPassword } from "./password-policy";
+import NativeAuthenticator from "../../../shared/NativeAuthenticator";
+import { createNativeAuthenticatorApi } from "../../../shared/native-authenticator";
 
 type Bootstrap = {
   profile: {
@@ -105,6 +107,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
+      if (event === "MFA_CHALLENGE_VERIFIED") return;
 
       if (event === "PASSWORD_RECOVERY") {
         setRecoveringPassword(true);
@@ -195,7 +198,10 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         <Mail size={34} />
         <span className="eyebrow">CONTA</span>
         <h1>Acesso técnico indisponível</h1>
-        <p>Conclua e valide seu cadastro pelo sistema de RH antes de usar a Central de T.I.</p>
+        <p>
+          Conclua e valide seu cadastro pelo sistema de RH antes de usar a
+          Central de T.I.
+        </p>
         <button onClick={() => void client().auth.signOut()}>
           <LogOut size={17} />
           Sair
@@ -212,7 +218,10 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
         <ShieldCheck size={34} />
         <span className="eyebrow">PERMISSÕES</span>
         <h1>Sem permissão de T.I</h1>
-        <p>Esta conta não possui acesso à administração técnica do Raízes do Futuro.</p>
+        <p>
+          Esta conta não possui acesso à administração técnica do Raízes do
+          Futuro.
+        </p>
         <button onClick={() => void client().auth.signOut()}>
           <LogOut size={17} />
           Sair
@@ -257,7 +266,9 @@ function Login({
   const [status, setStatus] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loginMode, setLoginMode] = useState<"password" | "code">("password");
-  const [mascotMood, setMascotMood] = useState<"idle" | "email" | "password" | "peek" | "code" | "error" | "success">("idle");
+  const [mascotMood, setMascotMood] = useState<
+    "idle" | "email" | "password" | "peek" | "code" | "error" | "success"
+  >("idle");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -366,8 +377,10 @@ function Login({
       }
 
       const redirectTo = new URL("/", window.location.origin).href;
-      const { error: resetError } =
-        await client().auth.resetPasswordForEmail(email, { redirectTo });
+      const { error: resetError } = await client().auth.resetPasswordForEmail(
+        email,
+        { redirectTo },
+      );
 
       if (resetError) throw resetError;
       setStatus(
@@ -382,7 +395,9 @@ function Login({
 
   return (
     <div className="login-page">
-      <div className="login-theme-control"><ThemeToggle compact /></div>
+      <div className="login-theme-control">
+        <ThemeToggle compact />
+      </div>
 
       <section className="login-brand">
         <Brand />
@@ -390,13 +405,19 @@ function Login({
           <span>RAÍZES DO FUTURO · OPERAÇÃO DIGITAL</span>
           <h1>Central de T.I.</h1>
           <p>
-            Administração, integrações, segurança, deploys e operação técnica
-            em um ambiente separado do RH.
+            Administração, integrações, segurança, deploys e operação técnica em
+            um ambiente separado do RH.
           </p>
           <div className="login-trust-row">
-            <span><ShieldCheck size={15} /> MFA obrigatório</span>
-            <span><ShieldCheck size={15} /> Acesso auditado</span>
-            <span><ShieldCheck size={15} /> Sessão protegida</span>
+            <span>
+              <ShieldCheck size={15} /> MFA obrigatório
+            </span>
+            <span>
+              <ShieldCheck size={15} /> Acesso auditado
+            </span>
+            <span>
+              <ShieldCheck size={15} /> Sessão protegida
+            </span>
           </div>
         </div>
         <div className="login-brand-foot">
@@ -407,150 +428,188 @@ function Login({
       <section className="login-panel">
         <div className="login-stage">
           <div className="login-mascot-dock">
-            <LoginMascot mood={mascotMood} placement="login" scopeSelector=".login-stage" />
+            <LoginMascot
+              mood={mascotMood}
+              placement="login"
+              scopeSelector=".login-stage"
+            />
           </div>
           <div className="login-card">
-          <div className="security-badge"><ShieldCheck size={22} /></div>
-          <span className="eyebrow">ACESSO RESTRITO</span>
-          <h2>Entrar na Central de T.I</h2>
-          <p>Use sua conta administrativa ou um código semanal autorizado.</p>
+            <div className="security-badge">
+              <ShieldCheck size={22} />
+            </div>
+            <span className="eyebrow">ACESSO RESTRITO</span>
+            <h2>Entrar na Central de T.I</h2>
+            <p>Use sua conta administrativa ou um código semanal autorizado.</p>
 
-          <div className="login-mode-switch" role="tablist" aria-label="Forma de acesso">
-            <button
-              id="ti-login-password-tab"
-              type="button"
-              role="tab"
-              aria-selected={loginMode === "password"}
-              aria-controls="ti-login-password-panel"
-              className={loginMode === "password" ? "active" : ""}
-              onClick={() => {
-                setLoginMode("password");
-                setError("");
-                setStatus("");
-              }}
+            <div
+              className="login-mode-switch"
+              role="tablist"
+              aria-label="Forma de acesso"
             >
-              <span className="login-mode-icon" aria-hidden="true"><Mail size={16} /></span>
-              <span>E-mail e senha</span>
-            </button>
-            <button
-              id="ti-login-code-tab"
-              type="button"
-              role="tab"
-              aria-selected={loginMode === "code"}
-              aria-controls="ti-login-code-panel"
-              className={loginMode === "code" ? "active" : ""}
-              onClick={() => {
-                setLoginMode("code");
-                setError("");
-                setStatus("");
-              }}
-            >
-              <span className="login-mode-icon" aria-hidden="true"><KeyRound size={16} /></span>
-              <span>Código semanal</span>
-            </button>
-          </div>
-
-          <form onSubmit={submit}>
-            {loginMode === "password" ? (
-              <div
-                id="ti-login-password-panel"
-                role="tabpanel"
-                aria-labelledby="ti-login-password-tab"
-                className="login-mode-panel"
+              <button
+                id="ti-login-password-tab"
+                type="button"
+                role="tab"
+                aria-selected={loginMode === "password"}
+                aria-controls="ti-login-password-panel"
+                className={loginMode === "password" ? "active" : ""}
+                onClick={() => {
+                  setLoginMode("password");
+                  setError("");
+                  setStatus("");
+                }}
               >
-                <label>
-                  <span>E-mail</span>
-                  <input
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="nome@empresa.com.br"
-                    onFocus={() => setMascotMood("email")}
-                    onBlur={() => setMascotMood("idle")}
-                    required
-                  />
-                </label>
-                <label>
-                  <span>Senha</span>
-                  <div className="password-field">
+                <span className="login-mode-icon" aria-hidden="true">
+                  <Mail size={16} />
+                </span>
+                <span>E-mail e senha</span>
+              </button>
+              <button
+                id="ti-login-code-tab"
+                type="button"
+                role="tab"
+                aria-selected={loginMode === "code"}
+                aria-controls="ti-login-code-panel"
+                className={loginMode === "code" ? "active" : ""}
+                onClick={() => {
+                  setLoginMode("code");
+                  setError("");
+                  setStatus("");
+                }}
+              >
+                <span className="login-mode-icon" aria-hidden="true">
+                  <KeyRound size={16} />
+                </span>
+                <span>Código semanal</span>
+              </button>
+            </div>
+
+            <form onSubmit={submit}>
+              {loginMode === "password" ? (
+                <div
+                  id="ti-login-password-panel"
+                  role="tabpanel"
+                  aria-labelledby="ti-login-password-tab"
+                  className="login-mode-panel"
+                >
+                  <label>
+                    <span>E-mail</span>
                     <input
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
-                      placeholder="Sua senha"
-                      onFocus={() => setMascotMood(showPassword ? "peek" : "password")}
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="nome@empresa.com.br"
+                      onFocus={() => setMascotMood("email")}
                       onBlur={() => setMascotMood("idle")}
                       required
                     />
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
-                      aria-pressed={showPassword}
-                      onClick={() => setShowPassword((current) => { const next = !current; setMascotMood(next ? "peek" : "password"); return next; })}
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </label>
+                  </label>
+                  <label>
+                    <span>Senha</span>
+                    <div className="password-field">
+                      <input
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        placeholder="Sua senha"
+                        onFocus={() =>
+                          setMascotMood(showPassword ? "peek" : "password")
+                        }
+                        onBlur={() => setMascotMood("idle")}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle"
+                        aria-label={
+                          showPassword ? "Ocultar senha" : "Exibir senha"
+                        }
+                        aria-pressed={showPassword}
+                        onClick={() =>
+                          setShowPassword((current) => {
+                            const next = !current;
+                            setMascotMood(next ? "peek" : "password");
+                            return next;
+                          })
+                        }
+                      >
+                        {showPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
+                  </label>
 
-                <button
-                  type="button"
-                  className="text-button forgot-password"
-                  disabled={busy}
-                  onClick={() => void requestPasswordReset()}
+                  <button
+                    type="button"
+                    className="text-button forgot-password"
+                    disabled={busy}
+                    onClick={() => void requestPasswordReset()}
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
+              ) : (
+                <div
+                  id="ti-login-code-panel"
+                  role="tabpanel"
+                  aria-labelledby="ti-login-code-tab"
+                  className="login-mode-panel"
                 >
-                  Esqueci minha senha
-                </button>
-              </div>
-            ) : (
-              <div
-                id="ti-login-code-panel"
-                role="tabpanel"
-                aria-labelledby="ti-login-code-tab"
-                className="login-mode-panel"
-              >
-              <label>
-                <span>Código semanal</span>
-                <input
-                  className="weekly-access-code"
-                  name="access_code"
-                  onFocus={() => setMascotMood("code")}
-                  onBlur={() => setMascotMood("idle")}
-                  inputMode="text"
-                  autoComplete="one-time-code"
-                  placeholder="RFXX-XXXX-XXXX-XXXX-XXXX-XX"
-                  minLength={22}
-                  maxLength={27}
-                  required
-                />
-                <small>
-                  Uso único. A confirmação cria uma sessão técnica verificada e auditada.
-                </small>
-              </label>
-              </div>
-            )}
+                  <label>
+                    <span>Código semanal</span>
+                    <input
+                      className="weekly-access-code"
+                      name="access_code"
+                      onFocus={() => setMascotMood("code")}
+                      onBlur={() => setMascotMood("idle")}
+                      inputMode="text"
+                      autoComplete="one-time-code"
+                      placeholder="RFXX-XXXX-XXXX-XXXX-XXXX-XX"
+                      minLength={22}
+                      maxLength={27}
+                      required
+                    />
+                    <small>
+                      Uso único. A confirmação cria uma sessão técnica
+                      verificada e auditada.
+                    </small>
+                  </label>
+                </div>
+              )}
 
-            {error && <div className="form-error" role="alert">{error}</div>}
-            {status && <div className="form-success" role="status">{status}</div>}
+              {error && (
+                <div className="form-error" role="alert">
+                  {error}
+                </div>
+              )}
+              {status && (
+                <div className="form-success" role="status">
+                  {status}
+                </div>
+              )}
 
-            <button className="primary-button login-submit" disabled={busy}>
-              <KeyRound size={18} />
-              {busy
-                ? "Validando..."
-                : loginMode === "code"
-                  ? "Entrar com código"
-                  : "Entrar com segurança"}
-            </button>
-          </form>
+              <button className="primary-button login-submit" disabled={busy}>
+                <KeyRound size={18} />
+                {busy
+                  ? "Validando..."
+                  : loginMode === "code"
+                    ? "Entrar com código"
+                    : "Entrar com segurança"}
+              </button>
+            </form>
 
-          <div className="login-card-foot">
-            <ShieldCheck size={14} />
-            <span>
-              Permissões e sessão são verificadas novamente antes de abrir o console.
-            </span>
+            <div className="login-card-foot">
+              <ShieldCheck size={14} />
+              <span>
+                Permissões e sessão são verificadas novamente antes de abrir o
+                console.
+              </span>
+            </div>
           </div>
-        </div>
         </div>
       </section>
     </div>
@@ -594,15 +653,18 @@ function PasswordRecovery({ onComplete }: { onComplete: () => void }) {
               return;
             }
 
-            const { error: updateError } =
-              await client().auth.updateUser({ password });
+            const { error: updateError } = await client().auth.updateUser({
+              password,
+            });
 
             if (updateError) throw updateError;
 
             await client().auth.signOut({ scope: "local" });
             onComplete();
           } catch {
-            setError("Não foi possível alterar a senha. Solicite um novo link.");
+            setError(
+              "Não foi possível alterar a senha. Solicite um novo link.",
+            );
           } finally {
             setBusy(false);
           }
@@ -641,7 +703,11 @@ function PasswordRecovery({ onComplete }: { onComplete: () => void }) {
           />
         </label>
 
-        {error && <div className="form-error" role="alert">{error}</div>}
+        {error && (
+          <div className="form-error" role="alert">
+            {error}
+          </div>
+        )}
 
         <button className="primary-button" disabled={busy}>
           <KeyRound size={17} />
@@ -656,7 +722,7 @@ export function Verification({
   onDone,
   onCancel,
 }: {
-  onDone: () => Promise<void>;
+  onDone: (isCurrent: () => boolean) => Promise<void>;
   onCancel?: () => void;
 }) {
   const [sent, setSent] = useState(false);
@@ -665,6 +731,19 @@ export function Verification({
   const [error, setError] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
   const modal = Boolean(onCancel);
+  const [native, setNative] = useState(false);
+  const verificationActive = useRef(false);
+  useEffect(() => {
+    verificationActive.current = true;
+    return () => {
+      verificationActive.current = false;
+    };
+  }, []);
+  const [authenticator] = useState(() =>
+    createNativeAuthenticatorApi(client().auth.mfa, () =>
+      rpc("confirm_authenticator_session"),
+    ),
+  );
 
   useEffect(() => {
     const element = dialog.current;
@@ -673,9 +752,44 @@ export function Verification({
   }, [modal]);
 
   async function invoke(body: Record<string, string>) {
-    const { data, error: functionError } = await client().functions.invoke("email-2fa", { body });
-    if (functionError) throw functionError;
-    if (data?.ok !== true) throw new Error("VERIFICATION_FAILED");
+    const failure = (code?: string) => {
+      if (code === "PASSWORD_LOGIN_REQUIRED")
+        return "Entre novamente com e-mail e senha.";
+      if (code === "EMAIL_CONFIGURATION_REQUIRED")
+        return "O envio de e-mails precisa ser configurado. Você pode usar o aplicativo de códigos para continuar.";
+      if (code === "EMAIL_RATE_LIMITED")
+        return "O envio de e-mails atingiu um limite temporário. Aguarde um pouco ou use o aplicativo de códigos.";
+      if (code === "EMAIL_DELIVERY_FAILED")
+        return "Não foi possível entregar o código. Tente novamente ou use o aplicativo de códigos.";
+      if (code === "RATE_LIMITED")
+        return "Aguarde um minuto antes de pedir outro código.";
+      return body.action === "verify"
+        ? "Código inválido ou expirado."
+        : "Não foi possível enviar o código.";
+    };
+    const { data, error: functionError } = await client().functions.invoke(
+      "email-2fa",
+      { body },
+    );
+    if (functionError) {
+      let code: string | undefined;
+      if (
+        "context" in functionError &&
+        functionError.context instanceof Response
+      ) {
+        const detail = (await functionError.context
+          .json()
+          .catch(() => null)) as { error?: string } | null;
+        code = detail?.error;
+      }
+      throw new Error(failure(code));
+    }
+    if (
+      data?.ok !== true ||
+      (body.action === "send" &&
+        (typeof data.masked_email !== "string" || !data.masked_email.trim()))
+    )
+      throw new Error(failure(data?.error));
     return data as { masked_email?: string };
   }
 
@@ -683,62 +797,122 @@ export function Verification({
     <>
       <ShieldCheck size={34} />
       <span className="eyebrow">SEGURANÇA</span>
-      <h1 id="ti-identity-verification">{modal ? "Renovar verificação" : "Verificação em duas etapas"}</h1>
-      <p>{sent ? `Enviamos um código para ${masked}.` : modal ? "Confirme sua identidade para continuar. Seu rascunho será mantido e a ação será retomada após a verificação." : "Confirme sua identidade para abrir a Central de T.I."}</p>
-      {error && <div className="form-error" role="alert">{error}</div>}
-      {sent && (
-        <form
-          onSubmit={async (event) => {
-            event.preventDefault();
-            setBusy(true);
-            setError("");
-            let verified = false;
-            try {
-              const code = String(new FormData(event.currentTarget).get("code") || "");
-              await invoke({ action: "verify", code });
-              verified = true;
-              await onDone();
-            } catch {
-              setError(verified ? "Não foi possível retomar a ação. Tente novamente." : "Código inválido ou expirado.");
-            } finally {
-              setBusy(false);
-            }
+      <h1 id="ti-identity-verification">
+        {modal ? "Renovar verificação" : "Verificação em duas etapas"}
+      </h1>
+      <p>
+        {native
+          ? "Confirme sua identidade com o código atual do aplicativo."
+          : sent
+            ? `Enviamos um código para ${masked}.`
+            : modal
+              ? "Confirme sua identidade para continuar. Seu rascunho será mantido e a ação será retomada após a verificação."
+              : "Confirme sua identidade para abrir a Central de T.I."}
+      </p>
+      {native ? (
+        <NativeAuthenticator
+          api={authenticator}
+          onDone={onDone}
+          onBusyChange={setBusy}
+          primaryClass="primary-button"
+          onBack={() => {
+            setNative(false);
+            setBusy(false);
           }}
-        >
-          <input
-            className="otp"
-            name="code"
-            aria-label="Código de verificação"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            minLength={6}
-            maxLength={6}
-            placeholder="000000"
-            required
-          />
-          <button className="primary-button" disabled={busy}>Verificar código</button>
-        </form>
+        />
+      ) : (
+        <>
+          {error && (
+            <div className="form-error" role="alert">
+              {error}
+            </div>
+          )}
+          {sent && (
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setBusy(true);
+                setError("");
+                let verified = false;
+                try {
+                  const code = String(
+                    new FormData(event.currentTarget).get("code") || "",
+                  );
+                  await invoke({ action: "verify", code });
+                  verified = true;
+                  if (verificationActive.current)
+                    await onDone(() => verificationActive.current);
+                } catch (caught) {
+                  setError(
+                    verified
+                      ? "Não foi possível retomar a ação. Tente novamente."
+                      : caught instanceof Error
+                        ? caught.message
+                        : "Código inválido ou expirado.",
+                  );
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <input
+                className="otp"
+                name="code"
+                aria-label="Código de verificação"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                minLength={6}
+                maxLength={6}
+                placeholder="000000"
+                required
+              />
+              <button className="primary-button" disabled={busy}>
+                Verificar código
+              </button>
+            </form>
+          )}
+          <button
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError("");
+              try {
+                const result = await invoke({ action: "send" });
+                setMasked(result.masked_email || "seu e-mail");
+                setSent(true);
+              } catch (caught) {
+                setError(
+                  caught instanceof Error
+                    ? caught.message
+                    : "Não foi possível enviar o código.",
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {sent ? "Reenviar código" : "Enviar código"}
+          </button>
+          <button
+            className="text-button"
+            disabled={busy}
+            onClick={() => {
+              setError("");
+              setNative(true);
+            }}
+          >
+            Usar aplicativo de códigos
+          </button>
+        </>
       )}
       <button
+        className="text-button"
         disabled={busy}
-        onClick={async () => {
-          setBusy(true);
-          setError("");
-          try {
-            const result = await invoke({ action: "send" });
-            setMasked(result.masked_email || "seu e-mail");
-            setSent(true);
-          } catch {
-            setError("Não foi possível enviar o código.");
-          } finally {
-            setBusy(false);
-          }
-        }}
+        onClick={onCancel || (() => void client().auth.signOut())}
       >
-        {sent ? "Reenviar código" : "Enviar código"}
+        {modal ? "Cancelar verificação" : "Voltar ao login"}
       </button>
-      <button className="text-button" disabled={busy} onClick={onCancel || (() => void client().auth.signOut())}>{modal ? "Cancelar verificação" : "Voltar ao login"}</button>
     </>
   );
 
@@ -754,13 +928,17 @@ export function Verification({
     >
       {content}
     </dialog>
-  ) : <AccessFrame>{content}</AccessFrame>;
+  ) : (
+    <AccessFrame>{content}</AccessFrame>
+  );
 }
 
 function AccessFrame({ children }: { children: ReactNode }) {
   return (
     <div className="access-page">
-      <div className="access-theme-control"><ThemeToggle compact /></div>
+      <div className="access-theme-control">
+        <ThemeToggle compact />
+      </div>
       <div className="access-card">
         <Brand />
         {children}
@@ -780,7 +958,9 @@ function Splash({ label }: { label: string }) {
 }
 
 export function Brand({ compact = false }: { compact?: boolean }) {
-  const rhSite = import.meta.env.VITE_RH_SITE_URL || "https://rh-raizes-do-futuro.vercel.app";
+  const rhSite =
+    import.meta.env.VITE_RH_SITE_URL ||
+    "https://rh-raizes-do-futuro.vercel.app";
   return (
     <div className={compact ? "brand compact" : "brand"}>
       <img src={`${rhSite}/brand/raizes-logo-mark.png`} alt="" />
