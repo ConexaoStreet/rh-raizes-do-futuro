@@ -439,7 +439,11 @@ async function setup(
         return;
       let rows = state.employees.filter(
         (row) =>
-          eq(url, "member_group", row.member_group) && eq(url, "id", row.id),
+          eq(url, "member_group", row.member_group) &&
+          eq(url, "class_id", row.class_id) &&
+          (url.searchParams.get("access_role_code") !== "neq.INSTRUCTOR" ||
+            row.access_role_code !== "INSTRUCTOR") &&
+          eq(url, "id", row.id),
       );
       const search = url.searchParams.get("full_name");
       if (search?.startsWith("ilike.")) {
@@ -458,7 +462,7 @@ async function setup(
       );
     }
     if (path.endsWith("/classes"))
-      return reply(route, [{ id: "class-1", name: "Turma 16807" }]);
+      return reply(route, [{ id: "class-1", code: "16807", name: "Turma 16807" }]);
     if (path.endsWith("/departments"))
       return reply(route, [{ id: "department-1", name: "Recursos Humanos" }]);
     if (emptyReadRequests.has(`${request.method()} ${path}`))
@@ -571,7 +575,8 @@ test("employees paginate, search by name, show an empty result and open the sele
   const searched = calls(state, "/employees").at(-1)!.url;
   expect(searched.searchParams.get("full_name")).toBe("ilike.%Colaborador 01%");
   expect(searched.searchParams.get("offset")).toBe("0");
-  expect(searched.searchParams.get("member_group")).toBe("eq.class");
+  expect(searched.searchParams.get("class_id")).toBe("eq.class-1");
+  expect(searched.searchParams.get("access_role_code")).toBe("neq.INSTRUCTOR");
 
   await page
     .getByRole("textbox", { name: "Buscar colaboradores" })
@@ -593,6 +598,36 @@ test("employees paginate, search by name, show an empty result and open the sele
   await expect(
     page.getByText("Código interno", { exact: true }).locator(".."),
   ).toContainText("TEST-1");
+});
+
+test("class roster includes RH students but excludes instructors and other classes", async ({
+  page,
+}) => {
+  const studentRh = makeEmployee({
+    id: "00000000-0000-4000-8000-000000000201",
+    full_name: "Aluna do RH",
+    member_group: "rh",
+  });
+  const instructor = makeEmployee({
+    id: "00000000-0000-4000-8000-000000000202",
+    full_name: "Instrutor da turma",
+    access_role_code: "INSTRUCTOR",
+  });
+  const otherClass = makeEmployee({
+    id: "00000000-0000-4000-8000-000000000203",
+    full_name: "Aluna de outra turma",
+    class_id: "class-2",
+  });
+  const state = await setup(page, {
+    employees: [studentRh, instructor, otherClass],
+  });
+  await page.goto("/#/colaboradores");
+  await expect(page.getByRole("link", { name: "Aluna do RH" })).toBeVisible();
+  await expect(page.getByText("Instrutor da turma")).toHaveCount(0);
+  await expect(page.getByText("Aluna de outra turma")).toHaveCount(0);
+  const request = calls(state, "/employees").at(-1)!.url;
+  expect(request.searchParams.get("class_id")).toBe("eq.class-1");
+  expect(request.searchParams.get("access_role_code")).toBe("neq.INSTRUCTOR");
 });
 
 test("switching the employee group from page two starts RH on its first page", async ({

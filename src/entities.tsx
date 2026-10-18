@@ -580,12 +580,14 @@ export function EntityPage({
   onSelect,
   extra,
   filter,
+  exclude,
   subnav,
 }: {
   spec: EntitySpec;
   onSelect?: (record: EntityRecord) => void;
   extra?: React.ReactNode;
   filter?: { key: string; value: string };
+  exclude?: { key: string; value: string };
   subnav?: React.ReactNode;
 }) {
   const { can } = useAuth();
@@ -602,10 +604,11 @@ export function EntityPage({
       .range(page * 25, page * 25 + 24);
     if (query) q = q.ilike(spec.search, `%${query.replace(/[%_]/g, "")}%`);
     if (filter) q = q.eq(filter.key as never, filter.value as never);
+    if (exclude) q = q.neq(exclude.key as never, exclude.value as never);
     const { data, error, count } = await q;
     if (error) throw error;
     return { rows: data as unknown as EntityRecord[], total: count || 0 };
-  }, [spec.table, query, page, filter?.key, filter?.value]);
+  }, [spec.table, query, page, filter?.key, filter?.value, exclude?.key, exclude?.value]);
   return (
     <>
       <Heading title={spec.title} eyebrow="GESTÃO DE RH" className="operational-heading">
