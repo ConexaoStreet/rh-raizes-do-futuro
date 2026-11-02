@@ -17,8 +17,10 @@ jobs:
           node-version: 22
       - name: Regenerate npm lockfiles for pinned security fixes
         run: |
+          npm install --global npm@11
+          npm --version
           rm package-lock.json apps/ti/package-lock.json
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund || { tail -n 80 $(ls -t ~/.npm/_logs/*-debug-0.log | head -1); exit 1; }
           npm --prefix apps/ti install --package-lock-only --ignore-scripts --no-audit --no-fund
           git diff --check
           git config user.name "github-actions[bot]"
