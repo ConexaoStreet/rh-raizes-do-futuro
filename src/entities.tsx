@@ -604,7 +604,6 @@ export function EntityPage({
       .range(page * 25, page * 25 + 24);
     if (query) q = q.ilike(spec.search, `%${query.replace(/[%_]/g, "")}%`);
     if (filter) q = q.eq(filter.key as never, filter.value as never);
-    // PostgREST "neq" excludes NULL too. A member with no access role is not an instructor.
     if (exclude) q = q.or(`${exclude.key}.is.null,${exclude.key}.neq.${exclude.value}`);
     const { data, error, count } = await q;
     if (error) throw error;

@@ -93,8 +93,6 @@ Deno.serve(
       request.headers.get("origin") ||
       "https://ti-raizes-do-futuro.vercel.app";
     if (!ORIGINS.has(origin)) return new Response(null, { status: 403 });
-    // A managed Edge invocation may not include geo metadata. The user JWT and
-    // per-action permission checks remain mandatory for these protected routes.
     if (request.headers.has("cf-ipcountry") && !isBrazilRequest(request)) return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
     if (request.method === "OPTIONS") {
       return new Response(null, {
