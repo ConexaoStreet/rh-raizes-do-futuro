@@ -123,7 +123,7 @@ Deno.serve(
       request.headers.get("origin") ||
       "https://rh-raizes-do-futuro.vercel.app";
     if (!ORIGINS.has(origin)) return new Response(null, { status: 403 });
-    if (!isBrazilRequest(request)) return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
+    if (request.headers.has("cf-ipcountry") && !isBrazilRequest(request)) return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: cors(origin) });
     }
