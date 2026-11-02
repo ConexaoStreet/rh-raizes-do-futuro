@@ -52,13 +52,31 @@ export default function People({ mode }: { mode: Mode }) {
   const [feedback, setFeedback] = useState<EntityRecord | null>(null);
   const [version, setVersion] = useState(0);
   const [peopleGroup, setPeopleGroup] = useState<"class" | "rh">("class");
+  const rosterClass = useAsync(async () => {
+    if (mode !== "employees") return null;
+    const { data, error } = await client()
+      .from("classes")
+      .select("id")
+      .eq("code", "16807")
+      .single();
+    if (error) throw error;
+    return data.id;
+  }, [mode]);
+  if (mode === "employees" && rosterClass.loading) return <Loading />;
+  if (mode === "employees" && (rosterClass.error || !rosterClass.data))
+    return <ErrorState retry={rosterClass.reload} />;
   if (mode === "employees")
     return (
       <>
         <EntityPage
           key={`${version}:${peopleGroup}`}
           spec={specs.colaboradores}
-          filter={{ key: "member_group", value: peopleGroup }}
+          filter={
+            peopleGroup === "rh"
+              ? { key: "member_group", value: "rh" }
+              : { key: "class_id", value: rosterClass.data! }
+          }
+          exclude={peopleGroup === "class" ? { key: "access_role_code", value: "INSTRUCTOR" } : undefined}
           subnav={
             <div className="tabs" role="tablist" aria-label="Grupos de pessoas">
               <button
