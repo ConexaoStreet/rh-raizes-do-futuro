@@ -441,7 +441,8 @@ async function setup(
         (row) =>
           eq(url, "member_group", row.member_group) &&
           eq(url, "class_id", row.class_id) &&
-          (url.searchParams.get("access_role_code") !== "neq.INSTRUCTOR" ||
+          (url.searchParams.get("or") !==
+            "(access_role_code.is.null,access_role_code.neq.INSTRUCTOR)" ||
             row.access_role_code !== "INSTRUCTOR") &&
           eq(url, "id", row.id),
       );
@@ -461,8 +462,13 @@ async function setup(
         rows.length,
       );
     }
-    if (path.endsWith("/classes"))
-      return reply(route, [{ id: "class-1", code: "16807", name: "Turma 16807" }]);
+    if (path.endsWith("/classes")) {
+      const entry = { id: "class-1", code: "16807", name: "Turma 16807" };
+      return reply(
+        route,
+        request.headers().accept?.includes("vnd.pgrst.object") ? entry : [entry],
+      );
+    }
     if (path.endsWith("/departments"))
       return reply(route, [{ id: "department-1", name: "Recursos Humanos" }]);
     if (emptyReadRequests.has(`${request.method()} ${path}`))
@@ -576,7 +582,7 @@ test("employees paginate, search by name, show an empty result and open the sele
   expect(searched.searchParams.get("full_name")).toBe("ilike.%Colaborador 01%");
   expect(searched.searchParams.get("offset")).toBe("0");
   expect(searched.searchParams.get("class_id")).toBe("eq.class-1");
-  expect(searched.searchParams.get("access_role_code")).toBe("neq.INSTRUCTOR");
+  expect(searched.searchParams.get("or")).toBe("(access_role_code.is.null,access_role_code.neq.INSTRUCTOR)");
 
   await page
     .getByRole("textbox", { name: "Buscar colaboradores" })
@@ -627,7 +633,7 @@ test("class roster includes RH students but excludes instructors and other class
   await expect(page.getByText("Aluna de outra turma")).toHaveCount(0);
   const request = calls(state, "/employees").at(-1)!.url;
   expect(request.searchParams.get("class_id")).toBe("eq.class-1");
-  expect(request.searchParams.get("access_role_code")).toBe("neq.INSTRUCTOR");
+  expect(request.searchParams.get("or")).toBe("(access_role_code.is.null,access_role_code.neq.INSTRUCTOR)");
 });
 
 test("switching the employee group from page two starts RH on its first page", async ({
