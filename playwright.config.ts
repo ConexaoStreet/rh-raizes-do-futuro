@@ -28,6 +28,5 @@ export default defineConfig({
         VITE_SUPABASE_ANON_KEY: "e2e-public-anon-key",
       },
     },
-    },
   ],
 });
