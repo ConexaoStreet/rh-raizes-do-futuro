@@ -84,4 +84,12 @@ describe("RH redesign foundation", () => {
     expect(legacyStyles).toContain("var(--rh-surface-canvas)");
     expect(legacyStyles).toContain("var(--rh-motion-fast)");
   });
+  it("keeps the skip link keyboard-accessible without changing the HashRouter route", () => {
+    expect(shell).toContain('className="skip-link"');
+    expect(shell).toContain('href="#main-content"');
+    expect(shell).toContain("event.preventDefault()");
+    expect(shell).toContain('document.getElementById("main-content")?.focus()');
+    expect(shell).toContain('<main id="main-content" className="page-content" tabIndex={-1}>');
+  });
+
 });
