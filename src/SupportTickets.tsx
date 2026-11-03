@@ -106,28 +106,6 @@ function pageLabel(path: string) {
   );
 }
 
-function safeFileName(value: string) {
-  const parts = value.split(".");
-  const extension = parts.length > 1 ? parts.pop()!.toLowerCase() : "bin";
-  const base = parts
-    .join(".")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9_-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-  return `${base || "anexo"}.${extension}`;
-}
-
-function shortBrowser(userAgent: string) {
-  if (/Edg\//.test(userAgent)) return "Microsoft Edge";
-  if (/Chrome\//.test(userAgent)) return "Google Chrome";
-  if (/Safari\//.test(userAgent) && !/Chrome\//.test(userAgent))
-    return "Safari";
-  if (/Firefox\//.test(userAgent)) return "Firefox";
-  return "Navegador não identificado";
-}
-
 export default function SupportTickets() {
   const { user } = useAuth();
   const location = useLocation();
