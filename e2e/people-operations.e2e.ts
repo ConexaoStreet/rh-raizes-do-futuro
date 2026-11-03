@@ -1098,109 +1098,28 @@ test("an attachment registration failure removes its uploaded object before retr
   expect(state.uploaded.size).toBe(1);
 });
 
-test("RH support retries a failed ticket, cleans the attachment, saves open status and prepares WhatsApp context", async ({
-  page,
-}) => {
+test("RH support prepares WhatsApp without storing a ticket or uploading an attachment", async ({ page }) => {
   const state = await setup(page);
-  state.failures["ticket-insert"] = 1;
   await page.goto("/#/suporte-ti");
-  await page
-    .getByRole("button", { name: /Acesso ou login Problema para entrar/ })
-    .click();
-  await page
-    .getByLabel("Resumo do problema", { exact: true })
-    .fill("  Não consigo abrir o perfil  ");
-  await page
-    .getByRole("textbox", { name: /^Descrição/ })
-    .fill("  Ao selecionar a pessoa, o perfil continua carregando.  ");
-  await page
-    .getByRole("combobox", { name: "Página relacionada", exact: true })
-    .selectOption("/colaboradores");
+  await page.getByRole("button", { name: /Acesso ou login Problema para entrar/ }).click();
+  await page.getByLabel("Resumo do problema", { exact: true }).fill("Não consigo abrir o perfil");
+  await page.getByRole("textbox", { name: /^Descrição/ }).fill("Ao selecionar a pessoa, o perfil continua carregando.");
+  await page.getByRole("combobox", { name: "Página relacionada", exact: true }).selectOption("/colaboradores");
   await page.locator('input[type="file"]').setInputFiles({
     name: "Evidência de acesso.pdf",
     mimeType: "application/pdf",
-    buffer: Buffer.from("%PDF-1.4\nIsolated support proof"),
+    buffer: Buffer.from("%PDF-1.4\\nIsolated support proof"),
   });
-  await page
-    .getByRole("button", { name: "Registrar e abrir WhatsApp", exact: true })
-    .click();
-  await expect(
-    page.getByText("Não foi possível registrar o chamado. Tente novamente.", {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(
-    page.getByLabel("Resumo do problema", { exact: true }),
-  ).toHaveValue("  Não consigo abrir o perfil  ");
-  await expect(
-    page.getByRole("button", {
-      name: "Registrar e abrir WhatsApp",
-      exact: true,
-    }),
-  ).toBeEnabled();
-  expect(state.tickets).toHaveLength(0);
-  expect(state.whatsapp).toHaveLength(0);
-  expect(state.uploaded.size).toBe(0);
-  const cleanup = state.requests.find(
-    (request) =>
-      request.method === "DELETE" &&
-      request.url.pathname.endsWith("/object/ti-support"),
-  );
-  expect(cleanup?.body).toEqual({
-    prefixes: [
-      expect.stringMatching(
-        new RegExp(`^${owner}/[0-9a-f-]+/Evidencia-de-acesso\\.pdf$`),
-      ),
-    ],
-  });
-
-  await page
-    .getByRole("button", { name: "Registrar e abrir WhatsApp", exact: true })
-    .click();
-  await expect(page.locator(".support-success")).toContainText(
-    /Chamado TI-20261009-[0-9A-F]{6} registrado\./,
-  );
+  await page.getByRole("button", { name: "Abrir WhatsApp", exact: true }).click();
   await expect.poll(() => state.whatsapp.length).toBe(1);
-  expect(state.tickets).toHaveLength(1);
-  const ticket = state.tickets[0];
-  expect(ticket).toMatchObject({
-    id: expect.stringMatching(/^[0-9a-f-]{36}$/),
-    user_id: owner,
-    category: "access",
-    subject: "Não consigo abrir o perfil",
-    description: "Ao selecionar a pessoa, o perfil continua carregando.",
-    page_path: "/colaboradores",
-    page_url: "http://127.0.0.1:4173/colaboradores",
-    page_title: "Colaboradores",
-    attachment_path: expect.stringMatching(
-      new RegExp(`^${owner}/[0-9a-f-]+/Evidencia-de-acesso\\.pdf$`),
-    ),
-    status: "open",
-    technical_context: {
-      browser: "Google Chrome",
-      userAgent: expect.stringContaining("Chrome/"),
-      viewport: "1280x720",
-      screen: "1280x720",
-      language: "en-US",
-      online: true,
-      platform: expect.any(String),
-    },
-  });
-  const message = state.whatsapp[0].searchParams.get("text")!;
+  expect(state.tickets).toHaveLength(0);
+  expect(state.uploaded.size).toBe(0);
+  const message = state.whatsapp[0].searchParams.get("text") || "";
   expect(message).toContain("*Solicitante:* Pessoa de Teste");
   expect(message).toContain("*Motivo:* Acesso ou login");
   expect(message).toContain("*Resumo:* Não consigo abrir o perfil");
+  expect(message).toContain("Não consigo abrir o perfil");
   expect(message).toContain("*Página relacionada:* Colaboradores");
-  expect(message).toContain(
-    "*Link da página:* http://127.0.0.1:4173/colaboradores",
-  );
-  expect(message).toContain(
-    `/storage/v1/object/sign/ti-support/${ticket.attachment_path}`,
-  );
-  expect(message).toContain("token=fixture-signed-token");
-  const protocol = `TI-20261009-${String(ticket.id).slice(0, 6).toUpperCase()}`;
-  expect(message).toContain(`*Protocolo:* ${protocol}`);
-  await expect(
-    page.getByRole("link", { name: "Abrir WhatsApp", exact: true }),
-  ).toHaveAttribute("href", state.whatsapp[0].href);
+  expect(message).toContain("Evidência de acesso.pdf");
+  await expect(page.locator(".support-success")).toContainText("Mensagem preparada para o WhatsApp.");
 });

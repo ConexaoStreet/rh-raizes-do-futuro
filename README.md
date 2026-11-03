@@ -22,3 +22,7 @@ A Edge Function `email-2fa` utiliza secrets do Supabase: `OTP_HMAC_SECRET`, `RES
 ## Segurança
 
 O banco usa RLS em todas as tabelas expostas. Operações privilegiadas passam por RPCs e 2FA; correções de presença em manutenção exigem verificação recente. Avaliações de gestão separam elegibilidade da resposta anônima.
+
+## Suporte
+
+O RH mantém o formulário de suporte e prepara uma mensagem para o WhatsApp, sem registrar chamados ou anexos no banco. A Central T.I. foi descontinuada; o histórico técnico de alterações já aplicadas permanece nas migrations.

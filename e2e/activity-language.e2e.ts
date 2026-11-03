@@ -264,41 +264,6 @@ test("RH activity list and before/after fit small screens", async ({
   }
 });
 
-test("TI explains site activity and Datasul responses in ordinary language", async ({
-  page,
-}) => {
-  await setup(page);
-  await page.goto("http://127.0.0.1:4174/");
-  await page
-    .getByRole("button", { name: "Histórico de atividades", exact: true })
-    .click();
-  const list = page.getByRole("list", { name: "Atividades do site" });
-  await expect(list).toContainText("Maria atualizou uma presença.");
-  await expect(list).not.toContainText(
-    /attendance_members|future_internal_action|internal_service_table|otp_failed/,
-  );
-  await list.locator("summary").first().click();
-  await expect(list).toContainText("Situação");
-  const datasul = page.getByRole("list", {
-    name: "Atividades da conexão com Datasul",
-  });
-  await expect(datasul).toContainText("O Datasul não autorizou esse acesso.");
-  await expect(datasul).toContainText("1,5 segundos");
-  await expect(datasul).not.toContainText(
-    /GET|403|internal-resource|INTERNAL_FORBIDDEN_DETAIL/,
-  );
-  for (const width of [320, 390, 768, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () => document.documentElement.scrollWidth <= window.innerWidth,
-        ),
-      )
-      .toBe(true);
-  }
-});
-
 test("public update history uses a simple number and ordinary descriptions", async ({
   page,
 }) => {

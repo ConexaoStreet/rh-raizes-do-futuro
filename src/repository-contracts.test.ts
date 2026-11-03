@@ -4,50 +4,24 @@ import { describe, expect, it } from "vitest";
 const read = (path: string) => readFileSync(path, "utf8");
 
 describe("repository contracts", () => {
-  it("keeps the Datasul mascot mounted and visibly styled", () => {
-    const app = read("apps/ti/src/App.tsx");
-    const styles = read("apps/ti/src/styles.css");
-    expect(app).toContain('data-testid="datasul-mascot"');
-    expect(app).toContain('placement="datasul"');
-    expect(app).toContain('scopeSelector=".datasul-view-root"');
-    expect(styles).toContain(".datasul-mascot-perch {");
-    expect(styles).toContain(".root-mascot-datasul {");
-    expect(styles).not.toMatch(/\.datasul-mascot-perch\s*\{[^}]*display\s*:\s*none/s);
+  it("keeps the email authentication Edge Function origin-restricted", () => {
+    expect(read("supabase/functions/email-2fa/index.ts")).not.toContain('"Access-Control-Allow-Origin": "*"');
   });
 
-  it("keeps the Datasul bridge full-featured and origin-restricted", () => {
-    const source = read("supabase/functions/datasul-bridge/index.ts");
-    expect(source).toContain('action === "request"');
-    expect(source).toContain('"ti.datasul.write"');
-    expect(source).toContain('"ti.datasul.delete"');
-    expect(source).not.toContain('"Access-Control-Allow-Origin": "*"');
-  });
-
-  it("keeps administrative Edge Functions origin-restricted", () => {
-    for (const path of [
-      "supabase/functions/platform-bridge/index.ts",
-      "supabase/functions/ti-admin-bridge/index.ts",
-      "supabase/functions/email-2fa/index.ts",
-    ]) {
-      expect(read(path)).not.toContain('"Access-Control-Allow-Origin": "*"');
-    }
-  });
-
-  it("pins JWT verification for every deployed Edge Function", () => {
+  it("keeps JWT verification for RH authenticated Edge Functions", () => {
     const config = read("supabase/config.toml");
-    for (const name of [
-      "email-2fa",
-      "datasul-bridge",
-      "platform-bridge",
-      "manager-activation",
-      "push-notify",
-      "registration-bootstrap",
-      "profile-photo-verify",
-      "ti-admin-bridge",
-      "ti-code-login",
-    ]) {
+    for (const name of ["email-2fa", "manager-activation", "push-notify", "registration-bootstrap", "profile-photo-verify"]) {
       expect(config).toContain(`[functions.${name}]`);
     }
+  });
+
+  it("keeps the retired technical center out of the application", () => {
+    expect(existsSync("apps/ti")).toBe(false);
+    expect(existsSync("supabase/functions/ti-admin-bridge/index.ts")).toBe(false);
+    const support = read("src/SupportTickets.tsx");
+    expect(support).toContain("https://wa.me/");
+    expect(support).not.toContain('from("ti_support_tickets")');
+    expect(support).not.toContain('.storage.from("ti-support")');
   });
 
   it("keeps only the applied complete profile repair migration", () => {
