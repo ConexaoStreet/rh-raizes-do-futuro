@@ -43,63 +43,10 @@ test("login surface renders without uncaught browser errors", async ({ page }) =
   expect(errors).toEqual([]);
 });
 
-test("TI theme cycles and persists", async ({ page }) => {
-  await page.emulateMedia({ colorScheme: "light" });
-  await page.goto("http://127.0.0.1:4174/", { waitUntil: "domcontentloaded" });
-
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "system");
-  const toggle = page.getByRole("button", { name: /Tema atual:/ });
-  await expect(toggle).toBeVisible();
-
-  await toggle.click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "light");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-
-  await toggle.click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "dark");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "dark");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-});
-
-test("TI login switches access methods without submitting", async ({ page }) => {
-  await page.addInitScript(() => sessionStorage.setItem("raizes-ti-intro-seen", "1"));
-  await page.goto("http://127.0.0.1:4174/", { waitUntil: "domcontentloaded" });
-
-  const passwordTab = page.getByRole("tab", { name: "E-mail e senha" });
-  const codeTab = page.getByRole("tab", { name: "Código semanal" });
-
-  await expect(passwordTab).toHaveAttribute("aria-selected", "true");
-  await expect(codeTab).toHaveAttribute("aria-selected", "false");
-  await expect(page.getByRole("textbox", { name: "E-mail", exact: true })).toBeVisible();
-  await expect(page.getByLabel("Senha", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Esqueci minha senha" })).toBeVisible();
-  await expect(page.locator(".login-submit")).toContainText("Entrar com segurança");
-
-  await codeTab.click();
-  await expect(codeTab).toHaveAttribute("aria-selected", "true");
-  await expect(passwordTab).toHaveAttribute("aria-selected", "false");
-  await expect(page.locator('input[name="access_code"]')).toBeVisible();
-  await expect(page.locator('input[name="email"]')).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Esqueci minha senha" })).toHaveCount(0);
-  await expect(page.locator(".login-submit")).toContainText("Entrar com código");
-
-  await passwordTab.click();
-  await expect(page.getByRole("textbox", { name: "E-mail", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Esqueci minha senha" })).toBeVisible();
-});
-
 test("login surfaces do not overflow on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
   await page.goto("/");
-  await expect
-    .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
-    .toBe(true);
-
-  await page.goto("http://127.0.0.1:4174/");
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
     .toBe(true);
@@ -214,31 +161,14 @@ test("internal apps stay non-indexable", async ({ page, request }) => {
   );
   const rhRobots = await request.get("/robots.txt");
   expect(await rhRobots.text()).toContain("Disallow: /");
-
-  await page.goto("http://127.0.0.1:4174/");
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
-    "content",
-    "noindex,nofollow,noarchive",
-  );
-  const tiRobots = await request.get("http://127.0.0.1:4174/robots.txt");
-  expect(await tiRobots.text()).toContain("Disallow: /");
 });
-
 
 test("PWA assets stay available", async ({ request }) => {
   const rhManifest = await request.get("/manifest.webmanifest");
   expect(rhManifest.ok()).toBe(true);
   expect((await rhManifest.json()).theme_color).toBe("#152522");
   expect((await request.get("/sw.js")).ok()).toBe(true);
-
-  const tiManifest = await request.get(
-    "http://127.0.0.1:4174/manifest.webmanifest",
-  );
-  expect(tiManifest.ok()).toBe(true);
-  expect((await tiManifest.json()).theme_color).toBe("#08110e");
-  expect((await request.get("http://127.0.0.1:4174/sw.js")).ok()).toBe(true);
 });
-
 
 test("first access starts with searchable preregistration identity", async ({ page }) => {
   await page.goto("/");

@@ -19,7 +19,6 @@ assert.doesNotMatch(helper, /error\.stack/);
 
 for (const file of [
   "supabase/functions/registration-bootstrap/index.ts",
-  "supabase/functions/ti-code-login/index.ts",
   "supabase/functions/push-notify/index.ts",
 ]) {
   const source = fs.readFileSync(file, "utf8");
@@ -33,14 +32,6 @@ const registration = fs.readFileSync(
 );
 assert.match(registration, /registration_bootstrap\.match/);
 assert.match(registration, /registration_bootstrap\.error/);
-
-const tiLogin = fs.readFileSync(
-  "supabase/functions/ti-code-login/index.ts",
-  "utf8",
-);
-assert.match(tiLogin, /outcome:\s*"rate_limited"/);
-assert.match(tiLogin, /outcome:\s*"invalid_code"/);
-assert.match(tiLogin, /ti_code_login\.confirm/);
 
 const rhNotify = fs.readFileSync(
   "supabase/functions/rh-notify/index.ts",

@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-for (const name of ["ti-admin-bridge", "platform-bridge", "datasul-bridge", "profile-photo-verify"]) {
+for (const name of ["profile-photo-verify"]) {
   const source = fs.readFileSync(`supabase/functions/${name}/index.ts`, "utf8");
   assert.match(source, /withSupabase\(\{ auth: "user" \}/);
   assert.match(source, /headers\.has\("cf-ipcountry"\)\s*&&\s*!isBrazilRequest/);
   assert.match(source, /status:\s*403|FORBIDDEN/);
 }
 
-for (const name of ["ti-code-login", "manager-activation"]) {
+for (const name of ["manager-activation"]) {
   const source = fs.readFileSync(`supabase/functions/${name}/index.ts`, "utf8");
   assert.match(source, /if \(!isBrazilRequest\(request\)\)/);
 }

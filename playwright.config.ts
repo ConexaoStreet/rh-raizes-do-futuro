@@ -28,14 +28,6 @@ export default defineConfig({
         VITE_SUPABASE_ANON_KEY: "e2e-public-anon-key",
       },
     },
-    {
-      command: "npx vite apps/ti --host 127.0.0.1 --port 4174",
-      url: "http://127.0.0.1:4174",
-      reuseExistingServer: false,
-      env: {
-        VITE_SUPABASE_URL: "http://127.0.0.1:54321",
-        VITE_SUPABASE_ANON_KEY: "e2e-public-anon-key",
-      },
     },
   ],
 });

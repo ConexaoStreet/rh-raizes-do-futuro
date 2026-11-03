@@ -21,11 +21,7 @@ secure_password_change = true
 [functions.email-2fa]
 verify_jwt = true
 
-[functions.datasul-bridge]
-verify_jwt = true
 
-[functions.platform-bridge]
-verify_jwt = true
 
 [functions.manager-activation]
 verify_jwt = false
@@ -43,12 +39,8 @@ verify_jwt = false
 verify_jwt = true
 
 
-[functions.ti-admin-bridge]
-verify_jwt = true
 
 
-[functions.ti-code-login]
-verify_jwt = false
 
 [auth.email.template.invite]
 subject = "Seu acesso ao Raízes do Futuro"

@@ -14,11 +14,9 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { client } from "./api";
 import { useAuth } from "./auth";
 import { Heading } from "./components";
-import { dateLabel } from "./domain";
-import { capture, captureError } from "./telemetry";
+import { capture } from "./telemetry";
 import "./styles/support.css";
 
 type Category =
@@ -131,7 +129,7 @@ function shortBrowser(userAgent: string) {
 }
 
 export default function SupportTickets() {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const sourcePath =
     (location.state as { reportPath?: string } | null)?.reportPath ||
@@ -156,90 +154,16 @@ export default function SupportTickets() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
-
-    if (attachment && attachment.size > 10 * 1024 * 1024) {
-      toast.error("O anexo pode ter no máximo 10 MB.");
+    if (subject.trim().length < 3 || description.trim().length < 10) {
+      toast.error("Preencha o resumo e a descrição do problema.");
       return;
     }
-
-    const allowed = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "application/pdf",
-    ];
-    if (attachment && !allowed.includes(attachment.type)) {
-      toast.error("Envie uma imagem PNG/JPG/WebP ou um PDF.");
-      return;
-    }
-
     setBusy(true);
-    const ticketId = crypto.randomUUID();
-    const pageUrl = new URL(relatedPath, window.location.origin).href;
-    const technicalContext = {
-      browser: shortBrowser(navigator.userAgent),
-      userAgent: navigator.userAgent,
-      viewport: `${window.innerWidth}x${window.innerHeight}`,
-      screen: `${window.screen.width}x${window.screen.height}`,
-      language: navigator.language,
-      online: navigator.onLine,
-      platform: navigator.platform || null,
-    };
-
-    let attachmentPath: string | null = null;
-    let signedAttachmentUrl = "";
-
     try {
-      if (attachment) {
-        attachmentPath = `${session.user.id}/${ticketId}/${safeFileName(attachment.name)}`;
-        const { error: uploadError } = await client()
-          .storage.from("ti-support")
-          .upload(attachmentPath, attachment, {
-            cacheControl: "3600",
-            upsert: false,
-            contentType: attachment.type,
-          });
-        if (uploadError) throw uploadError;
-
-        const { data: signed, error: signedError } = await client()
-          .storage.from("ti-support")
-          .createSignedUrl(attachmentPath, 60 * 60 * 24 * 7);
-        if (signedError) throw signedError;
-        signedAttachmentUrl = signed.signedUrl;
-      }
-
-      const { data: ticket, error } = await client()
-        .from("ti_support_tickets")
-        .insert({
-          id: ticketId,
-          user_id: session.user.id,
-          category,
-          subject: subject.trim(),
-          description: description.trim(),
-          page_path: relatedPath,
-          page_url: pageUrl,
-          page_title: relatedLabel,
-          technical_context: technicalContext,
-          attachment_path: attachmentPath,
-          status: "open",
-        })
-        .select("created_at")
-        .single();
-      if (error) throw error;
-      const createdAt = ticket.created_at;
-
-      const protocol = `TI-${createdAt.slice(0, 10).replaceAll("-", "")}-${ticketId
-        .slice(0, 6)
-        .toUpperCase()}`;
-      const brandUrl = new URL(
-        "/brand/raizes-logo-mark.png",
-        window.location.origin,
-      ).href;
-
+      const pageUrl = new URL(relatedPath, window.location.origin).href;
       const message = [
-        "🌱 *Raízes do Futuro • Chamado T.I.*",
+        "🌱 *Raízes do Futuro • Suporte pelo WhatsApp*",
         "",
-        `*Protocolo:* ${protocol}`,
         `*Solicitante:* ${user.profile.full_name}`,
         `*Motivo:* ${categoryLabel}`,
         `*Resumo:* ${subject.trim()}`,
@@ -249,33 +173,15 @@ export default function SupportTickets() {
         "",
         `*Página relacionada:* ${relatedLabel}`,
         `*Link da página:* ${pageUrl}`,
-        `*Enviado em:* ${dateLabel(createdAt, true)}`,
-        `*Navegador:* ${technicalContext.browser}`,
-        `*Tela:* ${technicalContext.viewport}`,
-        signedAttachmentUrl ? `*Anexo:* ${signedAttachmentUrl}` : "",
-        `*Identidade Raízes do Futuro:* ${brandUrl}`,
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      const whatsAppUrl = `https://wa.me/5511919730067?text=${encodeURIComponent(
-        message,
-      )}`;
-
-      setSent({ protocol, whatsAppUrl, createdAt });
-      capture("ti_support_ticket_created", {
-        category,
-        has_attachment: Boolean(attachment),
-        page_path: relatedPath,
-      });
-      toast.success("Chamado registrado. Abrindo o WhatsApp...");
+        `*Data:* ${new Date().toLocaleString("pt-BR")}`,
+        attachment
+          ? `*Arquivo selecionado:* ${attachment.name} (enviarei diretamente nesta conversa)`
+          : "",
+      ].filter(Boolean).join("\n");
+      const whatsAppUrl = `https://wa.me/5511919730067?text=${encodeURIComponent(message)}`;
+      setSent({ protocol: "", whatsAppUrl, createdAt: new Date().toISOString() });
+      capture("rh_support_whatsapp_opened", { category, has_attachment: Boolean(attachment), page_path: relatedPath });
       window.location.href = whatsAppUrl;
-    } catch (error) {
-      if (attachmentPath) {
-        await client().storage.from("ti-support").remove([attachmentPath]);
-      }
-      captureError("ti_support_ticket", error);
-      toast.error("Não foi possível registrar o chamado. Tente novamente.");
     } finally {
       setBusy(false);
     }
@@ -283,7 +189,7 @@ export default function SupportTickets() {
 
   return (
     <div className="support-page">
-      <Heading title="Chamado T.I." eyebrow="SUPORTE TÉCNICO" />
+      <Heading title="Suporte pelo WhatsApp" eyebrow="ATENDIMENTO DIRETO" />
 
       <section className="support-hero card">
         <div className="support-hero-icon" aria-hidden="true">
@@ -292,9 +198,7 @@ export default function SupportTickets() {
         <div>
           <h2>Precisa de ajuda com o sistema?</h2>
           <p>
-            Relate um erro, bug, problema de acesso ou dúvida. O sistema
-            registra o chamado e prepara uma mensagem completa para o WhatsApp
-            da T.I.
+            Relate um erro, bug, problema de acesso ou dúvida. O formulário prepara uma mensagem para o WhatsApp. Nada é salvo como chamado no sistema.
           </p>
         </div>
       </section>
@@ -302,9 +206,9 @@ export default function SupportTickets() {
       {sent && (
         <section className="support-success card" aria-live="polite">
           <div>
-            <strong>Chamado {sent.protocol} registrado.</strong>
+            <strong>Mensagem preparada para o WhatsApp.</strong>
             <span>
-              Se o WhatsApp não abriu automaticamente, use o botão ao lado.
+              Envie a mensagem na conversa para concluir o pedido.
             </span>
           </div>
           <a
@@ -326,7 +230,7 @@ export default function SupportTickets() {
               <span>1</span>
               <div>
                 <h2>Qual é o motivo?</h2>
-                <p>Escolha a opção que melhor descreve o chamado.</p>
+                <p>Escolha a opção que melhor descreve o problema.</p>
               </div>
             </div>
           </div>
@@ -429,7 +333,7 @@ export default function SupportTickets() {
               <span>3</span>
               <div>
                 <h2>Anexo opcional</h2>
-                <p>Uma captura de tela pode ajudar bastante.</p>
+                <p>Você poderá enviar a captura de tela diretamente na conversa do WhatsApp.</p>
               </div>
             </div>
           </div>
@@ -447,7 +351,7 @@ export default function SupportTickets() {
               <strong>
                 {attachment ? attachment.name : "Adicionar imagem ou PDF"}
               </strong>
-              <span>PNG, JPG, WebP ou PDF • até 10 MB</span>
+              <span>PNG, JPG, WebP ou PDF • envie manualmente pelo WhatsApp</span>
             </div>
             {attachment && (
               <button
@@ -469,24 +373,21 @@ export default function SupportTickets() {
           <div>
             <Smartphone size={22} />
             <div>
-              <strong>Enviar chamado para a T.I.</strong>
+              <strong>Conversar pelo WhatsApp</strong>
               <span>
-                O protocolo fica salvo no sistema e o WhatsApp abre com a
-                mensagem pronta para envio.
+                O WhatsApp abre com a mensagem pronta. Nenhum chamado é registrado no banco.
               </span>
             </div>
           </div>
           <button className="primary large" disabled={busy}>
-            {busy ? "Registrando..." : "Registrar e abrir WhatsApp"}
+            {busy ? "Preparando..." : "Abrir WhatsApp"}
             <Send size={18} />
           </button>
         </section>
       </form>
 
       <p className="support-footnote">
-        O WhatsApp não permite que links <code>wa.me</code> anexem arquivos
-        automaticamente. Quando houver screenshot/PDF, a mensagem leva um link
-        temporário e privado para o anexo.
+        O WhatsApp não anexa arquivos automaticamente: envie o arquivo selecionado diretamente na conversa. O site não armazena anexos ou chamados.
       </p>
     </div>
   );

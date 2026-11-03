@@ -115,10 +115,7 @@ const supabaseConfig = fs.readFileSync(
   "utf8",
 );
 for (const functionName of [
-  "datasul-bridge",
-  "platform-bridge",
   "profile-photo-verify",
-  "ti-admin-bridge",
 ]) {
   assert.match(
     supabaseConfig,
@@ -129,7 +126,7 @@ for (const functionName of [
   );
 }
 
-for (const relativePath of ["../vercel.json", "../apps/ti/vercel.json"]) {
+for (const relativePath of ["../vercel.json"]) {
   const config = JSON.parse(
     fs.readFileSync(fileURLToPath(new URL(relativePath, import.meta.url)), "utf8"),
   );

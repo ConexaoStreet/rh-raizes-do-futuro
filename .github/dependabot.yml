@@ -13,19 +13,6 @@ updates:
         update-types:
           - minor
           - patch
-  - package-ecosystem: npm
-    directory: /apps/ti
-    schedule:
-      interval: weekly
-      day: monday
-      time: "09:10"
-      timezone: America/Sao_Paulo
-    open-pull-requests-limit: 5
-    groups:
-      safe-updates:
-        update-types:
-          - minor
-          - patch
   - package-ecosystem: github-actions
     directory: /
     schedule:

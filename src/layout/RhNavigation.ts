@@ -136,7 +136,7 @@ export const rhNavGroups: RhNavGroup[] = [
     items: [
       {
         path: "/suporte-ti",
-        name: "Chamado T.I.",
+        name: "Suporte pelo WhatsApp",
         icon: LifeBuoy,
         permission: "",
       },
