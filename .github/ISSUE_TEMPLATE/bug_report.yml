@@ -1,0 +1,29 @@
+name: "Relatar problema"
+description: "Registrar falhas com informações técnicas, sem dados pessoais."
+title: "[Bug] "
+body:
+  - type: textarea
+    id: resumo
+    attributes:
+      label: "O que aconteceu?"
+      description: "Não inclua nomes, e-mails, senhas ou dados reais de colaboradores."
+    validations:
+      required: true
+  - type: textarea
+    id: reproducao
+    attributes:
+      label: "Como reproduzir?"
+      description: "Use contas e registros de teste."
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: "Comportamento esperado"
+    validations:
+      required: true
+  - type: textarea
+    id: ambiente
+    attributes:
+      label: "Ambiente e evidências seguras"
+      description: "Navegador, versão e prints anonimizados."
