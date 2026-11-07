@@ -5,20 +5,21 @@ import { isBrazilRequest } from "../_shared/request-security.ts";
 const BUCKET = "espro-profile-photos";
 const MAX_BYTES = 5 * 1024 * 1024;
 const MIN_BYTES = 20 * 1024;
+const RH_ORIGIN = "https://rh-raizes-do-futuro.vercel.app";
 
 const ORIGINS = new Set([
-  "https://rh-raizes-do-futuro.vercel.app",
-  "https://ti-raizes-do-futuro.vercel.app",
+  RH_ORIGIN,
   "http://127.0.0.1:4173",
   "http://localhost:4173",
 ]);
 
+function requestOrigin(request: Request) {
+  return request.headers.get("origin") || RH_ORIGIN;
+}
+
 function cors(origin: string) {
-  const safe = ORIGINS.has(origin)
-    ? origin
-    : "https://rh-raizes-do-futuro.vercel.app";
   return {
-    "Access-Control-Allow-Origin": safe,
+    "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -117,16 +118,10 @@ async function sha256(bytes: Uint8Array) {
     .join("");
 }
 
-Deno.serve(
-  withSupabase({ auth: "user" }, async (request, context) => {
-    const origin =
-      request.headers.get("origin") ||
-      "https://rh-raizes-do-futuro.vercel.app";
-    if (!ORIGINS.has(origin)) return new Response(null, { status: 403 });
+const handleUserRequest = withSupabase({ auth: "user" },
+  async (request, context) => {
+    const origin = requestOrigin(request);
     if (request.headers.has("cf-ipcountry") && !isBrazilRequest(request)) return response(origin, { error: "REGION_NOT_ALLOWED" }, 403);
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: cors(origin) });
-    }
     if (request.method !== "POST") {
       return response(origin, { error: "METHOD_NOT_ALLOWED" }, 405);
     }
@@ -288,5 +283,14 @@ Deno.serve(
         ? "A foto foi recebida, mas precisa ser substituída."
         : "A foto passou pela verificação básica e pode seguir para aprovação.",
     });
-  }),
+  },
 );
+
+Deno.serve((request) => {
+  const origin = requestOrigin(request);
+  if (!ORIGINS.has(origin)) return new Response(null, { status: 403 });
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: cors(origin) });
+  }
+  return handleUserRequest(request);
+});
