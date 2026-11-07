@@ -1,4 +1,3 @@
--- Retire browser access to Central de TI operations after its decommissioning.
 REVOKE EXECUTE ON FUNCTION
   public.ti_database_snapshot(),
   public.ti_review_espro_photo(uuid, text, text),
