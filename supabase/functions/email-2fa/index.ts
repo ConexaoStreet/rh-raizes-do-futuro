@@ -2,7 +2,6 @@ import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { classifyEmailDeliveryFailure } from "../_shared/email-delivery.ts";
 import { observe, observeError } from "../_shared/observability.ts";
 const DEFAULT_ALLOWED_ORIGINS = new Set([
-  "https://ti-raizes-do-futuro.vercel.app",
   "https://rh-raizes-do-futuro.vercel.app",
   "http://127.0.0.1:4174",
   "http://localhost:4174",
@@ -15,7 +14,14 @@ const allowedOrigins = () =>
     ...(Deno.env.get("ALLOWED_ORIGINS") || "")
       .split(",")
       .map((x) => x.trim())
-      .filter(Boolean),
+      .filter((origin) => {
+        if (!origin) return false;
+        try {
+          return new URL(origin).hostname !== "ti-raizes-do-futuro.vercel.app";
+        } catch {
+          return true;
+        }
+      }),
   ]);
 const required = (name: string) => {
   const value = Deno.env.get(name);
